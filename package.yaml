@@ -1,0 +1,51 @@
+name:                salak
+version:             0.1.0
+synopsis:            Configuration
+description:         Configuration
+homepage:            https://github.com/leptonyu/salak#readme
+license:             BSD3
+author:              Daniel YU
+maintainer:          Daniel YU &lt;leptonyu@gmail.com&gt;
+copyright:           (c) Daniel YU
+category:            Library
+extra-source-files:
+- README.md
+
+dependencies:
+  - base >= 4.7 && < 5
+  - bytestring
+  - unordered-containers
+  - split
+  - aeson
+  - yaml
+  - text
+  - scientific
+  - vector
+  - directory
+  - filepath
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - Data.Salak
+  other-modules:
+    - Data.Salak.Property
+    - Data.Salak.Environment 
+    - Data.Salak.CommandLine
+    - Data.Salak.Aeson
+    - Data.Salak.Yaml
+
+executables:
+  salak:
+    source-dirs:      .
+    main:             Main.hs
+
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs:
+      - test
+      - src
+    dependencies:
+      - hspec == 2.*
+      - QuickCheck
