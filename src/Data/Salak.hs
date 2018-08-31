@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module:      Data.Salak
 -- Copyright:   (c) 2018 Daniel YU
@@ -21,6 +22,7 @@ module Data.Salak(
   , empty
   -- * Lookup Properties
   , lookup
+  , lookup'
   , toKeys
   -- * Types
   , Property(..)
@@ -44,7 +46,8 @@ import           Data.Salak.CommandLine
 import           Data.Salak.Environment
 import           Data.Salak.Types
 import           Data.Salak.Yaml
-import           Prelude                hiding (empty, lookup)
+import           Data.Text              (Text, unpack)
+import           Prelude                hiding (lookup)
 import           System.Directory
 import           System.FilePath        ((</>))
 
@@ -60,7 +63,7 @@ defaultProperties' dpc
   >>= makePropertiesFromEnvironment
 
 -- | Yaml file name.
-type FileName = String
+type FileName = Text
 
 -- | Initialize default properties from `CommandLine`, `Environment` and `Yaml` files.
 -- All these configuration sources has orders, from highest order to lowest order:
@@ -74,22 +77,36 @@ type FileName = String
 defaultPropertiesWithFile
   :: FileName -- ^ specify default config file name, can reset by config "salak.config.name" from `CommandLine` or `Environment`.
   -> IO Properties
-defaultPropertiesWithFile name = do
-  p <- defaultProperties
-  let n  = fromMaybe name $ (lookup "salak.config.name" p :: Maybe String)
+defaultPropertiesWithFile name = defaultPropertiesWithFile' name defaultParseCommandLine
+
+-- | Initialize default properties from `CommandLine`, `Environment` and `Yaml` files.
+-- All these configuration sources has orders, from highest order to lowest order:
+--
+-- > 1. CommandLine
+-- > 2. Environment
+-- > 3. Specified Yaml file(file in "salak.config.dir")
+-- > 4. Yaml file in current directory
+-- > 5. Yaml file in home directory
+--
+defaultPropertiesWithFile'
+  :: FileName -- ^ specify default config file name, can reset by config "salak.config.name" from `CommandLine` or `Environment`.
+  -> ParseCommandLine -- ^ parser for command line
+  -> IO Properties
+defaultPropertiesWithFile' name dpc = do
+  p <- defaultProperties' dpc
+  let n  = fromMaybe name $ lookup "salak.config.name" p
       p' = insert (toKeys "salak.config.name") (PStr n) p
   c <- getCurrentDirectory
   h <- getHomeDirectory
-  foldl (go n) (return p') $ [(lookup "salak.config.dir" p, False), (Just c, True), (Just h, True)]
+  foldl (go n) (return p') [(lookup "salak.config.dir" p, False), (Just c, True), (Just h, True)]
   where
-    go _    p (Nothing, _) = p
-    go name p (Just d, ok) = let f = d </> name in do
+    go _ p (Nothing, _) = p
+    go n p (Just d, ok) = let f = d </> unpack n in do
       p' <- p
       b <- doesFileExist f
       if b
         then makePropertiesFromYaml f p'
         else if ok then return p' else error $ "File " ++ f ++  " not found"
-
 
 -- $use
 --

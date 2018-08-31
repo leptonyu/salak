@@ -2,10 +2,10 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 82f2482ba7f49ee8ad36d437e333c17b1bbfe849d8d94af64aeb66a611d3a71c
+-- hash: 23ec79db8365c6f1dee0d024ad785c8e8a99b04bfa21907880d9474e7c0d003b
 
 name:           salak
-version:        0.1.2
+version:        0.1.3
 synopsis:       Configuration Loader
 description:    Configuration Loader for Production in Haskell
 category:       Library
@@ -31,32 +31,13 @@ library
       Data.Salak.Yaml
   hs-source-dirs:
       src
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       aeson
     , base >=4.7 && <5
     , directory
     , filepath
     , scientific
-    , split
-    , text
-    , unordered-containers
-    , vector
-    , yaml
-  default-language: Haskell2010
-
-executable salak
-  main-is: Main.hs
-  other-modules:
-      Paths_salak
-  hs-source-dirs:
-      ./.
-  build-depends:
-      aeson
-    , base >=4.7 && <5
-    , directory
-    , filepath
-    , scientific
-    , split
     , text
     , unordered-containers
     , vector
@@ -77,15 +58,17 @@ test-suite spec
   hs-source-dirs:
       test
       src
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       QuickCheck
     , aeson
+    , aeson-pretty
     , base >=4.7 && <5
+    , bytestring
     , directory
     , filepath
     , hspec ==2.*
     , scientific
-    , split
     , text
     , unordered-containers
     , vector

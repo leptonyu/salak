@@ -2,6 +2,7 @@ module Data.Salak.Environment where
 
 import           Data.Char
 import           Data.Salak.Types
+import           Data.Text          (pack)
 import           System.Environment
 
 -- | Load `Properties` from 'Environment'
@@ -12,6 +13,6 @@ makePropertiesFromEnvironment p = getEnvironment >>= (\v -> return $ makePropert
 makePropertiesFromEnvironment' :: [(String,String)] -> Properties -> Properties
 makePropertiesFromEnvironment' vs = makeProperties $ go <$> vs
   where
-    go (k,v) = (fmap g2 k,PStr v)
+    go (k,v) = (pack $ fmap g2 k,PStr $ pack v)
     g2 '_' = '.'
     g2 a   = toLower a

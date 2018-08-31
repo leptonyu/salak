@@ -1,8 +1,8 @@
 module Data.Salak.CommandLine where
 
-import           Data.Char
 import           Data.Maybe
 import           Data.Salak.Types
+import           Data.Text          (pack)
 import           System.Environment
 
 -- | CommandLine parser. Parse command line into property key values.
@@ -21,7 +21,7 @@ defaultParseCommandLine :: ParseCommandLine
 defaultParseCommandLine = return . mapMaybe go
   where
     go ('-':'-':as) = case break (=='=') as of
-      (a,'=':b) -> Just (a,PStr b)
+      (a,'=':b) -> Just (a,PStr $ pack b)
       _         -> Nothing
     go _ = Nothing
 
@@ -32,4 +32,4 @@ makePropertiesFromCommandLine parser p = getArgs >>= (\a -> makePropertiesFromCo
 makePropertiesFromCommandLine' :: [String] -> ParseCommandLine -> Properties -> IO Properties
 makePropertiesFromCommandLine' args parser p = do
   v <- parser args
-  return $ makeProperties v p
+  return $ makeProperties (fmap (\(a,b) -> (pack a,b)) v) p
