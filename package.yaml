@@ -10,6 +10,7 @@ copyright:           (c) 2018 Daniel YU
 category:            Library
 extra-source-files:
 - README.md
+- test/salak.yml
 ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fno-warn-orphans -fno-warn-missing-signatures
 
 dependencies:

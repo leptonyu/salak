@@ -19,6 +19,7 @@ module Data.Salak(
   , ParseCommandLine
   , defaultProperties'
   , defaultPropertiesWithFile
+  , defaultPropertiesWithFile'
   , empty
   -- * Lookup Properties
   , lookup
