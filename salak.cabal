@@ -2,10 +2,10 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0015b041a0d475b56a8f5fe6ed5e46381c3c8081a519e77398c06bb9debd33c8
+-- hash: 5f3dd7d42f7a7ee9055783b8dc24862d706b27d1497cd7e3de9486b5ade28068
 
 name:           salak
-version:        0.1.4
+version:        0.1.5
 synopsis:       Configuration Loader
 description:    Configuration Loader for Production in Haskell
 category:       Library
