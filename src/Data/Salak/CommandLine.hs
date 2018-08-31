@@ -2,11 +2,21 @@ module Data.Salak.CommandLine where
 
 import           Data.Char
 import           Data.Maybe
-import           Data.Salak.Property
+import           Data.Salak.Types
 import           System.Environment
 
+-- | CommandLine parser. Parse command line into property key values.
 type ParseCommandLine = [String] -> IO [(String,Property)]
 
+-- | Default command line parsers.
+--   Use format:
+-- 
+-- > --KEY=VALUE
+--
+-- For example:
+--
+-- > --salak.config.name=test.yml => ("salak.config.name", PStr "test.yml")
+--
 defaultParseCommandLine :: ParseCommandLine
 defaultParseCommandLine = return . mapMaybe go
   where
@@ -15,6 +25,7 @@ defaultParseCommandLine = return . mapMaybe go
       _         -> Nothing
     go _ = Nothing
 
+-- | Load `Properties` from 'CommandLine'
 makePropertiesFromCommandLine :: ParseCommandLine -> Properties -> IO Properties
 makePropertiesFromCommandLine parser p = getArgs >>= (\a -> makePropertiesFromCommandLine' a parser p)
 

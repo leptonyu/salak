@@ -1,19 +1,18 @@
 name:                salak
-version:             0.1.0
-synopsis:            Configuration
-description:         Configuration
+version:             0.1.1
+synopsis:            Configuration Loader
+description:         Configuration Loader for Production in Haskell
 homepage:            https://github.com/leptonyu/salak#readme
 license:             BSD3
 author:              Daniel YU
-maintainer:          Daniel YU &lt;leptonyu@gmail.com&gt;
-copyright:           (c) Daniel YU
+maintainer:          Daniel YU <leptonyu@gmail.com>
+copyright:           (c) 2018 Daniel YU
 category:            Library
 extra-source-files:
 - README.md
 
 dependencies:
   - base >= 4.7 && < 5
-  - bytestring
   - unordered-containers
   - split
   - aeson
@@ -29,7 +28,7 @@ library:
   exposed-modules:
     - Data.Salak
   other-modules:
-    - Data.Salak.Property
+    - Data.Salak.Types
     - Data.Salak.Environment 
     - Data.Salak.CommandLine
     - Data.Salak.Aeson

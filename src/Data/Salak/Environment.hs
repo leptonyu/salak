@@ -1,9 +1,10 @@
 module Data.Salak.Environment where
 
 import           Data.Char
-import           Data.Salak.Property
+import           Data.Salak.Types
 import           System.Environment
 
+-- | Load `Properties` from 'Environment'
 makePropertiesFromEnvironment :: Properties -> IO Properties
 makePropertiesFromEnvironment p = getEnvironment >>= (\v -> return $ makePropertiesFromEnvironment' v p)
 

@@ -1,7 +1,8 @@
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-module Data.Salak.Property where
+
+module Data.Salak.Types where
 
 import           Control.Monad       ((>=>))
 import           Data.Char
@@ -15,16 +16,29 @@ import           Data.Word
 import           Foreign.C.Types
 import           Text.Read
 
+-- | Property key
 type Key = Text
 
+-- | A Property value represented as a Haskell value.
+data Property
+  = PNum  !Scientific -- ^ Numeric Property
+  | PStr  !String     -- ^ String  Property
+  | PBool !Bool       -- ^ Bool    Property
+  deriving (Eq, Show)
+
+-- | A Property Container to hold all properties
 data Properties
-  = Node [Property] [M.HashMap Key Properties]
+  = Properties [Property] [M.HashMap Key Properties]
   deriving (Eq)
 
 instance Show Properties where
   show = unlines . go ""
     where
-      go p (Node ps ms) = fmap (g2 p) ps ++ concat (fmap (g3 p) ms)
+      {-# INLINE go #-}
+      {-# INLINE g2 #-}
+      {-# INLINE g3 #-}
+      {-# INLINE g4 #-}
+      go p (Properties ps ms) = fmap (g2 p) ps ++ concat (fmap (g3 p) ms)
       g2 p (PNum n)  = p ++ "=" ++ show n
       g2 p (PStr n)  = p ++ "=" ++ n
       g2 p (PBool n) = p ++ "=" ++ show n
@@ -33,42 +47,49 @@ instance Show Properties where
       g4 "" (p2,ps) = go (unpack p2) ps
       g4 p  (p2,ps) = go (p ++ "." ++ unpack p2) ps
 
-data Property
-  = PNum  Scientific
-  | PStr  String
-  | PBool Bool
-  deriving (Eq, Show)
-
+-- | The empty `Properties`
 empty :: Properties
-empty = Node [] []
+empty = Properties [] []
 
+-- | Split origin key by '.' to sub keys:
+--   
+-- > "salak.config.name" -> ["salak","config","name"]
+-- > "" -> []
+-- > "a..b" -> ["a","b"]
+-- 
 toKeys :: String -> [Key]
 toKeys = fmap pack . filter (not.null) . splitOneOf "."
 
+-- | Insert simple `Property` into `Properties` by `Key`.
+-- If the key already have values then the new property will discard.
 insert :: [Key] -> Property -> Properties -> Properties
-insert []     p (Node [] m)  = Node [p] m
-insert []     _ (Node ps m)  = Node ps  m
-insert (a:as) p (Node ps []) = Node ps [M.insert a (insert as p empty) M.empty]
-insert (a:as) p (Node ps ms) = Node ps $ go a as p <$> ms
+insert []     p (Properties [] m)  = Properties [p] m
+insert []     _ (Properties ps m)  = Properties ps  m
+insert (a:as) p (Properties ps []) = Properties ps [M.insert a (insert as p empty) M.empty]
+insert (a:as) p (Properties ps ms) = Properties ps $ go a as p <$> ms
   where
     go a as p m = case M.lookup a m of
       Just n  -> M.insert a (insert as p     n) m
       Nothing -> M.insert a (insert as p empty) m
 
+-- | Find `Properties` by key and convert to specific Haskell value.
+-- Return `Nothing` means not found, and throw `ErrorCall` means convert failed.
 lookup :: FromProperties a => String -> Properties -> Maybe a
 lookup = go . toKeys
   where
     go []     p = from $ fromProperties p
-    go (a:as) (Node _ [m]) = case M.lookup a m of
+    go (a:as) (Properties _ [m]) = case M.lookup a m of
       Just n  -> go as n
       Nothing -> Nothing
     go (a:as) _ = Nothing
 
+-- | Insert batch properties to `Properties`
 makeProperties :: [(String, Property)] -> Properties -> Properties
 makeProperties ps m = foldl go m ps
   where
     go m (k,v) = insert (toKeys k) v m
 
+-- | Return of `FromProperties`
 data Return a
   = Empty
   | OK a
@@ -104,16 +125,17 @@ mapReturn f as = go $ fmap f as
     go (OK a:as) = a : go as
     go (_:as)    = go as
 
+-- | Convert `Properties` to Haskell value.
 class FromProperties a where
   fromProperties :: Properties -> Return a
 
 instance FromProperties Property where
-  fromProperties (Node (a:_) _) = OK a
+  fromProperties (Properties (a:_) _) = OK a
   fromProperties _              = Empty
 
 instance {-# OVERLAPPABLE #-} FromProperties a => FromProperties [a] where
-  fromProperties (Node ps ms) =
-    let ns = fmap (\p -> Node [p] []) ps ++ fmap (\m -> Node [] [m]) ms
+  fromProperties (Properties ps ms) =
+    let ns = fmap (\p -> Properties [p] []) ps ++ fmap (\m -> Properties [] [m]) ms
     in OK $ mapReturn fromProperties ns
 
 instance FromProperties Scientific where

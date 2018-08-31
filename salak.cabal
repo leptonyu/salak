@@ -2,16 +2,16 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0f2d8453e74e53a24b06a57047e8a2cbff0554c3d8008c00c80746a3715498f6
+-- hash: acba3dab08e19b8e540e6dcddfd6f30dfbcc8cfb38017fa43f07b1901fb432ac
 
 name:           salak
-version:        0.1.0
-synopsis:       Configuration
-description:    Configuration
+version:        0.1.1
+synopsis:       Configuration Loader
+description:    Configuration Loader for Production in Haskell
 category:       Library
 homepage:       https://github.com/leptonyu/salak#readme
 author:         Daniel YU
-maintainer:     Daniel YU &lt;leptonyu@gmail.com&gt;
+maintainer:     Daniel YU <leptonyu@gmail.com>
 copyright:      (c) Daniel YU
 license:        BSD3
 license-file:   LICENSE
@@ -24,7 +24,7 @@ library
   exposed-modules:
       Data.Salak
   other-modules:
-      Data.Salak.Property
+      Data.Salak.Types
       Data.Salak.Environment
       Data.Salak.CommandLine
       Data.Salak.Aeson
@@ -34,7 +34,6 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , directory
     , filepath
     , scientific
@@ -54,7 +53,6 @@ executable salak
   build-depends:
       aeson
     , base >=4.7 && <5
-    , bytestring
     , directory
     , filepath
     , scientific
@@ -73,7 +71,7 @@ test-suite spec
       Data.Salak.Aeson
       Data.Salak.CommandLine
       Data.Salak.Environment
-      Data.Salak.Property
+      Data.Salak.Types
       Data.Salak.Yaml
       Paths_salak
   hs-source-dirs:
@@ -83,7 +81,6 @@ test-suite spec
       QuickCheck
     , aeson
     , base >=4.7 && <5
-    , bytestring
     , directory
     , filepath
     , hspec ==2.*
