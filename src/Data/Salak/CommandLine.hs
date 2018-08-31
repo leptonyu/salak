@@ -10,7 +10,7 @@ type ParseCommandLine = [String] -> IO [(String,Property)]
 
 -- | Default command line parsers.
 --   Use format:
--- 
+--
 -- > --KEY=VALUE
 --
 -- For example:

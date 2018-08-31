@@ -2,17 +2,17 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: acba3dab08e19b8e540e6dcddfd6f30dfbcc8cfb38017fa43f07b1901fb432ac
+-- hash: 82f2482ba7f49ee8ad36d437e333c17b1bbfe849d8d94af64aeb66a611d3a71c
 
 name:           salak
-version:        0.1.1
+version:        0.1.2
 synopsis:       Configuration Loader
 description:    Configuration Loader for Production in Haskell
 category:       Library
 homepage:       https://github.com/leptonyu/salak#readme
 author:         Daniel YU
 maintainer:     Daniel YU <leptonyu@gmail.com>
-copyright:      (c) Daniel YU
+copyright:      (c) 2018 Daniel YU
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple

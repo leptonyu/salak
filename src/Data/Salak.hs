@@ -7,8 +7,8 @@
 -- Stability:   experimental
 -- Portability: portable
 --
--- Configuration Loader for Production in Haskell. 
--- 
+-- Configuration Loader for Production in Haskell.
+--
 module Data.Salak(
   -- * How to use this library
   -- $use
@@ -48,12 +48,12 @@ import           Prelude                hiding (empty, lookup)
 import           System.Directory
 import           System.FilePath        ((</>))
 
--- | Initialize default properties from `CommandLine` and `Environment`. 
+-- | Initialize default properties from `CommandLine` and `Environment`.
 -- `CommandLine` use default parser.
 defaultProperties :: IO Properties
 defaultProperties = defaultProperties' defaultParseCommandLine
 
--- | Initialize default properties from `CommandLine` and `Environment`.  
+-- | Initialize default properties from `CommandLine` and `Environment`.
 defaultProperties' :: ParseCommandLine -> IO Properties
 defaultProperties' dpc
   = makePropertiesFromCommandLine dpc empty
@@ -71,7 +71,7 @@ type FileName = String
 -- > 4. Yaml file in current directory
 -- > 5. Yaml file in home directory
 --
-defaultPropertiesWithFile 
+defaultPropertiesWithFile
   :: FileName -- ^ specify default config file name, can reset by config "salak.config.name" from `CommandLine` or `Environment`.
   -> IO Properties
 defaultPropertiesWithFile name = do
@@ -92,9 +92,9 @@ defaultPropertiesWithFile name = do
 
 
 -- $use
--- 
--- | This library default a standard configuration load process. It can load properties from `CommandLine`, `Environment`, 
--- `JSON value` and `Yaml` files. They all load to the same format `Properties`. Earler property source has higher order 
+--
+-- | This library default a standard configuration load process. It can load properties from `CommandLine`, `Environment`,
+-- `JSON value` and `Yaml` files. They all load to the same format `Properties`. Earler property source has higher order
 -- to load property. For example:
 --
 -- > CommandLine:  --package.a.enabled=true
@@ -111,13 +111,13 @@ defaultPropertiesWithFile name = do
 -- >   , dir  :: Maybe Text
 -- >   , ext  :: Int
 -- >   } deriving (Eq, Show)
--- > 
+-- >
 -- > instance FromJSON Config where
 -- >   parseJSON = withObject "Config" $ \v -> Config
 -- >         <$> v .:  "name"
 -- >         <*> v .:? "dir"
 -- >         <*> (fromMaybe 1 <$> v .:? "ext")
--- 
+--
 -- > main = do
 -- >   p <- defaultPropertiesWithFile "salak.yml"
 -- >   let Just config = lookup "salak.config" p :: Maybe Config

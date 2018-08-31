@@ -52,11 +52,11 @@ empty :: Properties
 empty = Properties [] []
 
 -- | Split origin key by '.' to sub keys:
---   
+--
 -- > "salak.config.name" -> ["salak","config","name"]
 -- > "" -> []
 -- > "a..b" -> ["a","b"]
--- 
+--
 toKeys :: String -> [Key]
 toKeys = fmap pack . filter (not.null) . splitOneOf "."
 
@@ -131,7 +131,7 @@ class FromProperties a where
 
 instance FromProperties Property where
   fromProperties (Properties (a:_) _) = OK a
-  fromProperties _              = Empty
+  fromProperties _                    = Empty
 
 instance {-# OVERLAPPABLE #-} FromProperties a => FromProperties [a] where
   fromProperties (Properties ps ms) =

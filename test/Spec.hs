@@ -10,7 +10,7 @@ import           Data.Maybe
 import           Data.Salak
 import           Data.Salak.CommandLine
 import           Data.Salak.Environment
-import qualified Data.Salak.Property    as P
+import qualified Data.Salak.Types       as P
 import           Data.Text              (Text, pack)
 import           System.Environment
 import           Test.Hspec
@@ -19,7 +19,7 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  describe "Data.Salak.Property" specProperty
+  describe "Data.Salak.Types" specProperty
 
 shouldFail :: (HasCallStack, Show a, Eq a) => a -> a -> Expectation
 shouldFail f a = (f `shouldBe` a) `shouldThrow` anyErrorCall
@@ -41,7 +41,7 @@ specProperty = do
     it "normal" $ do
       let p = empty
       print p
-      p `shouldBe` Node [] []
+      p `shouldBe` Properties [] []
   context "toKeys" $ do
     it "normal" $ do
       []        `shouldBe` toKeys ""
@@ -54,8 +54,8 @@ specProperty = do
         k = toKeys "a.b"
         m = insert k p empty
     it "normal" $ do
-      insert [] p empty `shouldBe` Node [p] []
-      insert k  p empty `shouldBe` Node [] [M.insert "a" (Node [] [M.insert "b" (Node [p] []) M.empty]) M.empty]
+      insert [] p empty `shouldBe` Properties [p] []
+      insert k  p empty `shouldBe` Properties [] [M.insert "a" (Properties [] [M.insert "b" (Properties [p] []) M.empty]) M.empty]
     it "Reject replacement" $ do
       insert k (PStr "1") m `shouldBe` m
   context "lookup" $ do
