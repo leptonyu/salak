@@ -22,6 +22,7 @@ spec :: Spec
 spec = do
   describe "Data.Salak.Types" specProperty
   describe "Data.Salak"       specProperties
+  describe "Data.Salak"       specDeep
 
 shouldFail :: (HasCallStack, Show a, Eq a) => a -> a -> Expectation
 shouldFail f a = (f `shouldBe` a) `shouldThrow` anyErrorCall
@@ -36,7 +37,8 @@ instance FromJSON Config where
   parseJSON = withObject "Config" $ \v -> Config
         <$> v .: "name"
         <*> v .: "dir"
-        <*> (fromMaybe 1 <$> v .:? "ext")
+        <*> v .:? "ext" .!= 1
+
 
 specProperty = do
   context "empty" $ do
@@ -130,6 +132,33 @@ specProperties = do
       (get "array"        :: Maybe [Int])    `shouldFail` Nothing
       (get "array"        :: Maybe String)   `shouldFail` Nothing
 
+data Total = Total
+  { sub :: Sub
+  , sec :: Int
+  } deriving (Eq, Show)
 
+instance FromJSON Total where
+  parseJSON = withObject "Total" $ \v -> Total
+        <$> v .:? "sub" .!= toAny
+        <*> v .:? "sec" .!= 1
 
+data Sub = Sub
+  { key1 :: Text
+  , key2 :: Int
+  } deriving (Eq, Show)
+
+instance FromJSON Sub where
+  parseJSON = withObject "Sub" $ \v -> Sub
+        <$> v .:? "1" .!= "2"
+        <*> v .:? "2" .!= 1
+
+specDeep = do
+  context "Deep parse" $ do
+    it "Deep parse" $ do
+      setEnv "SALAK_CONFIG_NAME" "salak.yml"
+      setEnv "SALAK_CONFIG_DIR" "test"
+      p <- defaultPropertiesWithFile "salak.yml"
+      let t = P.lookup "total.a.b.c" p :: Maybe Total
+      t `shouldNotBe` Nothing
+      print $ fromJust t
 

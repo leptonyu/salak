@@ -72,6 +72,9 @@ singleton p = Properties [p] []
 singletonMap :: M.HashMap Key Properties -> Properties
 singletonMap m = Properties [] [m]
 
+emptyMap :: Properties
+emptyMap = singletonMap M.empty
+
 -- | Split origin key by '.' to sub keys:
 --
 -- > "salak.config.name" -> ["salak","config","name"]
@@ -108,7 +111,7 @@ lookup' = go . toKeys
     go [] p                      = fromProperties p
     go (a:as) (Properties _ [m]) = case M.lookup a m of
       Just n -> go as n
-      _      -> Empty
+      _      -> fromProperties emptyMap
     go _ _                       = Empty
 
 -- | Insert batch properties to `Properties`

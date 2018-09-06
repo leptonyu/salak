@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -8,6 +9,11 @@ import           Data.Aeson
 import qualified Data.HashMap.Strict as M
 import           Data.Salak.Types
 import           Data.Vector         (fromList, toList)
+
+toAny :: FromJSON a => a
+toAny = case decode "{}" of
+  Just a  -> a
+  Nothing -> error "value not found"
 
 -- | Load `Properties` from JSON `Value`
 makePropertiesFromJson :: Value -> Properties -> Properties

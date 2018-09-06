@@ -39,6 +39,7 @@ module Data.Salak(
   , makePropertiesFromJson
   , makePropertiesFromYaml
   , FileName
+  , toAny
   ) where
 
 import           Data.Maybe
