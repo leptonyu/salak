@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 15658bba3b586093d4c9683218e74e5bc2efbb298788eb55744e12248a80eee9
+-- hash: 65d137fa16b84c27133c76282e7859306d30f334f45be6cb7332a144552ef7ce
 
 name:           salak
-version:        0.1.5
+version:        0.2.0
 synopsis:       Configuration Loader
 description:    Configuration Loader for Production in Haskell
 category:       Library
