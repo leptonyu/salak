@@ -1,5 +1,5 @@
 name:                salak
-version:             0.1.5
+version:             0.2.0
 synopsis:            Configuration Loader
 description:         Configuration Loader for Production in Haskell
 homepage:            https://github.com/leptonyu/salak#readme
