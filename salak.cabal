@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 65d137fa16b84c27133c76282e7859306d30f334f45be6cb7332a144552ef7ce
+-- hash: 19909cb63c9e952b05840ea0aadf5c071ef2f49e72c4068a8336aa37c2d7a30c
 
 name:           salak
-version:        0.2.0
+version:        0.1.5
 synopsis:       Configuration Loader
 description:    Configuration Loader for Production in Haskell
 category:       Library
@@ -36,7 +36,7 @@ library
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       aeson
-    , base >=4.7 && <5
+    , base >=4.11 && <5
     , directory
     , filepath
     , scientific
@@ -65,7 +65,7 @@ test-suite spec
       QuickCheck
     , aeson
     , aeson-pretty
-    , base >=4.7 && <5
+    , base >=4.11 && <5
     , bytestring
     , directory
     , filepath
