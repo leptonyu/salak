@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b9a9ca349fd983f2e848273f87f1c7df9bf27df7dba2153eef195ee342d497f0
+-- hash: 2eed1b28ecd21eb3f869b8c0a1172488aa98986cd60cd4bb2f432cb3dbfdb4ee
 
 name:           salak
 version:        0.1.6
@@ -31,6 +31,7 @@ library
       Data.Salak.CommandLine
       Data.Salak.Aeson
       Data.Salak.Yaml
+      Data.Salak.Operation
   hs-source-dirs:
       src
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fno-warn-orphans -fno-warn-missing-signatures
@@ -54,6 +55,7 @@ test-suite spec
       Data.Salak.Aeson
       Data.Salak.CommandLine
       Data.Salak.Environment
+      Data.Salak.Operation
       Data.Salak.Types
       Data.Salak.Yaml
       Paths_salak

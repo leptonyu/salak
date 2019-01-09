@@ -39,12 +39,15 @@ module Data.Salak(
   , makePropertiesFromJson
   , makePropertiesFromYaml
   , FileName
+  -- * Operations
+  , module Data.Salak.Operation
   ) where
 
 import           Data.Maybe
 import           Data.Salak.Aeson
 import           Data.Salak.CommandLine
 import           Data.Salak.Environment
+import           Data.Salak.Operation
 import           Data.Salak.Types
 import           Data.Salak.Yaml
 import           Data.Text              (Text, unpack)
