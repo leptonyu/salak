@@ -1,8 +1,10 @@
 module Data.Salak.CommandLine where
 
+import           Control.Monad.IO.Class
+import           Control.Monad.State
 import           Data.Maybe
 import           Data.Salak.Types
-import           Data.Text          (pack)
+import           Data.Text              (pack)
 import           System.Environment
 
 -- | CommandLine parser. Parse command line into property key values.
@@ -33,3 +35,13 @@ makePropertiesFromCommandLine' :: [String] -> ParseCommandLine -> Properties -> 
 makePropertiesFromCommandLine' args parser p = do
   v <- parser args
   return $ makeProperties (fmap (\(a,b) -> (pack a,b)) v) p
+
+
+-- | Load Properties from CommandLine
+--
+-- @since 0.2.2
+loadCommandLine :: MonadIO m => ParseCommandLine -> LoadProperties m ()
+loadCommandLine pcl = do
+  p <- get
+  q <- liftIO $ makePropertiesFromCommandLine pcl p
+  put q

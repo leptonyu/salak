@@ -6,6 +6,7 @@
 module Data.Salak.Types where
 
 import           Control.Monad       ((>=>))
+import           Control.Monad.State
 import           Data.Char
 import qualified Data.HashMap.Strict as M
 import           Data.Int
@@ -15,7 +16,8 @@ import           Data.String
 import           Data.Text           (Text)
 import qualified Data.Text           as T
 import           Data.Word
-import           Text.Read
+import           System.Directory
+import           Text.Read           (readMaybe)
 
 -- | Property key
 type Key = Text
@@ -65,7 +67,6 @@ instance Show Properties where
 empty :: Properties
 empty = Properties [] []
 
-
 singleton :: Property -> Properties
 singleton p = Properties [p] []
 
@@ -92,26 +93,17 @@ insert (a:as) p (Properties ps ms) = Properties ps $ insertMap as p a <$> ms
 insertMap as p = M.alter (Just . insert as p . fromMaybe empty)
 
 -- | Find `Properties` by key and convert to specific Haskell value.
--- Return `Nothing` means not found, and throw `ErrorCall` means convert failed.
-lookup :: FromProperties a => Text -> Properties -> Maybe a
-lookup k = from . lookup' k
+lookup :: FromProperties a => Text -> Properties -> Return a
+lookup k = go (toKeys k)
   where
-    from :: Return a -> Maybe a
-    from (Right a)           = Just a
-    from (Left (EmptyKey _)) = Nothing
-    from (Left (Fail     e)) = error e
-
--- | Find `Properties` by key and convert to specific Haskell value.
-lookup' :: FromProperties a => Text -> Properties -> Return a
-lookup' k = go (toKeys k)
-  where
+    {-# INLINE go #-}
     go [] p                      = fromProperties p
-    go (a:as) (Properties _ [m]) = case M.lookup a m of
-      Just n -> case go as n of
+    go (a:as) (Properties _ ms) = case go as $ fromMaybe empty $ select a ms of
         Left (EmptyKey ke) -> Left $ EmptyKey $ joinKey a ke
         v                  -> v
-      _      -> Left $ EmptyKey $ T.intercalate "." (a:as)
-    go ke _                      = Left $ EmptyKey $ T.intercalate "." ke
+    select _ []  = Nothing
+    select a [m] = M.lookup a m
+    select _ _   = Nothing
 
 
 joinKey :: Text -> Text -> Text
@@ -140,6 +132,12 @@ instance FromProperties Property where
 
 instance {-# OVERLAPPABLE #-} FromProperties a => FromProperties [a] where
   fromProperties (Properties ps ms) = traverse fromProperties $ fmap singleton ps <> fmap singletonMap ms
+
+instance {-# OVERLAPPABLE #-} FromProperties a => FromProperties (Maybe a) where
+  fromProperties p = case fromProperties p of
+    Right          a  -> Right (Just a)
+    Left (EmptyKey _) -> Right Nothing
+    Left r            -> Left r
 
 instance FromProperties Scientific where
   fromProperties = fromProperties >=> go
@@ -222,3 +220,33 @@ instance FromProperties Char where
         | otherwise = Right $ T.head s
       go _          = Left  $ Fail "cannot convert to char"
 
+-- | Monad to Load Properties
+--
+-- @since 0.2.2
+type LoadProperties = StateT Properties
+
+-- | Load Properties
+--
+-- @since 0.2.2
+runLoad :: Monad m => LoadProperties m a -> m Properties
+runLoad a = snd <$> runStateT a empty
+
+-- | Get current Properties
+--
+-- @since 0.2.2
+askProperties :: Monad m => LoadProperties m Properties
+askProperties = get
+
+-- | Set value to current properties
+--
+-- @since 0.2.2
+setValue :: Monad m => Text -> Property -> LoadProperties m ()
+setValue k v = do
+  p <- askProperties
+  put (insert (toKeys k) v p)
+
+loadIfExists :: MonadIO m => Maybe FilePath -> (FilePath -> LoadProperties m ()) -> LoadProperties m ()
+loadIfExists (Just f) a = do
+    e <- liftIO $ doesFileExist f
+    when e (a f)
+loadIfExists _ _ = return ()

@@ -1,8 +1,10 @@
 module Data.Salak.Environment where
 
+import           Control.Monad.IO.Class
+import           Control.Monad.State
 import           Data.Char
 import           Data.Salak.Types
-import           Data.Text          (pack)
+import           Data.Text              (pack)
 import           System.Environment
 
 -- | Load `Properties` from 'Environment'
@@ -16,3 +18,9 @@ makePropertiesFromEnvironment' vs = makeProperties $ go <$> vs
     go (k,v) = (pack $ fmap g2 k,PStr $ pack v)
     g2 '_' = '.'
     g2 a   = toLower a
+
+-- | Load Properties from CommandLine
+--
+-- @since 0.2.2
+loadEnvironment :: MonadIO m => LoadProperties m ()
+loadEnvironment = get >>= liftIO . makePropertiesFromEnvironment >>= put

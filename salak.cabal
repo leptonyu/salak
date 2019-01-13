@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 24da3c4bf220d6036f1866cc292fc622a8fee6464cfea0783451b45d14d10ce7
+-- hash: ba5b501bd6b336dfb8a2f72a8b43e61577c461d9ac38a9abf28cbcef4be13f11
 
 name:           salak
 version:        0.2.2
@@ -40,8 +40,10 @@ library
     , base >=4.11 && <5
     , directory
     , filepath
+    , mtl
     , scientific
     , text
+    , transformers
     , unordered-containers
     , vector
     , yaml
@@ -72,8 +74,10 @@ test-suite spec
     , directory
     , filepath
     , hspec ==2.*
+    , mtl
     , scientific
     , text
+    , transformers
     , unordered-containers
     , vector
     , yaml

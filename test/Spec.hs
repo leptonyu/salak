@@ -9,7 +9,6 @@ import           Data.Salak
 import           Data.Salak.CommandLine
 import           Data.Salak.Environment
 import           Data.Salak.Operation   ()
-import qualified Data.Salak.Types       as P
 import           Data.Text              (Text, intercalate, pack)
 import           System.Environment
 import           Test.Hspec
@@ -62,39 +61,39 @@ specProperty = do
     it "Reject replacement" $ do
       insert k "1" m `shouldBe` m
     it "quickCheck" $ do
-      quickCheck $ \a' (b :: Int)    -> let a = pack a' in Just b == P.lookup a (insert (toKeys a) (PNum $ fromIntegral b) empty)
-      quickCheck $ \a' (b :: Bool)   -> let a = pack a' in Just b == P.lookup a (insert (toKeys a) (PBool b) empty)
-      quickCheck $ \a' (b :: String) -> let a = pack a' in Just b == P.lookup a (insert (toKeys a) (PStr $ pack b) empty)
+      quickCheck $ \a' (b :: Int)    -> let a = pack a' in Just b == (insert (toKeys a) (PNum $ fromIntegral b) empty) .>> a
+      quickCheck $ \a' (b :: Bool)   -> let a = pack a' in Just b == (insert (toKeys a) (PBool b)               empty) .>> a
+      quickCheck $ \a' (b :: String) -> let a = pack a' in Just b == (insert (toKeys a) (PStr $ pack b)         empty) .>> a
   context "lookup" $ do
     it "normal" $ do
       let m = insert ["a"] (PNum 1) empty
           n = insert ["a"] (PStr "true") empty
-      (P.lookup "a" empty :: Maybe Int)    `shouldBe`   Nothing
-      (P.lookup "a" m     :: Maybe Int)    `shouldBe`   Just  1
-      (P.lookup "a" m     :: Maybe Bool)   `shouldFail` Nothing
-      (P.lookup "a" m     :: Maybe String) `shouldBe`   Just "1.0"
-      (P.lookup "a" n     :: Maybe Int)    `shouldFail` Nothing
-      (P.lookup "a" n     :: Maybe Bool)   `shouldBe`   Just True
-      (P.lookup "a" n     :: Maybe Text)   `shouldBe`   Just "true"
+      (empty .>> "a" :: Maybe Int)    `shouldBe`   Nothing
+      (m     .>> "a" :: Maybe Int)    `shouldBe`   Just  1
+      (m     .>> "a" :: Maybe Bool)   `shouldFail` Nothing
+      (m     .>> "a" :: Maybe String) `shouldBe`   Just "1.0"
+      (n     .>> "a" :: Maybe Int)    `shouldFail` Nothing
+      (n     .>> "a" :: Maybe Bool)   `shouldBe`   Just True
+      (n     .>> "a" :: Maybe Text)   `shouldBe`   Just "true"
   context "makeProperties" $ do
     it "normal" $ do
       m <- makePropertiesFromEnvironment empty
       h <- getEnv "HOME"
-      (P.lookup "home" m) `shouldBe` Just h
+      (m .>> "home") `shouldBe` Just h
   context "command-line" $ do
     it "normal" $ do
       let args = ["--package.a.enabled=true","--package.b.enabled=false","package.c.enabled=false"]
       m    <- makePropertiesFromCommandLine' args defaultParseCommandLine empty
-      P.lookup "package.a.enabled" m `shouldBe` Just True
-      P.lookup "package.b.enabled" m `shouldBe` Just False
-      (P.lookup "package.c.enabled" m :: Maybe Bool )`shouldBe` Nothing
+      (m .>> "package.a.enabled") `shouldBe` Just True
+      (m .>> "package.b.enabled") `shouldBe` Just False
+      (m .>> "package.c.enabled" :: Maybe Bool )`shouldBe` Nothing
   context "environment" $ do
     it "normal" $ do
       let args = [("PACKAGE_A_ENABLED","true"),("PACKAGE_B_ENABLED","false")]
           m    = makePropertiesFromEnvironment' args empty
-      P.lookup "package.a.enabled" m `shouldBe` Just True
-      P.lookup "package.b.enabled" m `shouldBe` Just False
-      (P.lookup "package.c.enabled" m :: Maybe Bool )`shouldBe` Nothing
+      (m .>> "package.a.enabled") `shouldBe` Just True
+      (m .>> "package.b.enabled") `shouldBe` Just False
+      (m .>> "package.c.enabled" :: Maybe Bool )`shouldBe` Nothing
 
 specProperties = do
   context "defaultPropertiesWithFile" $ do
@@ -102,32 +101,27 @@ specProperties = do
         confName' = pack confName
     it "read config" $ do
       unsetEnv "SALAK_CONFIG_NAME"
-      p <- defaultPropertiesWithFile confName'
-      P.lookup "salak.config.name" p `shouldBe` Just confName
+      p <- defaultPropertiesWithFile confName
+      p .>> "salak.config.name" `shouldBe` Just confName
     it "read config - replacement" $ do
       setEnv "SALAK_CONFIG_NAME" confName
       p <- defaultPropertiesWithFile "salak.ok"
-      P.lookup "salak.config.name" p `shouldBe` Just confName
+      p .>> "salak.config.name" `shouldBe` Just confName
     it "read config - not found" $ do
       setEnv "SALAK_CONFIG_NAME" "salak.notfound"
       setEnv "SALAK_CONFIG_DIR" "test"
-      defaultPropertiesWithFile confName' `shouldThrow` anyErrorCall
+      defaultPropertiesWithFile confName `shouldThrow` anyException
     it "read config - read file parse Config" $ do
       setEnv "SALAK_CONFIG_NAME" confName
       setEnv "SALAK_CONFIG_DIR" "test"
       setEnv "SALAK_CONFIG" confName
-      p <- defaultPropertiesWithFile confName'
-      let get :: FromProperties a => Text -> Maybe a
-          get = flip P.lookup p
-      -- print p
-      -- let v::Return Value = fromProperties p
-      -- P.fromReturn (return ()) $ BC.putStrLn . encodePretty <$> v
-      get "salak.config.name"                `shouldBe`   Just confName
-      get "salak.config"                     `shouldBe`   Just confName
-      (get "salak.config" :: Maybe Config)   `shouldBe`   Just (Config confName' "test" 1)
-      (get "array"        :: Maybe [String]) `shouldBe`   Just ["a","b"]
-      (get "array"        :: Maybe [Int])    `shouldFail` Nothing
-      (get "array"        :: Maybe String)   `shouldFail` Nothing
+      p <- defaultPropertiesWithFile confName
+      (p .>> "salak.config.name")              `shouldBe`   Just confName
+      (p .>> "salak.config")                   `shouldBe`   Just confName
+      (p .>> "salak.config" :: Maybe Config)   `shouldBe`   Just (Config confName' "test" 1)
+      (p .>> "array"        :: Maybe [String]) `shouldBe`   Just ["a","b"]
+      (p .>> "array"        :: Maybe [Int])    `shouldFail` Nothing
+      (p .>> "array"        :: Maybe String)   `shouldFail` Nothing
 
 
 

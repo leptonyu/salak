@@ -4,10 +4,12 @@
 
 module Data.Salak.Aeson where
 
+import           Control.Monad.IO.Class
+import           Control.Monad.State
 import           Data.Aeson
-import qualified Data.HashMap.Strict as M
+import qualified Data.HashMap.Strict    as M
 import           Data.Salak.Types
-import           Data.Vector         (toList)
+import           Data.Vector            (toList)
 
 -- | Load `Properties` from JSON `Value`
 makePropertiesFromJson :: Value -> Properties -> Properties
@@ -29,3 +31,9 @@ fromArray v = foldl g3 ([],[]) $ go . jsonToProperties <$> toList v
     g2 []    = []
     g2 (a:_) = [a]
     g3 (as,bs) (a,b) = (as++a,bs++b)
+
+-- | Load Properties from JSON Value
+--
+-- @since 0.2.2
+loadJSON :: MonadIO m => Value -> LoadProperties m ()
+loadJSON = modify . makePropertiesFromJson

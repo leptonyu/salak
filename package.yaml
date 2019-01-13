@@ -23,6 +23,8 @@ dependencies:
   - vector
   - directory
   - filepath
+  - mtl
+  - transformers
 
 library:
   source-dirs: src
