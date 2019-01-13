@@ -9,20 +9,17 @@ infixl 5 .?>
 
 infixl 5 .|=
 (.|=) :: Return a -> a -> a
-(.|=) (OK   a) _ = a
-(.|=) (Fail e) _ = error e
-(.|=) _        d = d
+(.|=) (Right a)       _ = a
+(.|=) (Left (Fail e)) _ = error e
+(.|=) _               d = d
 
 infixl 5 .?=
 (.?=) :: Return a -> a -> Return a
-(.?=) a b = OK (a .|= b)
+(.?=) a b = Right (a .|= b)
 
 infixl 5 .>>
 (.>>) :: FromProperties a => Properties -> Text -> a
-(.>>) p k = case p .?> k of
-  OK v   -> v
-  Empty  -> case fromProperties empty of
-    (OK   a) -> a
-    (Fail e) -> error e
-    _        -> error $ "Config " <> unpack k <> " not found"
-  Fail e -> error e
+(.>>) p key = case p .?> key of
+  Right v           -> v
+  Left (EmptyKey k) -> error $ "Config " <> unpack k <> " not found"
+  Left (Fail e)     -> error e

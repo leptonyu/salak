@@ -4,12 +4,11 @@
 
 module Main where
 
-import           Data.Aeson
 import qualified Data.HashMap.Strict    as M
-import           Data.Maybe
 import           Data.Salak
 import           Data.Salak.CommandLine
 import           Data.Salak.Environment
+import           Data.Salak.Operation   ()
 import qualified Data.Salak.Types       as P
 import           Data.Text              (Text, intercalate, pack)
 import           System.Environment
@@ -32,11 +31,11 @@ data Config = Config
   , ext  :: Int
   } deriving (Eq, Show)
 
-instance FromJSON Config where
-  parseJSON = withObject "Config" $ \v -> Config
-        <$> v .: "name"
-        <*> v .: "dir"
-        <*> (fromMaybe 1 <$> v .:? "ext")
+instance FromProperties Config where
+  fromProperties v = Config
+        <$> v .?> "name"
+        <*> v .?> "dir"
+        <*> v .?> "ext" .?= 1
 
 specProperty = do
   context "empty" $ do
@@ -63,9 +62,9 @@ specProperty = do
     it "Reject replacement" $ do
       insert k "1" m `shouldBe` m
     it "quickCheck" $ do
-      quickCheck $ \a' (b :: Integer) -> let a = pack a' in Just b == P.lookup a (insert (toKeys a) (PNum $ fromInteger b) empty)
-      quickCheck $ \a' (b :: Bool)    -> let a = pack a' in Just b == P.lookup a (insert (toKeys a) (PBool b) empty)
-      quickCheck $ \a' (b :: String)  -> let a = pack a' in Just b == P.lookup a (insert (toKeys a) (PStr $ pack b) empty)
+      quickCheck $ \a' (b :: Int)    -> let a = pack a' in Just b == P.lookup a (insert (toKeys a) (PNum $ fromIntegral b) empty)
+      quickCheck $ \a' (b :: Bool)   -> let a = pack a' in Just b == P.lookup a (insert (toKeys a) (PBool b) empty)
+      quickCheck $ \a' (b :: String) -> let a = pack a' in Just b == P.lookup a (insert (toKeys a) (PStr $ pack b) empty)
   context "lookup" $ do
     it "normal" $ do
       let m = insert ["a"] (PNum 1) empty

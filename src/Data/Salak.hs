@@ -30,7 +30,7 @@ module Data.Salak(
   , Properties(..)
   , Key
   , FromProperties(..)
-  , Return(..)
+  , Return
   -- * Properties Loader Helper
   , insert
   , makePropertiesFromEnvironment

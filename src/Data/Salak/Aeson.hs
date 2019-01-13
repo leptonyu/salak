@@ -7,7 +7,7 @@ module Data.Salak.Aeson where
 import           Data.Aeson
 import qualified Data.HashMap.Strict as M
 import           Data.Salak.Types
-import           Data.Vector         (fromList, toList)
+import           Data.Vector         (toList)
 
 -- | Load `Properties` from JSON `Value`
 makePropertiesFromJson :: Value -> Properties -> Properties
@@ -29,19 +29,3 @@ fromArray v = foldl g3 ([],[]) $ go . jsonToProperties <$> toList v
     g2 []    = []
     g2 (a:_) = [a]
     g3 (as,bs) (a,b) = (as++a,bs++b)
-
-instance FromProperties Value where
-  fromProperties (Properties []        []) = Empty
-  fromProperties (Properties [PBool p] []) = OK $ Bool   p
-  fromProperties (Properties [PNum  p] []) = OK $ Number p
-  fromProperties (Properties [PStr  p] []) = OK $ String p
-  fromProperties (Properties ps [])        = Array . fromList <$> traverse (fromProperties.singleton) ps
-  fromProperties (Properties _ [m])        = OK $ Object $ M.map (fromReturn Null . fromProperties) m
-  fromProperties (Properties _  ms)        = Array . fromList <$> traverse (fromProperties.singletonMap) ms
-
-instance {-# OVERLAPPABLE #-} FromJSON a => FromProperties a where
-  fromProperties a = do
-    v :: Value <- fromProperties a
-    case fromJSON v of
-      Success r -> OK r
-      Error   e -> Fail e

@@ -97,19 +97,27 @@ lookup :: FromProperties a => Text -> Properties -> Maybe a
 lookup k = from . lookup' k
   where
     from :: Return a -> Maybe a
-    from (OK a)   = Just a
-    from Empty    = Nothing
-    from (Fail e) = error e
+    from (Right a)           = Just a
+    from (Left (EmptyKey _)) = Nothing
+    from (Left (Fail     e)) = error e
 
 -- | Find `Properties` by key and convert to specific Haskell value.
 lookup' :: FromProperties a => Text -> Properties -> Return a
-lookup' = go . toKeys
+lookup' k = go (toKeys k)
   where
     go [] p                      = fromProperties p
     go (a:as) (Properties _ [m]) = case M.lookup a m of
-      Just n -> go as n
-      _      -> Empty
-    go _ _                       = Empty
+      Just n -> case go as n of
+        Left (EmptyKey ke) -> Left $ EmptyKey $ joinKey a ke
+        v                  -> v
+      _      -> Left $ EmptyKey $ T.intercalate "." (a:as)
+    go ke _                      = Left $ EmptyKey $ T.intercalate "." ke
+
+
+joinKey :: Text -> Text -> Text
+joinKey "" k = k
+joinKey k "" = k
+joinKey a b  = a <> "." <> b
 
 -- | Insert batch properties to `Properties`
 makeProperties :: [(Text, Property)] -> Properties -> Properties
@@ -118,52 +126,27 @@ makeProperties = flip (foldl go)
     go m (k,v) = insert (toKeys k) v m
 
 -- | Return of `FromProperties`
-data Return a
-  = Empty
-  | OK a
-  | Fail String
-  deriving Show
-
-instance Functor Return where
-  fmap f (OK a)   = OK (f a)
-  fmap _ Empty    = Empty
-  fmap _ (Fail b) = Fail b
-
-instance Applicative Return where
-  pure = OK
-  (OK f) <*> (OK a) = OK (f a)
-  (Fail x) <*> (Fail y) = Fail $ x ++ ";" ++ y
-  (Fail x) <*> _ = Fail x
-  _ <*> (Fail y) = Fail y
-  _ <*> _ = Empty
-
-instance Monad Return where
-  (OK a)   >>= f = f a
-  Empty    >>= _ = Empty
-  (Fail b) >>= _ = Fail b
-
-fromReturn :: b -> Return b -> b
-fromReturn _ (OK a) = a
-fromReturn a _      = a
+type Return = Either ErrResult
+data ErrResult = EmptyKey Text | Fail String deriving Show
 
 -- | Convert `Properties` to Haskell value.
 class FromProperties a where
   fromProperties :: Properties -> Return a
 
 instance FromProperties Property where
-  fromProperties (Properties [a] _) = OK a
-  fromProperties (Properties [] _)  = Empty
-  fromProperties _                  = Fail "property has multi values"
+  fromProperties (Properties [a] _) = Right a
+  fromProperties (Properties [] _)  = Left $ EmptyKey ""
+  fromProperties _                  = Left $ Fail "property has multi values"
 
 instance {-# OVERLAPPABLE #-} FromProperties a => FromProperties [a] where
-  fromProperties (Properties ps ms) = traverse fromProperties $ fmap singleton ps ++ fmap singletonMap ms
+  fromProperties (Properties ps ms) = traverse fromProperties $ fmap singleton ps <> fmap singletonMap ms
 
 instance FromProperties Scientific where
   fromProperties = fromProperties >=> go
     where
-      go (PNum a) = OK a
+      go (PNum a) = Right a
       go (PStr a) = to readMaybe $ T.unpack a
-      go _        = Fail "bool cannot convert to number"
+      go _        = Left $ Fail "bool cannot convert to number"
 
 instance FromProperties String where
   fromProperties a = T.unpack <$> fromProperties a
@@ -171,8 +154,8 @@ instance FromProperties String where
 instance FromProperties Text where
   fromProperties = fromProperties >=> go
     where
-      go (PStr a) = OK a
-      go a        = OK $ T.pack $ show a
+      go (PStr a) = Right a
+      go a        = Right $ T.pack $ show a
 
 instance FromProperties Float where
   fromProperties a = toRealFloat <$> fromProperties a
@@ -215,25 +198,27 @@ toNumeric = fromProperties >=> to toBoundedInteger
 
 to :: (b -> Maybe a) -> b -> Return a
 to v b = case v b of
-  Just a  -> OK a
-  Nothing -> Fail "number convert failed"
+  Just a  -> Right a
+  Nothing -> Left $ Fail "number convert failed"
 
 instance FromProperties Bool where
   fromProperties = fromProperties >=> go
     where
-      go (PBool a) = OK a
+      go (PBool a) = Right a
       go (PStr  a) = g2 $ T.toLower a
-      go _         = Fail "number cannot convert to bool"
+      go _         = Left $ Fail "number cannot convert to bool"
       g2 :: Text -> Return Bool
-      g2 "true"  = OK True
-      g2 "false" = OK False
-      g2 _       = Fail "string value cannot convert to bool"
+      g2 "1"     = Right True
+      g2 "true"  = Right True
+      g2 "0"     = Right False
+      g2 "false" = Right False
+      g2 _       = Left $ Fail "string value cannot convert to bool"
 
 instance FromProperties Char where
   fromProperties = fromProperties >=> go
     where
       go (PStr s)
-        | T.null s  = Empty
-        | otherwise = OK $ T.head s
-      go _          = Fail "cannot convert to char"
+        | T.null s  = Left  $ EmptyKey ""
+        | otherwise = Right $ T.head s
+      go _          = Left  $ Fail "cannot convert to char"
 
