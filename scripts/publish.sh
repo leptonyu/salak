@@ -28,11 +28,29 @@ if [ "$update" -gt 0 ]; then
   exit 1
 fi
 
+name=salak
+version=`grep -o '^version:\(  *\)[0-9][0-9]*\(\.[0-9][0-9]*\)*' package.yaml | awk '{print $2}'`
 
 stack haddock
+
+if [ $? -ne 0 ]; then
+  echo "stack build failed"
+  exit 1
+fi
 
 pkg=.
 
 stack sdist $pkg && stack upload $pkg
-hup docboth -u $HACKAGE_USER -p $HACKAGE_PASS
+
+dist=`stack path --dist-dir 2> /dev/null`
+cd "$dist/doc/html"
+doc=$name-$version-docs
+rm -rf $doc
+cp -r $name $doc
+tar -c -v -z --format=ustar -f $doc.tar.gz $doc
+echo `pwd`/$doc.tar.gz
+curl -X PUT -H 'Content-Type: application/x-tar' \
+  -H 'Content-Encoding: gzip' \
+  --data-binary "@$doc.tar.gz" \
+  "https://$HACKAGE_USER:$HACKAGE_PASS@hackage.haskell.org/package/$name-$version/docs"
 
