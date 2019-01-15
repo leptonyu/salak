@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                  #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
@@ -5,7 +6,7 @@
 
 module Data.Salak.Types where
 
-import           Control.Monad       ((>=>))
+import           Control.Monad       ()
 import           Control.Monad.State
 import           Data.Char
 import qualified Data.HashMap.Strict as M
@@ -18,7 +19,9 @@ import qualified Data.Text           as T
 import           Data.Word
 import           System.Directory
 import           Text.Read           (readMaybe)
-
+#if __GLASGOW_HASKELL__ <= 802
+import           Data.Monoid         ((<>))
+#endif
 -- | Property key
 type Key = Text
 

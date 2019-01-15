@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8cf4844eb9bb9c7e875b447b7fb15246d614cfaa2baa9b892d8dc23a1be793ca
+-- hash: bab4357c1310b84f23678c1d617ff5361e1d04de8a6e2d6f1cb293ab8e0bc346
 
 name:           salak
-version:        0.1.7
+version:        0.2.2
 synopsis:       Configuration Loader
 description:    Configuration Loader for Production in Haskell
 category:       Library
@@ -34,10 +34,10 @@ library
       Data.Salak.Operation
   hs-source-dirs:
       src
-  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fno-warn-orphans -fno-warn-missing-signatures
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       aeson
-    , base >=4.11 && <5
+    , base >=4.7 && <5
     , directory
     , filepath
     , mtl
@@ -64,13 +64,11 @@ test-suite spec
   hs-source-dirs:
       test
       src
-  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fno-warn-orphans -fno-warn-missing-signatures
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       QuickCheck
     , aeson
-    , aeson-pretty
-    , base >=4.11 && <5
-    , bytestring
+    , base >=4.7 && <5
     , directory
     , filepath
     , hspec ==2.*

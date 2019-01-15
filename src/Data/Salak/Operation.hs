@@ -35,5 +35,5 @@ infixl 5 .>>
 (.>>) :: FromProperties a => Properties -> Text -> a
 (.>>) p key = case p .?> key of
   Right v           -> v
-  Left (EmptyKey k) -> error $ "property " <> unpack k <> " not set"
+  Left (EmptyKey k) -> error $ "property " ++ unpack k ++ " not set"
   Left (Fail e)     -> error e

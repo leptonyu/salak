@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Data.Salak.Yaml where
 
 import           Control.Monad.IO.Class
@@ -9,7 +10,16 @@ import           Data.Yaml
 -- | Load `Properties` from `Yaml` file.
 makePropertiesFromYaml :: FilePath -> Properties -> IO Properties
 makePropertiesFromYaml file p = do
+
+#if __GLASGOW_HASKELL__ <= 710
+  x <- decodeFile file
+  v <- case x of
+    Just a -> return a
+    _      -> error $ "load " ++ file ++ " failed"
+#else
   v <- decodeFileThrow file
+#endif
+
   return $ makePropertiesFromJson v p
 
 -- | Load Properties from Yaml

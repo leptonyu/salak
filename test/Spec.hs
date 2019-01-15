@@ -21,7 +21,7 @@ spec = do
   describe "Data.Salak.Types" specProperty
   describe "Data.Salak"       specProperties
 
-shouldFail :: (HasCallStack, Show a, Eq a) => a -> a -> Expectation
+shouldFail :: (Show a, Eq a) => a -> a -> Expectation
 shouldFail f a = (f `shouldBe` a) `shouldThrow` anyErrorCall
 
 data Config = Config

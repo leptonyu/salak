@@ -1,5 +1,5 @@
 name:                salak
-version:             0.1.7
+version:             0.2.2
 synopsis:            Configuration Loader
 description:         Configuration Loader for Production in Haskell
 homepage:            https://github.com/leptonyu/salak#readme
@@ -11,12 +11,12 @@ category:            Library
 extra-source-files:
 - README.md
 - test/salak.yml
-ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -fno-warn-orphans -fno-warn-missing-signatures
+ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
 
 dependencies:
-  - base >= 4.11 && < 5
+  - base >= 4.7 && < 5
   - unordered-containers
-  - aeson
+  - aeson 
   - yaml
   - text
   - scientific
@@ -47,5 +47,3 @@ tests:
     dependencies:
       - hspec == 2.*
       - QuickCheck
-      - aeson-pretty
-      - bytestring
