@@ -36,7 +36,6 @@ module Data.Salak(
   -- * Types
   , Property(..)
   , Properties(..)
-  , Key
   , FromProperties(..)
   , Return
   -- * Properties Loader Helper

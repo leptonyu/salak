@@ -1,5 +1,5 @@
 name:                salak
-version:             0.2.2
+version:             0.2.3
 synopsis:            Configuration Loader
 description:         Configuration Loader for Production in Haskell
 homepage:            https://github.com/leptonyu/salak#readme
@@ -25,6 +25,7 @@ dependencies:
   - filepath
   - mtl
   - transformers
+  - menshen
 
 library:
   source-dirs: src

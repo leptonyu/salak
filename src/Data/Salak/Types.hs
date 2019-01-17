@@ -12,6 +12,7 @@ import           Data.Char
 import qualified Data.HashMap.Strict as M
 import           Data.Int
 import           Data.Maybe
+import           Data.Menshen
 import           Data.Scientific
 import           Data.String
 import           Data.Text           (Text)
@@ -123,6 +124,9 @@ makeProperties = flip (foldl go)
 -- | Return of `FromProperties`
 type Return = Either ErrResult
 data ErrResult = EmptyKey Text | Fail String deriving Show
+
+instance HasValid Return where
+  invalid = Left . Fail . toI18n
 
 -- | Convert `Properties` to Haskell value.
 class FromProperties a where

@@ -7,7 +7,9 @@ module Data.Salak.Aeson where
 import           Control.Monad.IO.Class
 import           Control.Monad.State
 import           Data.Aeson
+import           Data.Aeson.Types
 import qualified Data.HashMap.Strict    as M
+import           Data.Menshen
 import           Data.Salak.Types
 import           Data.Vector            (toList)
 
@@ -24,6 +26,9 @@ makePropertiesFromJson (Object _) p = p
 
 jsonToProperties :: Value -> Properties
 jsonToProperties = (`makePropertiesFromJson` empty)
+
+instance HasValid Parser where
+  invalid = fail . toI18n
 
 fromArray v = foldl g3 ([],[]) $ go . jsonToProperties <$> toList v
   where
