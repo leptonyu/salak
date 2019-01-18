@@ -1,20 +1,10 @@
 #!/bin/sh
-PRG="$0"
-# Need this for relative symlinks.
-while [ -h "$PRG" ] ; do
-    ls=`ls -ld "$PRG"`
-    link=`expr "$ls" : '.*-> \(.*\)$'`
-    if expr "$link" : '/.*' > /dev/null; then
-        PRG="$link"
-    else
-        PRG=`dirname "$PRG"`"/$link"
-    fi
-done
-
+PRG=`readlink "$0"`
+if [ -z "$PRG" ]; then
+  PRG=$0
+fi
 ROOT=`dirname "$PRG"`
-ROOT=`cd "$ROOT/..";pwd`
-
-cd "$ROOT"
+cd "$ROOT/.."
 
 if [ -z "$HACKAGE_USER" -o -z "$HACKAGE_PASS" ]; then
   echo "HACKAGE_USER or HACKAGE_PASS not set"
