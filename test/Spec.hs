@@ -18,8 +18,9 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  describe "Data.Salak.Types" specProperty
-  describe "Data.Salak"       specProperties
+  describe "Data.Salak.Types"   specProperty
+  describe "Data.Salak"         specProperties
+  describe "Data.Salak.Dynamic" specDynamic
 
 shouldFail :: (Show a, Eq a) => a -> a -> Expectation
 shouldFail f a = (f `shouldBe` a) `shouldThrow` anyErrorCall
@@ -122,6 +123,19 @@ specProperties = do
       (p .>> "array"        :: Maybe [String]) `shouldBe`   Just ["a","b"]
       (p .>> "array"        :: Maybe [Int])    `shouldFail` Nothing
       (p .>> "array"        :: Maybe String)   `shouldFail` Nothing
+
+specDynamic = do
+  context "Dynamic" $ do
+    it "dynamic load" $ do
+      p  <- defaultPropertiesWithFile "salak.yml"
+      (c,s) <- runLoader p $ (,) <$> load "config" <*> askSetProperties
+      c1 <- c
+      s $ insert ["config","name"] "world" empty
+      c2 <- c
+      name c1 `shouldBe` "hello"
+      name c2 `shouldBe` "world"
+      dir c1  `shouldBe` dir c2
+      ext c1  `shouldBe` ext c2
 
 
 

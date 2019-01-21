@@ -45,12 +45,15 @@ module Data.Salak(
   , FileName
   -- * Operations
   , module Data.Salak.Operation
+  -- * Dynamic Load
+  , module Data.Salak.Dynamic
   ) where
 
 import           Control.Monad.Trans.Class (lift)
 import           Data.Maybe
 import           Data.Salak.Aeson
 import           Data.Salak.CommandLine
+import           Data.Salak.Dynamic
 import           Data.Salak.Environment
 import           Data.Salak.Operation
 import           Data.Salak.Types

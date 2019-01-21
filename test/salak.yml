@@ -1,3 +1,9 @@
 array:
   - a
   - b
+hello:
+  world
+
+config:
+  name: hello
+  dir: /root

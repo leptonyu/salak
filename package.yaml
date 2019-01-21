@@ -24,6 +24,7 @@ dependencies:
   - directory
   - filepath
   - mtl
+  - stm
   - transformers
   - menshen
 
@@ -38,6 +39,7 @@ library:
     - Data.Salak.Aeson
     - Data.Salak.Yaml
     - Data.Salak.Operation
+    - Data.Salak.Dynamic
 
 tests:
   spec:
