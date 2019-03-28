@@ -1,7 +1,6 @@
 name:                salak
 version:             0.2.5
 synopsis:            Configuration Loader
-description:         Configuration Loader for Production in Haskell
 homepage:            https://github.com/leptonyu/salak#readme
 license:             BSD3
 author:              Daniel YU
@@ -28,6 +27,8 @@ dependencies:
   - attoparsec
   - unordered-containers
   - data-default
+  - filepath
+  - directory
 
 library:
   source-dirs: src

@@ -6,6 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 module Salak.Prop where
 
 import           Control.Applicative
@@ -25,9 +26,9 @@ import           Salak.Types
 import           Text.Read            (readMaybe)
 
 data PResult a
-  = O [Selector] a
-  | N [Selector]
-  | F [Selector] String
+  = O [Selector] a      -- ^ Succeed value
+  | N [Selector]        -- ^ Empty value
+  | F [Selector] String -- ^ Fail value
   deriving (Eq, Show, Functor)
 
 instance Applicative PResult where
@@ -51,15 +52,12 @@ instance Monad PResult where
 
 type Prop a = ReaderT SourcePack PResult a
 
-infixl 5 .?=
-(.?=) :: Prop a -> a -> Prop a
-(.?=) a b = a <|> pure b
-
 instance FromProp a => IsString (Prop a) where
   fromString = readSelect . T.pack
 
 class FromProp a where
   fromProp :: Prop a
+  {-# MINIMAL fromProp #-}
   default fromProp :: (Generic a, GFromProp (Rep a)) => Prop a
   fromProp = fmap to gFromProp
 
@@ -115,6 +113,14 @@ instance {-# OVERLAPPABLE #-} FromProp a => FromProp [a] where
         a <- lift $ runReaderT fromProp (SourcePack (SNum ix:xx) x s xt)
         return (a:as)
 
+instance {-# OVERLAPPABLE #-} FromEnumProp a => FromProp a where
+  fromProp = readPrimitive $ \ss v -> case v of
+    VStr  _ s -> case fromEnumProp $ T.toLower s of
+      Left  e -> F ss e
+      Right r -> O ss r
+    VNum  _ _ -> F ss "number cannot be enum"
+    VBool _ _ -> F ss "bool   cannot be enum"
+
 -- | ReadPrimitive value
 readPrimitive :: ([Selector] -> Value -> PResult a) -> Prop a
 readPrimitive f = do
@@ -122,6 +128,9 @@ readPrimitive f = do
   case Q.getMin q of
     Just v -> lift $ f ss v
     _      -> lift $ N ss
+
+class FromEnumProp a where
+  fromEnumProp :: Text -> Either String a
 
 err :: String -> Prop a
 err e = do

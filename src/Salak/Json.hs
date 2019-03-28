@@ -11,6 +11,7 @@ import           Data.Text              (pack)
 import qualified Data.Vector            as V
 import qualified Data.Yaml              as Y
 import           Salak.Types
+import           System.Directory
 
 loadJSON :: Reload -> A.Value -> SourcePack -> SourcePack
 loadJSON name v sp = loadFile name sp $ go v
@@ -30,3 +31,8 @@ loadYaml file = do
   modify $ \sp -> case v of
     Left  e -> addErr' (show e) sp
     Right a -> loadJSON (emptyReload $ pack file) a sp
+
+tryLoadYaml :: MonadIO m => FilePath -> SourcePackT m ()
+tryLoadYaml file = do
+  b <- liftIO $ doesFileExist file
+  when b $ loadYaml file

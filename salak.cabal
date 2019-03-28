@@ -4,12 +4,11 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4f3d363ee3bc9b22e1f86e8b6c92e977ad3760091d7f8d7cff5291ce092d60a7
+-- hash: b4914634f10b673934647057004b70e2f59a2a492bf1dcfc24c81d6c0d0c8a71
 
 name:           salak
 version:        0.2.5
 synopsis:       Configuration Loader
-description:    Configuration Loader for Production in Haskell
 category:       Library
 homepage:       https://github.com/leptonyu/salak#readme
 author:         Daniel YU
@@ -40,6 +39,8 @@ library
     , base >=4.7 && <5
     , containers
     , data-default
+    , directory
+    , filepath
     , mtl
     , pqueue
     , scientific
@@ -72,6 +73,8 @@ test-suite spec
     , base >=4.7 && <5
     , containers
     , data-default
+    , directory
+    , filepath
     , hspec ==2.*
     , mtl
     , pqueue

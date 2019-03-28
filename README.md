@@ -6,7 +6,7 @@
 [![Build Status](https://travis-ci.org/leptonyu/salak.svg?branch=master)](https://travis-ci.org/leptonyu/salak)
 
 
-Configuration Loader for Production in Haskell.
+Configuration Loader in Haskell.
 
 This library default a standard configuration load process. It can load properties from `CommandLine`, `Environment`,
 `JSON value` and `Yaml` files. They all load to the same format `SourcePack`. Earler property source has higher order
