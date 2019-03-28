@@ -57,7 +57,6 @@ instance FromProp a => IsString (Prop a) where
 
 class FromProp a where
   fromProp :: Prop a
-  {-# MINIMAL fromProp #-}
   default fromProp :: (Generic a, GFromProp (Rep a)) => Prop a
   fromProp = fmap to gFromProp
 
@@ -131,6 +130,7 @@ readPrimitive f = do
 
 class FromEnumProp a where
   fromEnumProp :: Text -> Either String a
+  {-# MINIMAL fromEnumProp #-}
 
 err :: String -> Prop a
 err e = do
