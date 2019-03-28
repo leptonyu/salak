@@ -16,17 +16,13 @@ ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
 dependencies:
   - base >= 4.7 && < 5
   - unordered-containers
+  - vector
   - aeson 
   - yaml
   - text
   - scientific
-  - vector
-  - directory
-  - filepath
   - mtl
-  - stm
   - transformers
-  - menshen
   - pqueue
   - containers
   - attoparsec
@@ -37,21 +33,12 @@ library:
   source-dirs: src
   exposed-modules:
     - Salak
-    - Data.Salak
   other-modules:
     - Salak.Types
     - Salak.Env
     - Salak.Json
     - Salak.Prop
     - Salak.Dynamic
-    
-    - Data.Salak.Types
-    - Data.Salak.Environment 
-    - Data.Salak.CommandLine
-    - Data.Salak.Aeson
-    - Data.Salak.Yaml
-    - Data.Salak.Operation
-    - Data.Salak.Dynamic
 
 tests:
   spec:

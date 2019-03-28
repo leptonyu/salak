@@ -22,7 +22,7 @@ reloadableSourcePack sp = do
   where
     reloadAll' v f = do
       sp'@(SourcePack _ _ _ it) <- readMVar v
-      as <- filter (not . nullSource . snd) <$> (mapM go $ MI.toList it)
+      as <- filter (not . nullSource . snd) <$> mapM go (MI.toList it)
       if null as
         then return (True, [])
         else do

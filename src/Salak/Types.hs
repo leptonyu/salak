@@ -78,10 +78,10 @@ instance Foldable Source' where
       go (Source _ q _ _) = f q
 
 foldSource :: (Value -> b -> b) -> b -> Source -> b
-foldSource f = foldr (\q b -> fromMaybe b $ (\a -> f a b) <$> Q.getMin q)
+foldSource f = foldr (\q b -> maybe b (`f` b) $ Q.getMin q)
 
 sizeSouce :: Source -> Int
-sizeSouce = foldSource (\_ -> (+1)) 0
+sizeSouce = foldSource (const (+1)) 0
 
 extractErr :: Source -> ([String], Source)
 extractErr (Source es q is ts) =
@@ -91,7 +91,7 @@ extractErr (Source es q is ts) =
   where
     go e s = let (e', s') = extractErr s in (e ++ e', s')
 
-replace a b c = replace' [] a b c
+replace = replace' []
 
 replace' :: [Selector] -> Priority -> Source -> Source -> Source
 replace' ss i (Source _ nq nis nts) (Source es q is ts) =
@@ -160,8 +160,8 @@ insert k v s = case selectors k of
 
 insert' :: [Selector] -> Value -> Source -> Source
 insert' [] v (Source es q is ts) = Source es (Q.insert v q) is ts
-insert' ((STxt n):ss) v (Source es q is ts) = Source es q is $ M.alter (Just . insert' ss v . fromMaybe emptySource) n ts
-insert' ((SNum i):ss) v (Source es q is ts) = Source es q (MI.alter (Just . insert' ss v . fromMaybe emptySource) i is) ts
+insert' (STxt n:ss) v (Source es q is ts) = Source es q is $ M.alter (Just . insert' ss v . fromMaybe emptySource) n ts
+insert' (SNum i:ss) v (Source es q is ts) = Source es q (MI.alter (Just . insert' ss v . fromMaybe emptySource) i is) ts
 
 data SourcePack = SourcePack [Selector] Int Source PriorityEnv deriving Show
 

@@ -2,7 +2,6 @@
 {-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE KindSignatures       #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeOperators        #-}
@@ -71,7 +70,7 @@ instance {-# OVERLAPPABLE #-} (Constructor c, GFromProp a) => GFromProp (M1 C c 
     gFromProp
       | conIsRecord m = fmap M1 gFromProp
       | otherwise     = fmap M1 $ gEnum $ T.pack (conName m)
-      where m = (undefined :: t c a x)
+      where m = undefined :: t c a x
 
 gEnum va = do
   o <- gFromProp

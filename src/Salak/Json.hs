@@ -16,7 +16,7 @@ loadJSON :: Reload -> A.Value -> SourcePack -> SourcePack
 loadJSON name v sp = loadFile name sp $ go v
   where
     go (A.Object m) i s = foldl (g2 i) s $ HM.toList m
-    go (A.Array  m) i s = foldl (g3 i) s $ zipWith (,) [0..] $ V.toList m
+    go (A.Array  m) i s = foldl (g3 i) s $ zip [0..] $ V.toList m
     go (A.String m) i s = insert' [] (VStr  i m) s
     go (A.Number m) i s = insert' [] (VNum  i m) s
     go (A.Bool   m) i s = insert' [] (VBool i m) s

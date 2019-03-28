@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 04d6d6b931753599c658cf87e2807820df6dbd04e1a3e4e8abf3c01b0d63ff87
+-- hash: 4f3d363ee3bc9b22e1f86e8b6c92e977ad3760091d7f8d7cff5291ce092d60a7
 
 name:           salak
 version:        0.2.5
@@ -25,20 +25,12 @@ extra-source-files:
 library
   exposed-modules:
       Salak
-      Data.Salak
   other-modules:
       Salak.Types
       Salak.Env
       Salak.Json
       Salak.Prop
       Salak.Dynamic
-      Data.Salak.Types
-      Data.Salak.Environment
-      Data.Salak.CommandLine
-      Data.Salak.Aeson
-      Data.Salak.Yaml
-      Data.Salak.Operation
-      Data.Salak.Dynamic
   hs-source-dirs:
       src
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
@@ -48,13 +40,9 @@ library
     , base >=4.7 && <5
     , containers
     , data-default
-    , directory
-    , filepath
-    , menshen
     , mtl
     , pqueue
     , scientific
-    , stm
     , text
     , transformers
     , unordered-containers
@@ -66,14 +54,6 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Data.Salak
-      Data.Salak.Aeson
-      Data.Salak.CommandLine
-      Data.Salak.Dynamic
-      Data.Salak.Environment
-      Data.Salak.Operation
-      Data.Salak.Types
-      Data.Salak.Yaml
       Salak
       Salak.Dynamic
       Salak.Env
@@ -92,14 +72,10 @@ test-suite spec
     , base >=4.7 && <5
     , containers
     , data-default
-    , directory
-    , filepath
     , hspec ==2.*
-    , menshen
     , mtl
     , pqueue
     , scientific
-    , stm
     , text
     , transformers
     , unordered-containers

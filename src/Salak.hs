@@ -64,8 +64,7 @@ instance Default PropConfig where
 loadSalak :: Monad m => ReaderT SourcePack m a -> SourcePackT m () -> m a
 loadSalak a spm = do
   (es, sp) <- runSourcePackT spm
-  unless (null es) $ do
-    fail (head es)
+  unless (null es) $ fail (head es)
   runReaderT a sp
 
 defaultLoadSalak :: MonadIO m => PropConfig -> ReaderT SourcePack m a -> m a
@@ -81,7 +80,7 @@ class Monad m => HasSourcePack m where
   askSourcePack :: m SourcePack
 
 fetch :: (HasSourcePack m, FromProp a) => Text -> m (Either String a)
-fetch key = askSourcePack >>= return . search key
+fetch key = search key <$> askSourcePack
 
 require :: (HasSourcePack m, FromProp a) => Text -> m a
 require k = do
