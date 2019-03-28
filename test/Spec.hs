@@ -66,12 +66,13 @@ specProperty = do
     it "normal" $ do
       nullSource emptySource `shouldBe` True
       sizeSouce  emptySource `shouldBe` 0
+    it "normal - 2" $ do
       let s1 = insert "hello" (VStr 0 "world") emptySource
       sizeSouce s1           `shouldBe` 1
       let s2 = insert "1"     (VStr 0 "world") emptySource
-      sizeSouce s2           `shouldBe` 0
+      sizeSouce s2           `shouldBe` 1
       let (es,_) = extractErr s2
-      length es              `shouldBe` 1
+      length es              `shouldBe` 0
     it "merge" $ do
       let s  = insert "hello" (VStr 0 "world") emptySource
           s1 = insert "hello" (VStr 0 "xxxxx") emptySource
