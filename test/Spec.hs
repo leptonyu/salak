@@ -10,6 +10,7 @@ import           Data.Either
 import           Data.List       (intercalate)
 import           Data.Text       (Text, pack, unpack)
 import           GHC.Generics
+import           Salak
 import           Salak.Prop
 import           Salak.Types
 import           Test.Hspec
