@@ -96,7 +96,7 @@ instance Monad m => HasSourcePack (ReaderT SourcePack m) where
 -- $use
 --
 -- | This library default a standard configuration load process. It can load properties from `CommandLine`, `Environment`,
--- `JSON value` and `Yaml` files. They all load to the same format `Properties`. Earler property source has higher order
+-- `JSON value` and `Yaml` files. They all load to the same format `SourcePack`. Earler property source has higher order
 -- to load property. For example:
 --
 -- > CommandLine:  --package.a.enabled=true

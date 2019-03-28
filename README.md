@@ -9,13 +9,15 @@
 Configuration Loader for Production in Haskell.
 
 This library default a standard configuration load process. It can load properties from `CommandLine`, `Environment`,
-`JSON value` and `Yaml` files. They all load to the same format `Properties`. Earler property source has higher order
+`JSON value` and `Yaml` files. They all load to the same format `SourcePack`. Earler property source has higher order
 to load property. For example:
 
+```
 CommandLine:  --package.a.enabled=true
 Environment: PACKAGE_A_ENABLED: false
 
 lookup "package.a.enabled" properties => Just True
+```
 
 `CommandLine` has higher order then `Environment`, for the former load properties earler then later.
 
@@ -39,5 +41,7 @@ main = do
   print c
 ```
 
+```
 λ> c
 Config {name = "daniel", dir = Nothing, ext = 1}
+```
