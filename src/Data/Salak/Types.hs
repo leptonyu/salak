@@ -123,6 +123,7 @@ makeProperties = flip (foldl go)
 
 -- | Return of `FromProperties`
 type Return = Either ErrResult
+
 data ErrResult = EmptyKey Text | Fail String deriving Show
 
 instance HasValid Return where

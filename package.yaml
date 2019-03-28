@@ -27,12 +27,24 @@ dependencies:
   - stm
   - transformers
   - menshen
+  - pqueue
+  - containers
+  - attoparsec
+  - unordered-containers
+  - data-default
 
 library:
   source-dirs: src
   exposed-modules:
+    - Salak
     - Data.Salak
   other-modules:
+    - Salak.Types
+    - Salak.Env
+    - Salak.Json
+    - Salak.Prop
+    - Salak.Dynamic
+    
     - Data.Salak.Types
     - Data.Salak.Environment 
     - Data.Salak.CommandLine

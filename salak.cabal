@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a34f7a62e332d736b5e02f39f495526fb8e086ea35a0ee35910165ecbe76f780
+-- hash: a8ea48cfe65f344efb63c732c063cae3de1ea058d5a84354fddd27c6f6f896ac
 
 name:           salak
 version:        0.2.4
@@ -24,8 +24,14 @@ extra-source-files:
 
 library
   exposed-modules:
+      Salak
       Data.Salak
   other-modules:
+      Salak.Types
+      Salak.Env
+      Salak.Json
+      Salak.Prop
+      Salak.Dynamic
       Data.Salak.Types
       Data.Salak.Environment
       Data.Salak.CommandLine
@@ -38,11 +44,15 @@ library
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       aeson
+    , attoparsec
     , base >=4.7 && <5
+    , containers
+    , data-default
     , directory
     , filepath
     , menshen
     , mtl
+    , pqueue
     , scientific
     , stm
     , text
@@ -64,6 +74,12 @@ test-suite spec
       Data.Salak.Operation
       Data.Salak.Types
       Data.Salak.Yaml
+      Salak
+      Salak.Dynamic
+      Salak.Env
+      Salak.Json
+      Salak.Prop
+      Salak.Types
       Paths_salak
   hs-source-dirs:
       test
@@ -72,12 +88,16 @@ test-suite spec
   build-depends:
       QuickCheck
     , aeson
+    , attoparsec
     , base >=4.7 && <5
+    , containers
+    , data-default
     , directory
     , filepath
     , hspec ==2.*
     , menshen
     , mtl
+    , pqueue
     , scientific
     , stm
     , text
