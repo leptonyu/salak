@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b4914634f10b673934647057004b70e2f59a2a492bf1dcfc24c81d6c0d0c8a71
+-- hash: 17804c3b1820142e18d76089687d6cb2980cc9434c416188aa8a317ac9849dda
 
 name:           salak
-version:        0.2.5
+version:        0.2.6
 synopsis:       Configuration Loader
 category:       Library
 homepage:       https://github.com/leptonyu/salak#readme
@@ -41,6 +41,7 @@ library
     , data-default
     , directory
     , filepath
+    , menshen
     , mtl
     , pqueue
     , scientific
@@ -67,7 +68,7 @@ test-suite spec
       src
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
-      QuickCheck
+      QuickCheck <2.14
     , aeson
     , attoparsec
     , base >=4.7 && <5
@@ -76,6 +77,7 @@ test-suite spec
     , directory
     , filepath
     , hspec ==2.*
+    , menshen
     , mtl
     , pqueue
     , scientific

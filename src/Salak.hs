@@ -36,6 +36,7 @@ module Salak(
   , FromProp(..)
   , FromEnumProp(..)
   , (.?=)
+  , (.?:)
   -- * SourcePack
   , SourcePack
   , SourcePackT
@@ -140,7 +141,7 @@ require k = do
 
 -- | Fetch dynamic properties from `SourcePack`, or throw fail
 requireD
-  :: (MonadIO m, HasSourcePack m, FromProp a)
+  :: (MonadIO m, FromProp a)
   => Text -- ^ Properties key
   -> ReloadableSourcePackT m (IO a)
 requireD k = do
@@ -151,7 +152,7 @@ requireD k = do
 
 -- | Try fetch dynamic properties from `SourcePack`
 fetchD
-  :: (MonadIO m, HasSourcePack m, FromProp a)
+  :: (MonadIO m, FromProp a)
   => Text -- ^ Properties key
   -> ReloadableSourcePackT m (Either String (IO a))
 fetchD = search'
@@ -164,6 +165,11 @@ reloadable f = askSourcePack >>= runReloadable f
 infixl 5 .?=
 (.?=) :: Alternative f => f a -> a -> f a
 (.?=) a b = a <|> pure b
+
+-- | Default value.
+infixl 5 .?:
+(.?:) :: (Alternative f, Default b) => f a -> (b -> a) -> f a
+(.?:) fa b = fa .?= b def
 
 -- $use
 --

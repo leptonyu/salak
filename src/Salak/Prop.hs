@@ -1,18 +1,21 @@
-{-# LANGUAGE DefaultSignatures    #-}
-{-# LANGUAGE DeriveFunctor        #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DefaultSignatures          #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE TypeSynonymInstances       #-}
+{-# LANGUAGE UndecidableInstances       #-}
 module Salak.Prop where
 
 import           Control.Applicative
 import           Control.Monad.Reader
 import           Data.Int
 import qualified Data.IntMap.Strict   as MI
+import           Data.Menshen
 import qualified Data.PQueue.Min      as Q
 import           Data.Scientific
 import           Data.Text            (Text)
@@ -50,7 +53,19 @@ instance Monad PResult where
   (N s  ) >>= _ = N s
   (F s e) >>= _ = F s e
 
-type Prop a = ReaderT SourcePack PResult a
+newtype PropT m a = Prop { unProp :: ReaderT SourcePack m a }
+  deriving (Functor, Applicative, Monad, MonadTrans, Alternative)
+
+type Prop = PropT PResult
+
+runProp sp a = runReaderT (unProp a) sp
+
+instance MonadReader SourcePack Prop where
+  ask = Prop ask
+  local f (Prop a) = Prop (local f a)
+
+instance HasValid Prop where
+  invalid = err . toI18n
 
 instance FromProp a => IsString (Prop a) where
   fromString = readSelect . T.pack
@@ -98,7 +113,7 @@ instance {-# OVERLAPPABLE #-} (GFromProp a, GFromProp b) => GFromProp (a:+:b) wh
 instance FromProp a => FromProp (Maybe a) where
   fromProp = do
     sp <- ask
-    lift $ case runReaderT (fromProp :: Prop a) sp of
+    lift $ case runProp sp (fromProp :: Prop a) of
       O s a -> O s $ Just a
       N s   -> O s Nothing
       F s e -> F s e
@@ -109,7 +124,7 @@ instance {-# OVERLAPPABLE #-} FromProp a => FromProp [a] where
     foldM (go ss i it) [] $ MI.toList is
     where
       go xx x xt as (ix,s) = do
-        a <- lift $ runReaderT fromProp (SourcePack (SNum ix:xx) x s xt)
+        a <- lift $ runProp (SourcePack (SNum ix:xx) x s xt) fromProp
         return (a:as)
 
 instance {-# OVERLAPPABLE #-} FromEnumProp a => FromProp a where
@@ -144,7 +159,7 @@ readSelect key = case selectors key of
   Right s -> local (\sp -> foldl select sp s) fromProp
 
 search :: FromProp a => Text -> SourcePack -> Either String a
-search key sp = case runReaderT (readSelect key) sp of
+search key sp = case runProp sp (readSelect key) of
   O _ x -> Right x
   N s   -> Left $ "key " ++ toKey s ++ " not found"
   F s e -> Left $ "key " ++ toKey s ++ " : " ++ e

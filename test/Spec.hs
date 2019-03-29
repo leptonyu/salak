@@ -16,7 +16,6 @@ import           Salak.Types
 import           Test.Hspec
 import           Test.QuickCheck
 
-
 main = hspec spec
 
 spec :: Spec
@@ -95,7 +94,6 @@ specProperty = do
         [ ("name", "Daniel")
         , ("age", "18")
         , ("male", "yes")
-        -- , ("det.hello", "world")
         ]
       e `shouldBe` []
       let a = search "" sp :: Either String Conf

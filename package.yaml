@@ -1,5 +1,5 @@
 name:                salak
-version:             0.2.5
+version:             0.2.6
 synopsis:            Configuration Loader
 homepage:            https://github.com/leptonyu/salak#readme
 license:             BSD3
@@ -29,6 +29,7 @@ dependencies:
   - data-default
   - filepath
   - directory
+  - menshen
 
 library:
   source-dirs: src
@@ -49,4 +50,4 @@ tests:
       - src
     dependencies:
       - hspec == 2.*
-      - QuickCheck
+      - QuickCheck < 2.14
