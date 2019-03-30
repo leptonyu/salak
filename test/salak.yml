@@ -1,9 +1,14 @@
 array:
   - a
   - b
+  - d
+  - c
 hello:
   world
 
-config:
-  name: hello
-  dir: /root
+me.icymint.conf:
+  name: daniel
+  age: 18
+  male: yes
+  det:
+    hello: abc

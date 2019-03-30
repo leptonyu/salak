@@ -1,14 +1,16 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections   #-}
-module Salak.Dynamic where
+module Salak.Load.Dynamic where
 
 import           Control.Concurrent.MVar
 import           Control.Monad.IO.Class  (MonadIO, liftIO)
 import           Control.Monad.State
+import           Control.Monad.Writer
 import qualified Data.IntMap.Strict      as MI
 import           Data.Text               (Text)
 import           Salak.Prop
 import           Salak.Types
+import           Salak.Types.Source
 
 data ReloadResult = ReloadResult
   { isError :: Bool
@@ -27,18 +29,18 @@ reloadableSourcePack sp = do
   return $ ReloadableSourcePack msp (reloadAll' msp)
   where
     reloadAll' v f = do
-      sp'@(SourcePack _ _ _ it) <- readMVar v
-      as <- filter (not . nullSource . snd) <$> mapM go (MI.toList it)
-      if null as
-        then return (ReloadResult True [])
-        else do
-          let (es, sp'') = extractErr' $ foldl g2 sp' as
-          (ac, es') <- f sp''
-          if null es'
-            then putMVar v sp'' >>  sequence_ ac >> return (ReloadResult True es)
-            else return (ReloadResult False es')
-    go (i, Reload _ f) = (i,) <$> f i
-    g2 (SourcePack ss i s it) (x,s') = SourcePack ss i (replace x s' s) it
+      sp' <- readMVar v
+      as  <- sequence $ MI.foldlWithKey' go [] (reEnv sp')
+      let loadErr = concat $ fst . snd <$> as
+          runWith e a = if null e then a else return $ ReloadResult True e
+      runWith loadErr $ do
+        let sp''    = foldl g2 sp' {errs = []} as
+            modLog  = errs sp''
+        (ac, msErr) <- f sp''
+        runWith msErr $ putMVar v sp'' >>  sequence_ ac >> return (ReloadResult False modLog)
+    go b i (Reload _ f) = ((i,) <$> f i) : b
+    g2 :: SourcePack -> (Int, ([String], Source)) -> SourcePack
+    g2 p (i, (_, s)) = let (s', e) = runWriter $ replace i s (source p) in p { source = s', errs = errs p <> e}
 
 type ReloadableSourcePackT = StateT ReloadableSourcePack
 

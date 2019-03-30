@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 17804c3b1820142e18d76089687d6cb2980cc9434c416188aa8a317ac9849dda
+-- hash: 6a2cd5b21fd37f41a096f4c0b86a5493a6fd390dbec31d8963cf33ac055b9049
 
 name:           salak
 version:        0.2.6
@@ -26,10 +26,14 @@ library
       Salak
   other-modules:
       Salak.Types
-      Salak.Env
-      Salak.Json
+      Salak.Types.Value
+      Salak.Types.Selector
+      Salak.Types.Source
+      Salak.Load.Env
+      Salak.Load.Json
+      Salak.Load.Dynamic
+      Salak.Load.Toml
       Salak.Prop
-      Salak.Dynamic
   hs-source-dirs:
       src
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
@@ -46,7 +50,8 @@ library
     , pqueue
     , scientific
     , text
-    , transformers
+    , time
+    , tomland
     , unordered-containers
     , vector
     , yaml
@@ -57,11 +62,15 @@ test-suite spec
   main-is: Spec.hs
   other-modules:
       Salak
-      Salak.Dynamic
-      Salak.Env
-      Salak.Json
+      Salak.Load.Dynamic
+      Salak.Load.Env
+      Salak.Load.Json
+      Salak.Load.Toml
       Salak.Prop
       Salak.Types
+      Salak.Types.Selector
+      Salak.Types.Source
+      Salak.Types.Value
       Paths_salak
   hs-source-dirs:
       test
@@ -82,7 +91,8 @@ test-suite spec
     , pqueue
     , scientific
     , text
-    , transformers
+    , time
+    , tomland
     , unordered-containers
     , vector
     , yaml

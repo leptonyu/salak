@@ -1,11 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Salak.Env where
+module Salak.Load.Env where
 
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State
 import           Data.Maybe
 import qualified Data.Text              as T
 import           Salak.Types
+import           Salak.Types.Value
 import           System.Environment
 
 loadEnv :: MonadIO m => SourcePackT m ()

@@ -40,10 +40,13 @@ module Salak(
   -- * SourcePack
   , SourcePack
   , SourcePackT
-  , loadYaml
   , loadCommandLine
   , loadEnv
   , loadMock
+  , loadYaml
+  , loadToml
+  , loadByExt
+  , defaultLoadByExt
   , defaultParseCommandLine
   , ParseCommandLine
   , Priority
@@ -57,11 +60,13 @@ import           Control.Monad.Reader
 import           Control.Monad.State
 import           Data.Default
 import           Data.Text              (Text)
-import           Salak.Dynamic
-import           Salak.Env
-import           Salak.Json
+import           Salak.Load.Dynamic
+import           Salak.Load.Env
+import           Salak.Load.Json
+import           Salak.Load.Toml
 import           Salak.Prop
 import           Salak.Types
+import           Salak.Types.Value
 import           System.Directory
 import           System.FilePath        ((</>))
 
@@ -75,7 +80,7 @@ data PropConfig = PropConfig
   }
 
 instance Default PropConfig where
-  def = PropConfig Nothing "salak.conf" True False defaultParseCommandLine
+  def = PropConfig Nothing "salak.conf.dir" True False defaultParseCommandLine
 
 -- | Load salak `SourcePack` and fetch properties.
 loadSalak
@@ -84,9 +89,29 @@ loadSalak
   -> SourcePackT m ()       -- ^ Load properties monad.
   -> m a
 loadSalak a spm = do
-  (es, sp) <- runSourcePackT spm
+  sp <- runSourcePackT spm
+  let es = errs sp
   unless (null es) $ fail (head es)
   runReaderT a sp
+
+type ExtLoad = (String, FilePath -> SourcePackT IO ())
+
+defaultFileExt :: [ExtLoad]
+defaultFileExt =
+  [ ("yaml", loadYaml)
+  , ("yml",  loadYaml)
+  , ("toml", loadToml)
+  , ("tml",  loadToml)
+  ]
+
+loadByExt :: MonadIO m => [ExtLoad] -> FilePath -> SourcePackT m ()
+loadByExt xs f = mapM_ go xs
+  where
+    go (ext, ly) = tryLoadFile (g2 ly) $ f <> "." <> ext
+    g2 g file = get >>= lift . liftIO . execStateT (g file) >>= put
+
+defaultLoadByExt :: MonadIO m => FilePath -> SourcePackT m ()
+defaultLoadByExt = loadByExt defaultFileExt
 
 -- | Default load salak.
 -- All these configuration sources has orders, from highest order to lowest order:
@@ -107,11 +132,11 @@ defaultLoadSalak PropConfig{..} a = loadSalak a $ do
     go ck n = do
       case ck of
         Left  _ -> return ()
-        Right d -> loadYaml $ d </> n
+        Right d -> defaultLoadByExt $ d </> n
       c <- liftIO getCurrentDirectory
-      when searchCurrent $ tryLoadYaml $ c </> n
+      when searchCurrent $ defaultLoadByExt $ c </> n
       h <- liftIO getHomeDirectory
-      when searchHome    $ tryLoadYaml $ h </> n
+      when searchHome    $ defaultLoadByExt $ h </> n
 
 class Monad m => HasSourcePack m where
   askSourcePack :: m SourcePack

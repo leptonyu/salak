@@ -16,12 +16,10 @@ dependencies:
   - base >= 4.7 && < 5
   - unordered-containers
   - vector
-  - aeson 
-  - yaml
   - text
   - scientific
+  - time
   - mtl
-  - transformers
   - pqueue
   - containers
   - attoparsec
@@ -30,6 +28,9 @@ dependencies:
   - filepath
   - directory
   - menshen
+  - tomland
+  - aeson 
+  - yaml
 
 library:
   source-dirs: src
@@ -37,10 +38,14 @@ library:
     - Salak
   other-modules:
     - Salak.Types
-    - Salak.Env
-    - Salak.Json
+    - Salak.Types.Value
+    - Salak.Types.Selector
+    - Salak.Types.Source
+    - Salak.Load.Env
+    - Salak.Load.Json
+    - Salak.Load.Dynamic
+    - Salak.Load.Toml
     - Salak.Prop
-    - Salak.Dynamic
 
 tests:
   spec:
