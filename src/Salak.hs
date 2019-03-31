@@ -107,7 +107,7 @@ type ExtLoad = (String, FilePath -> SourcePackT IO ())
 loadByExt :: MonadIO m => [ExtLoad] -> FilePath -> SourcePackT m ()
 loadByExt xs f = mapM_ go xs
   where
-    go (ext, ly) = tryLoadFile (jump . ly) $ f <> "." <> ext
+    go (ext, ly) = tryLoadFile (jump . ly) $ f ++ "." ++ ext
 
 jump :: MonadIO m => StateT SourcePack IO a -> StateT SourcePack m ()
 jump a = get >>= lift . liftIO . execStateT a >>= put
