@@ -136,9 +136,7 @@ instance {-# OVERLAPPABLE #-} FromEnumProp a => FromProp a where
     VStr  _ s -> case fromEnumProp $ T.toLower s of
       Left  e -> F ss e
       Right r -> O ss r
-    VNum  _ _ -> F ss "number cannot be enum"
-    VBool _ _ -> F ss   "bool cannot be enum"
-    VDate _ _ -> F ss   "date cannot be enum"
+    x         -> F ss $ getType x <> " cannot be enum"
 
 -- | ReadPrimitive value
 readPrimitive :: ([Selector] -> Value -> PResult a) -> Prop a
@@ -173,22 +171,19 @@ instance FromProp Bool where
   fromProp = readPrimitive go
     where
       go s (VBool _ x) = O s x
-      go s (VNum  _ _) = F s "number cannot be bool"
-      go s (VDate _ _) = F s "date cannot be bool"
       go s (VStr  _ x) = case T.toLower x of
         "true"  -> O s True
         "yes"   -> O s True
         "false" -> O s False
         "no"    -> O s False
         _       -> F s "string convert bool failed"
+      go s x           = F s $ getType x <> " cannot be bool"
 
 instance FromProp Text where
   fromProp = readPrimitive go
     where
       go s (VStr  _ x) = O s x
-      go s (VBool _ _) = F s   "bool cannot be string"
-      go s (VNum  _ _) = F s "number cannot be string"
-      go s (VDate _ _) = F s   "date cannot be string"
+      go s x           = O s $ T.pack (getV x)
 
 instance FromProp TL.Text where
   fromProp = TL.fromStrict <$> fromProp
@@ -203,8 +198,7 @@ instance FromProp Scientific where
         Just v -> O s v
         _      -> F s "string convert number failed"
       go s (VNum  _ x) = O s x
-      go s (VBool _ _) = F s "bool cannot be number"
-      go s (VDate _ _) = F s "date cannot be number"
+      go s x           = F s $ getType x <> " cannot be number"
 
 instance FromProp Float where
   fromProp = toRealFloat <$> fromProp

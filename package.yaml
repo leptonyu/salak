@@ -10,6 +10,7 @@ category:            Library
 extra-source-files:
 - README.md
 - test/salak.yml
+- test/salak.toml
 ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
 
 dependencies:
@@ -28,7 +29,7 @@ dependencies:
   - filepath
   - directory
   - menshen
-  - tomland
+  - tomland >= 1.0
   - aeson 
   - yaml
 

@@ -17,8 +17,8 @@ module Salak(
   -- $use
 
   -- * Salak
-    defaultLoadSalak
-  , loadSalak
+    loadAndRunSalak
+  , runSalak
   , PropConfig(..)
   -- * Static Load
   , HasSourcePack(..)
@@ -77,18 +77,25 @@ data PropConfig = PropConfig
   , searchCurrent :: Bool          -- ^ Search current directory, default true
   , searchHome    :: Bool          -- ^ Search home directory, default false.
   , commandLine   :: ParseCommandLine -- ^ How to parse commandline
+  , loadExt       :: FilePath -> SourcePackT IO ()
   }
 
 instance Default PropConfig where
-  def = PropConfig Nothing "salak.conf.dir" True False defaultParseCommandLine
+  def = PropConfig
+    Nothing
+    "salak.conf.dir"
+    True
+    False
+    defaultParseCommandLine
+    defaultLoadByExt
 
--- | Load salak `SourcePack` and fetch properties.
-loadSalak
+-- | Load and run salak `SourcePack` and fetch properties.
+loadAndRunSalak
   :: Monad m
-  => ReaderT SourcePack m a -- ^ Fetch properties monad.
-  -> SourcePackT m ()       -- ^ Load properties monad.
+  => SourcePackT m ()       -- ^ Load properties monad.
+  -> ReaderT SourcePack m a -- ^ Fetch properties monad.
   -> m a
-loadSalak a spm = do
+loadAndRunSalak spm a = do
   sp <- runSourcePackT spm
   let es = errs sp
   unless (null es) $ fail (head es)
@@ -96,22 +103,21 @@ loadSalak a spm = do
 
 type ExtLoad = (String, FilePath -> SourcePackT IO ())
 
-defaultFileExt :: [ExtLoad]
-defaultFileExt =
+loadByExt :: MonadIO m => [ExtLoad] -> FilePath -> SourcePackT m ()
+loadByExt xs f = mapM_ go xs
+  where
+    go (ext, ly) = tryLoadFile (jump . ly) $ f <> "." <> ext
+
+jump :: MonadIO m => StateT SourcePack IO a -> StateT SourcePack m ()
+jump a = get >>= lift . liftIO . execStateT a >>= put
+
+defaultLoadByExt :: MonadIO m => FilePath -> SourcePackT m ()
+defaultLoadByExt = loadByExt
   [ ("yaml", loadYaml)
   , ("yml",  loadYaml)
   , ("toml", loadToml)
   , ("tml",  loadToml)
   ]
-
-loadByExt :: MonadIO m => [ExtLoad] -> FilePath -> SourcePackT m ()
-loadByExt xs f = mapM_ go xs
-  where
-    go (ext, ly) = tryLoadFile (g2 ly) $ f <> "." <> ext
-    g2 g file = get >>= lift . liftIO . execStateT (g file) >>= put
-
-defaultLoadByExt :: MonadIO m => FilePath -> SourcePackT m ()
-defaultLoadByExt = loadByExt defaultFileExt
 
 -- | Default load salak.
 -- All these configuration sources has orders, from highest order to lowest order:
@@ -122,21 +128,31 @@ defaultLoadByExt = loadByExt defaultFileExt
 -- > 4. Yaml file in current directory
 -- > 5. Yaml file in home directory
 --
-defaultLoadSalak :: MonadIO m => PropConfig -> ReaderT SourcePack m a -> m a
-defaultLoadSalak PropConfig{..} a = loadSalak a $ do
+runSalak :: MonadIO m => PropConfig -> ReaderT SourcePack m a -> m a
+runSalak PropConfig{..} = loadAndRunSalak $ do
   loadCommandLine commandLine
   loadEnv
-  cf <- fetch configDirKey
-  maybe (return ()) (go cf) configName
+  forM_ configName $ forM_
+    [ require configDirKey
+    , ifS searchCurrent getCurrentDirectory
+    , ifS searchHome    getHomeDirectory
+    ] . loadConf
   where
-    go ck n = do
-      case ck of
-        Left  _ -> return ()
-        Right d -> defaultLoadByExt $ d </> n
-      c <- liftIO getCurrentDirectory
-      when searchCurrent $ defaultLoadByExt $ c </> n
-      h <- liftIO getHomeDirectory
-      when searchHome    $ defaultLoadByExt $ h </> n
+    ifS True gxd = Just <$> liftIO gxd
+    ifS _    _   = return Nothing
+    loadConf n mf = mf >>= mapM_ (jump . loadExt . (</> n))
+
+  --   loadC ffa n = (mapM_ . mapM_) g
+  -- cf <- fetch configDirKey
+  -- where
+  --   go ck n = do
+  --     case ck of
+  --       Left  _ -> return ()
+  --       Right d -> defaultLoadByExt $ d </> n
+  --     c <- liftIO getCurrentDirectory
+  --     when searchCurrent $ defaultLoadByExt $ c </> n
+  --     h <- liftIO getHomeDirectory
+  --     when searchHome    $ defaultLoadByExt $ h </> n
 
 class Monad m => HasSourcePack m where
   askSourcePack :: m SourcePack

@@ -9,35 +9,38 @@ import           Data.Time
 type Priority = Int
 
 data Value
-  = VStr  Priority !Text
-  | VNum  Priority !Scientific
-  | VBool Priority !Bool
-  | VDate Priority !DateValue
+  = VStr   !Priority !Text
+  | VNum   !Priority !Scientific
+  | VBool  !Priority !Bool
+  | VZTime !Priority !TimeZone !LocalTime
+  | VLTime !Priority !LocalTime
+  | VDay   !Priority !Day
+  | VHour  !Priority !TimeOfDay
   deriving Eq
 
 instance Ord Value where
   compare a b = compare (getPriority a) (getPriority b)
 
 instance Show Value where
-  show (VStr  a b) = showV a b "Str"
-  show (VNum  a b) = showV a b "Num"
-  show (VBool a b) = showV a b "Bool"
-  show (VDate a b) = showV a b "Date"
+  show v = let (a,b,c) = typeOfV v in c <> ":" <> b <> "#" <> show a
 
-showV a b t = show b <> ":" <> t <> "#" <> show a
-
-data DateValue
-  = DV1 !TimeZone !LocalTime
-  | DV2 !LocalTime
-  | DV3 !Day
-  | DV4 !TimeOfDay
-  deriving (Eq, Show, Ord)
+typeOfV :: Value -> (Priority, String, String)
+typeOfV (VStr   a b)   = (a, "Str",       show b)
+typeOfV (VNum   a b)   = (a, "Num",       show b)
+typeOfV (VBool  a b)   = (a, "Bool",      show b)
+typeOfV (VZTime a b c) = (a, "ZonedTime", show (ZonedTime c b))
+typeOfV (VLTime a b)   = (a, "LocalTime", show b)
+typeOfV (VDay   a b)   = (a, "Day",       show b)
+typeOfV (VHour  a b)   = (a, "TimeOfDay", show b)
 
 getPriority :: Value -> Priority
-getPriority (VStr  p _) = p
-getPriority (VNum  p _) = p
-getPriority (VBool p _) = p
-getPriority (VDate p _) = p
+getPriority x = let (a,_,_) = typeOfV x in a
+
+getType :: Value -> String
+getType x = let (_,b,_) = typeOfV x in b
+
+getV :: Value -> String
+getV x = let (_,_,b) = typeOfV x in b
 
 type QV = Q.MinQueue Value
 

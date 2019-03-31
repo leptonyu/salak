@@ -32,7 +32,7 @@ showKey p (SNum k) = p <> "[" <> show k <> "]"
 instance Show Source where
   show = unlines . go ""
     where
-      go p Source{..} = concat $ M.foldlWithKey (\b k v -> go (showKey p k) v : b) [ g2 p value] mapValue
+      go p Source{..} = concat $ M.foldrWithKey (\k v b -> go (showKey p k) v : b) [ g2 p value] mapValue
       g2 x v = if nullQ v then [] else [x <> "=" <> show v]
 
 emptySource :: Source

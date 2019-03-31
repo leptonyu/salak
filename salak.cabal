@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6a2cd5b21fd37f41a096f4c0b86a5493a6fd390dbec31d8963cf33ac055b9049
+-- hash: 2a073fceca454231c5f4121507767c0df791aa3068b1e2fd8c424878387a4d6b
 
 name:           salak
 version:        0.2.6
@@ -20,6 +20,7 @@ build-type:     Simple
 extra-source-files:
     README.md
     test/salak.yml
+    test/salak.toml
 
 library
   exposed-modules:
@@ -51,7 +52,7 @@ library
     , scientific
     , text
     , time
-    , tomland
+    , tomland >=1.0
     , unordered-containers
     , vector
     , yaml
@@ -92,7 +93,7 @@ test-suite spec
     , scientific
     , text
     , time
-    , tomland
+    , tomland >=1.0
     , unordered-containers
     , vector
     , yaml

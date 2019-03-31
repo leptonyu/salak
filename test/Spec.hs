@@ -119,7 +119,7 @@ specProperty = do
 jsonProperty = do
   context "load json" $ do
     it "salak.yml" $ do
-      flip loadSalak (loadYaml "test/salak.yml") $ do
+      loadAndRunSalak (loadYaml "test/salak.yml") $ do
         as <- require "array"
         cf <- require "me.icymint.conf"
         lift $ do
@@ -132,7 +132,7 @@ jsonProperty = do
 tomlProperty = do
   context "load toml" $ do
     it "salak.toml" $ do
-      flip loadSalak (loadToml "test/salak.toml") $ do
+      loadAndRunSalak (loadToml "test/salak.toml") $ do
         cf <- require "me.icymint.conf"
         lift $ do
           name cf `shouldBe` "shelly"
@@ -143,7 +143,7 @@ tomlProperty = do
 extProperty = do
   context "multiload" $ do
     it "salak" $ do
-      flip loadSalak (defaultLoadByExt "test/salak") $ do
+      loadAndRunSalak (defaultLoadByExt "test/salak") $ do
         cf <- require "me.icymint.conf"
         sp <- ask
         lift $ do
