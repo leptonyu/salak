@@ -29,6 +29,7 @@ module Salak(
   , ReloadableSourcePackT
   , ReloadResult(..)
   , reloadable
+  , reloadAction
   , fetchD
   , requireD
   -- * Prop Parser

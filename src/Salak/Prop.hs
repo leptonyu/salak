@@ -136,7 +136,7 @@ instance {-# OVERLAPPABLE #-} FromEnumProp a => FromProp a where
     VStr  _ s -> case fromEnumProp $ T.toLower s of
       Left  e -> F ss e
       Right r -> O ss r
-    x         -> F ss $ getType x <> " cannot be enum"
+    x         -> F ss $ getType x ++ " cannot be enum"
 
 -- | ReadPrimitive value
 readPrimitive :: ([Selector] -> Value -> PResult a) -> Prop a
@@ -177,7 +177,7 @@ instance FromProp Bool where
         "false" -> O s False
         "no"    -> O s False
         _       -> F s "string convert bool failed"
-      go s x           = F s $ getType x <> " cannot be bool"
+      go s x           = F s $ getType x ++ " cannot be bool"
 
 instance FromProp Text where
   fromProp = readPrimitive go
@@ -198,7 +198,7 @@ instance FromProp Scientific where
         Just v -> O s v
         _      -> F s "string convert number failed"
       go s (VNum  _ x) = O s x
-      go s x           = F s $ getType x <> " cannot be number"
+      go s x           = F s $ getType x ++ " cannot be number"
 
 instance FromProp Float where
   fromProp = toRealFloat <$> fromProp

@@ -61,8 +61,8 @@ search' k = do
         Left  e -> return (as, e:es)
         Right r -> return (putMVar x r:as, es)
 
-reload :: Monad m => ReloadableSourcePackT m (IO ReloadResult)
-reload = do
+reloadAction :: Monad m => ReloadableSourcePackT m (IO ReloadResult)
+reloadAction = do
   ReloadableSourcePack{..} <- get
   return $ reloadAll $ \_ -> return ([], [])
 
