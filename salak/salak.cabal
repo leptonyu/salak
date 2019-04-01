@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 63bee142349c11a4deb3ea45ac3baba14fee9ea68d9b5b8ca60b4614df046279
+-- hash: a2bcce875a46002bbdacf8594e5a0210fae8526809f90f8044c89aeb52452599
 
 name:           salak
-version:        0.2.7
+version:        0.2.8
 synopsis:       Configuration Loader
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme
@@ -78,8 +78,6 @@ test-suite spec
     , menshen
     , mtl
     , pqueue
-    , salak-toml
-    , salak-yaml
     , scientific
     , text
     , time

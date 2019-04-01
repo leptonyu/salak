@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4e8ff60ca5ef5c8d2bd72aa460dda673b9eb2d96c38fecf57c11a012de126a79
+-- hash: 7d38524c4a3dd8eac3603e13ecadd4eb70bdd098fbea830d3c23f8207fa93284
 
 name:           salak-yaml
-version:        0.2.7
+version:        0.2.8
 synopsis:       Configuration Loader for yaml
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme
@@ -32,7 +32,7 @@ library
       aeson
     , base >=4.10 && <5
     , mtl
-    , salak ==0.2.7
+    , salak ==0.2.8
     , unordered-containers
     , vector
     , yaml
@@ -53,7 +53,7 @@ test-suite spec
     , base >=4.10 && <5
     , hspec ==2.*
     , mtl
-    , salak ==0.2.7
+    , salak ==0.2.8
     , text
     , unordered-containers
     , vector
