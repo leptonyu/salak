@@ -1,13 +1,16 @@
 # salak
 
 [![Hackage](https://img.shields.io/hackage/v/salak.svg)](https://hackage.haskell.org/package/salak)
-[![salak-yaml](https://img.shields.io/hackage/v/salak-yaml.svg)](https://hackage.haskell.org/package/salak-yaml)
-[![salak-toml](https://img.shields.io/hackage/v/salak-toml.svg)](https://hackage.haskell.org/package/salak-toml)
 [![stackage LTS package](http://stackage.org/package/salak/badge/lts)](http://stackage.org/lts/package/salak)
 [![stackage Nightly package](http://stackage.org/package/salak/badge/nightly)](http://stackage.org/nightly/package/salak)
 [![Build Status](https://travis-ci.org/leptonyu/salak.svg?branch=master)](https://travis-ci.org/leptonyu/salak)
 
 Configuration (re)loader in Haskell.
+
+## salak-yaml
+[![salak-yaml](https://img.shields.io/hackage/v/salak-yaml.svg)](https://hackage.haskell.org/package/salak-yaml)
+## salak-toml
+[![salak-toml](https://img.shields.io/hackage/v/salak-toml.svg)](https://hackage.haskell.org/package/salak-toml)
 
 This library define a universal procedure to load configurations and parse properties, also supports reload configuration files.
 
