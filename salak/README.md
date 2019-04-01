@@ -5,23 +5,54 @@
 [![stackage Nightly package](http://stackage.org/package/salak/badge/nightly)](http://stackage.org/nightly/package/salak)
 [![Build Status](https://travis-ci.org/leptonyu/salak.svg?branch=master)](https://travis-ci.org/leptonyu/salak)
 
+Configuration (re)loader in Haskell.
 
-Configuration Loader in Haskell.
+This library define a universal procedure to load configurations and parse properties, also supports reload configuration files.
 
-This library default a standard configuration load process. It can load properties from `CommandLine`, `Environment`,
-`JSON value` and `Yaml` files. They all load to the same format `SourcePack`. Earler property source has higher order
-to load property. For example:
 
+We can load configurations from command line, environment, configuration files such as yaml or toml etc, and we may want to have our own strategies to load configurations from multi sources and overwrite properties by orders of these sources.
+
+`PropConfig` defines a common loading strategy:
+> 1. loadCommandLine
+> 2. loadEnvironment
+> 3. loadConfFiles
+> 3.1.1 load file from folder `salak.conf.dir` if defined
+> 3.1.2 load file from current folder if enabled
+> 3.1.3 load file from home folder if enabled
+> 3.2 file extension matching, support yaml or toml or any other loader.
+
+Load earlier has higher orders, orders cannot be changed.
+
+`ReaderT SourcePack m` defines how to read properties:
+> require "abc.prop"
+
+`ReloadableSourcePackT m` defines how to read reloadable properties:
+> requireD "abc.dynamic.prop"
+
+For commandline and environment, 
 ```
 CommandLine:  --package.a.enabled=true
 Environment: PACKAGE_A_ENABLED: false
-
-lookup "package.a.enabled" properties => Just True
 ```
 
-`CommandLine` has higher order then `Environment`, for the former load properties earler then later.
-
 Usage:
+
+
+Environment:
+```
+export TEST_CONFIG_NAME=daniel
+```
+Current Directory:  salak.yaml
+```YAML
+test.config:
+  name: noop
+  pwd: ls
+```
+Current Directory:  salak.toml
+```TOML
+[test.config]
+ext=2
+```
 
 ```Haskell
 data Config = Config
@@ -32,16 +63,16 @@ data Config = Config
 
 instance FromProp Config where
   fromProp = Config
-    <$> "user"
+    <$> "user" ? pattern "[a-z]{5,16}"
     <*> "pwd"
     <*> "ext" .?= 1
 
-main = do
-  c :: Config <- defaultLoadSalak def $ require ""
-  print c
+main = runSalak def { configName = Just "salak", loadExt = loaders $ YAML :|: TOML } $ do
+  c :: Config <- require "test.config"
+  lift $ print c
 ```
 
 ```
 λ> c
-Config {name = "daniel", dir = Nothing, ext = 1}
+Config {name = "daniel", dir = Just "ls" , ext = 2}
 ```

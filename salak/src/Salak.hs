@@ -245,7 +245,7 @@ infixl 5 .?:
 -- >     <*> "ext" .?= 1
 --
 -- > main = do
--- >   c :: Config <- defaultLoadSalak def $ require ""
+-- >   c :: Config <- runSalak def $ require ""
 -- >   print c
 --
 -- > λ> c
