@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6fe886c3a7597706afbf766fbeca8659b5c3e7d13f948b1e3e1d04a169a15841
+-- hash: 63bee142349c11a4deb3ea45ac3baba14fee9ea68d9b5b8ca60b4614df046279
 
 name:           salak
 version:        0.2.7
@@ -78,6 +78,8 @@ test-suite spec
     , menshen
     , mtl
     , pqueue
+    , salak-toml
+    , salak-yaml
     , scientific
     , text
     , time

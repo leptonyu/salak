@@ -3,7 +3,6 @@ packages:
 - salak
 - salak-yaml
 - salak-toml
-- salak-test
 extra-deps:
   - tomland-1.0.0
 pvp-bounds: both

@@ -43,3 +43,5 @@ tests:
     dependencies:
       - hspec == 2.*
       - QuickCheck < 2.14
+      - salak-yaml
+      - salak-toml
