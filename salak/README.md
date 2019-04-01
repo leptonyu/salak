@@ -83,8 +83,8 @@ main = runSalak def { configName = Just "salak", loadExt = loadByExt $ YAML :|: 
 GHCi play
 ```Haskell
 λ> import Salak
-λ> import Salak.Load.YAML
-λ> import Salak.Load.TOML
+λ> import Salak.Load.Yaml
+λ> import Salak.Load.Toml
 λ> import Data.Menshen
 λ> :set -XTypeApplications
 λ> instance FromProp Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1

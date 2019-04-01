@@ -1,6 +1,6 @@
 _common: !include "../default.yaml"
 name:                salak-toml
-version:             0.2.8
+version:             0.2.9
 synopsis:            Configuration Loader for toml
 <<: *legal
 extra-source-files:
@@ -9,7 +9,7 @@ extra-source-files:
 
 dependencies:
   - base >= 4.10 && < 5
-  - salak == 0.2.8
+  - salak == 0.2.9
   - tomland >= 1.0
   - mtl
   - unordered-containers
