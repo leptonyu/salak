@@ -25,9 +25,6 @@ main = hspec spec
 spec :: Spec
 spec = do
   describe "Salak.Types" specProperty
-  describe "Salak.Json"  jsonProperty
-  describe "Salak.Toml"  tomlProperty
-  describe "Salak"       extProperty
 
 newtype SKey = SKey { unKey :: Text } deriving Show
 
@@ -116,43 +113,6 @@ specProperty = do
       print a
       isRight a `shouldBe` True
 
-jsonProperty = do
-  context "load json" $ do
-    it "salak.yml" $ do
-      loadAndRunSalak (loadYaml "test/salak.yml") $ do
-        as <- require "array"
-        cf <- require "me.icymint.conf"
-        lift $ do
-          as      `shouldBe` ["a","b","d","c" :: String]
-          name cf `shouldBe` "daniel"
-          age  cf `shouldBe` 18
-          male cf `shouldBe` True
-          det  cf `shouldBe` SubConf "abc"
-
-tomlProperty = do
-  context "load toml" $ do
-    it "salak.toml" $ do
-      loadAndRunSalak (loadToml "test/salak.toml") $ do
-        cf <- require "me.icymint.conf"
-        lift $ do
-          name cf `shouldBe` "shelly"
-          age  cf `shouldBe` 16
-          male cf `shouldBe` False
-          det  cf `shouldBe` SubConf "def"
-
-extProperty = do
-  context "multiload" $ do
-    it "salak" $ do
-      loadAndRunSalak (defaultLoadByExt "test/salak") $ do
-        cf <- require "me.icymint.conf"
-        sp <- ask
-        lift $ do
-          print sp
-          print cf
-          name cf `shouldBe` "daniel"
-          age  cf `shouldBe` 18
-          male cf `shouldBe` True
-          det  cf `shouldBe` SubConf "abc"
 
 
 

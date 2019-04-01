@@ -1,0 +1,32 @@
+_common: !include "../default.yaml"
+name:                salak-toml
+version:             0.2.7
+synopsis:            Configuration Loader for toml
+<<: *legal
+extra-source-files:
+- README.md
+- test/salak.toml
+
+dependencies:
+  - base >= 4.10 && < 5
+  - salak == 0.2.7
+  - tomland >= 1.0
+  - mtl
+  - unordered-containers
+  - time
+  - text
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - Salak.Load.Toml
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs:
+      - test
+      - src
+    dependencies:
+      - hspec == 2.*
+      - QuickCheck < 2.14
+      - text

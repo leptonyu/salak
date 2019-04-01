@@ -1,0 +1,60 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 9cc3d69939170ed738ab852895f8ccbbb6d9ebdfbf63f8ae496637fca5bffddb
+
+name:           salak-toml
+version:        0.2.7
+synopsis:       Configuration Loader for toml
+category:       Library, Configuration
+homepage:       https://github.com/leptonyu/salak#readme
+author:         Daniel YU
+maintainer:     Daniel YU <leptonyu@gmail.com>
+copyright:      (c) 2018 Daniel YU
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    test/salak.toml
+
+library
+  exposed-modules:
+      Salak.Load.Toml
+  other-modules:
+      Paths_salak_toml
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.10 && <5
+    , mtl
+    , salak ==0.2.7
+    , text
+    , time
+    , tomland >=1.0
+    , unordered-containers
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Salak.Load.Toml
+      Paths_salak_toml
+  hs-source-dirs:
+      test
+      src
+  build-depends:
+      QuickCheck <2.14
+    , base >=4.10 && <5
+    , hspec ==2.*
+    , mtl
+    , salak ==0.2.7
+    , text
+    , time
+    , tomland >=1.0
+    , unordered-containers
+  default-language: Haskell2010

@@ -1,0 +1,61 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 4e8ff60ca5ef5c8d2bd72aa460dda673b9eb2d96c38fecf57c11a012de126a79
+
+name:           salak-yaml
+version:        0.2.7
+synopsis:       Configuration Loader for yaml
+category:       Library, Configuration
+homepage:       https://github.com/leptonyu/salak#readme
+author:         Daniel YU
+maintainer:     Daniel YU <leptonyu@gmail.com>
+copyright:      (c) 2018 Daniel YU
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    test/salak.yml
+
+library
+  exposed-modules:
+      Salak.Load.Yaml
+  other-modules:
+      Paths_salak_yaml
+  hs-source-dirs:
+      src
+  build-depends:
+      aeson
+    , base >=4.10 && <5
+    , mtl
+    , salak ==0.2.7
+    , unordered-containers
+    , vector
+    , yaml
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Salak.Load.Yaml
+      Paths_salak_yaml
+  hs-source-dirs:
+      test
+      src
+  build-depends:
+      QuickCheck <2.14
+    , aeson
+    , base >=4.10 && <5
+    , hspec ==2.*
+    , mtl
+    , salak ==0.2.7
+    , text
+    , unordered-containers
+    , vector
+    , yaml
+  default-language: Haskell2010

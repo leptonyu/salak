@@ -1,7 +1,10 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes        #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators       #-}
 -- |
 -- Module:      Salak
 -- Copyright:   (c) 2019 Daniel YU
@@ -44,12 +47,14 @@ module Salak(
   , loadCommandLine
   , loadEnv
   , loadMock
-  , loadYaml
-  , loadToml
+  -- ** Load Extension
+  , ExtLoad
   , loadByExt
-  , defaultLoadByExt
-  , defaultParseCommandLine
+  , HasLoad(..)
+  , (:|:)(..)
+  -- * Other
   , ParseCommandLine
+  , defaultParseCommandLine
   , Priority
   , Value(..)
   ) where
@@ -60,11 +65,10 @@ import           Control.Monad.IO.Class (MonadIO)
 import           Control.Monad.Reader
 import           Control.Monad.State
 import           Data.Default
+import           Data.Proxy
 import           Data.Text              (Text)
 import           Salak.Load.Dynamic
 import           Salak.Load.Env
-import           Salak.Load.Json
-import           Salak.Load.Toml
 import           Salak.Prop
 import           Salak.Types
 import           Salak.Types.Value
@@ -78,7 +82,7 @@ data PropConfig = PropConfig
   , searchCurrent :: Bool          -- ^ Search current directory, default true
   , searchHome    :: Bool          -- ^ Search home directory, default false.
   , commandLine   :: ParseCommandLine -- ^ How to parse commandline
-  , loadExt       :: FilePath -> SourcePackT IO ()
+  , loadExt       :: [ExtLoad]
   }
 
 instance Default PropConfig where
@@ -88,7 +92,7 @@ instance Default PropConfig where
     True
     False
     defaultParseCommandLine
-    defaultLoadByExt
+    []
 
 -- | Load and run salak `SourcePack` and fetch properties.
 loadAndRunSalak
@@ -104,6 +108,15 @@ loadAndRunSalak spm a = do
 
 type ExtLoad = (String, FilePath -> SourcePackT IO ())
 
+class HasLoad a where
+  loaders :: a -> [ExtLoad]
+
+data a :|: b = a :|: b
+infixr 3 :|:
+
+instance (HasLoad a, HasLoad b) => HasLoad (a :|: b) where
+  loaders (a :|: b) = loaders a ++ loaders b
+
 loadByExt :: MonadIO m => [ExtLoad] -> FilePath -> SourcePackT m ()
 loadByExt xs f = mapM_ go xs
   where
@@ -111,14 +124,6 @@ loadByExt xs f = mapM_ go xs
 
 jump :: MonadIO m => StateT SourcePack IO a -> StateT SourcePack m ()
 jump a = get >>= lift . liftIO . execStateT a >>= put
-
-defaultLoadByExt :: MonadIO m => FilePath -> SourcePackT m ()
-defaultLoadByExt = loadByExt
-  [ ("yaml", loadYaml)
-  , ("yml",  loadYaml)
-  , ("toml", loadToml)
-  , ("tml",  loadToml)
-  ]
 
 -- | Default load salak.
 -- All these configuration sources has orders, from highest order to lowest order:
@@ -141,7 +146,7 @@ runSalak PropConfig{..} = loadAndRunSalak $ do
   where
     ifS True gxd = Just <$> liftIO gxd
     ifS _    _   = return Nothing
-    loadConf n mf = mf >>= mapM_ (jump . loadExt . (</> n))
+    loadConf n mf = mf >>= mapM_ (jump . loadByExt loadExt . (</> n))
 
   --   loadC ffa n = (mapM_ . mapM_) g
   -- cf <- fetch configDirKey

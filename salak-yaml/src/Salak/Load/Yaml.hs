@@ -1,4 +1,5 @@
-module Salak.Load.Json where
+{-# LANGUAGE TupleSections #-}
+module Salak.Load.Yaml where
 
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State
@@ -6,10 +7,8 @@ import qualified Data.Aeson             as A
 import qualified Data.HashMap.Strict    as HM
 import qualified Data.Vector            as V
 import qualified Data.Yaml              as Y
-import           Salak.Types
-import           Salak.Types.Selector
-import           Salak.Types.Source
-import           Salak.Types.Value
+import           Salak
+import           Salak.Load
 
 loadJSON :: Reload -> A.Value -> SourcePack -> SourcePack
 loadJSON name v sp = loadFile name sp $ go v
@@ -31,5 +30,7 @@ loadYaml file = do
     Left  e -> addErr' (show e) sp
     Right a -> loadJSON (defReload file $ loadYaml file) a sp
 
-tryLoadYaml :: MonadIO m => FilePath -> SourcePackT m ()
-tryLoadYaml = tryLoadFile loadYaml
+data YAML = YAML
+
+instance HasLoad YAML where
+  loaders _ = (, loadYaml) <$> ["yaml", "yml"]

@@ -1,22 +1,13 @@
+_common: !include "../default.yaml"
 name:                salak
 version:             0.2.7
 synopsis:            Configuration Loader
-homepage:            https://github.com/leptonyu/salak#readme
-license:             BSD3
-author:              Daniel YU
-maintainer:          Daniel YU <leptonyu@gmail.com>
-copyright:           (c) 2018 Daniel YU
-category:            Library
+<<: *legal
 extra-source-files:
 - README.md
-- test/salak.yml
-- test/salak.toml
-ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
 
 dependencies:
   - base >= 4.10 && < 5
-  - unordered-containers
-  - vector
   - text
   - scientific
   - time
@@ -24,28 +15,23 @@ dependencies:
   - pqueue
   - containers
   - attoparsec
-  - unordered-containers
   - data-default
   - filepath
   - directory
   - menshen
-  - tomland >= 1.0
-  - aeson 
-  - yaml
 
 library:
   source-dirs: src
   exposed-modules:
     - Salak
+    - Salak.Load
   other-modules:
     - Salak.Types
     - Salak.Types.Value
     - Salak.Types.Selector
     - Salak.Types.Source
     - Salak.Load.Env
-    - Salak.Load.Json
     - Salak.Load.Dynamic
-    - Salak.Load.Toml
     - Salak.Prop
 
 tests:

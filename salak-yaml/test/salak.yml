@@ -1,0 +1,14 @@
+array:
+  - a
+  - b
+  - d
+  - c
+hello:
+  world
+
+me.icymint.conf:
+  name: daniel
+  age: 18
+  male: yes
+  det:
+    hello: abc

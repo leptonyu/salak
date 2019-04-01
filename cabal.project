@@ -1,3 +1,7 @@
 -- see https://cabal.readthedocs.io/en/latest/nix-local-build-overview.html
 
-packages: .
+packages:
+  salak
+  salak-toml
+  salak-yaml
+  salak-test
