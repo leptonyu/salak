@@ -277,7 +277,7 @@ infixl 5 .?:
 -- >     <*> "pwd"
 -- >     <*> "ext" .?= 1
 -- >
--- > main = runSalak def { configName = Just "salak", loadExt = loaders $ YAML :|: TOML } $ do
+-- > main = runSalak def { configName = Just "salak", loadExt = loadByExt $ YAML :|: TOML } $ do
 -- >   c :: Config <- require "test.config"
 -- >   lift $ print c
 --
@@ -288,7 +288,7 @@ infixl 5 .?:
 -- > λ> import Salak.Load.TOML
 -- > λ> :set -XTypeApplications
 -- > λ> instance FromProp Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1
--- > λ> f = runSalak def { configName = Just "salak", loadExt = loaders $ YAML :|: TOML }
+-- > λ> f = runSalak def { configName = Just "salak", loadExt = loadByExt $ YAML :|: TOML }
 -- > λ> f (require "") >>= print @Config
 -- > Config {name = "daniel", dir = Just "ls", ext = 2}
 --

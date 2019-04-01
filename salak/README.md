@@ -9,7 +9,6 @@ Configuration (re)loader in Haskell.
 
 This library define a universal procedure to load configurations and parse properties, also supports reload configuration files.
 
-
 We can load configurations from command line, environment, configuration files such as yaml or toml etc, and we may want to have our own strategies to load configurations from multi sources and overwrite properties by orders of these sources.
 
 `PropConfig` defines a common loading strategy:
@@ -71,7 +70,7 @@ instance FromProp Config where
     <*> "pwd"
     <*> "ext" .?= 1
 
-main = runSalak def { configName = Just "salak", loadExt = loaders $ YAML :|: TOML } $ do
+main = runSalak def { configName = Just "salak", loadExt = loadByExt $ YAML :|: TOML } $ do
   c :: Config <- require "test.config"
   lift $ print c
 ```
@@ -84,7 +83,7 @@ GHCi play
 λ> import Data.Menshen
 λ> :set -XTypeApplications
 λ> instance FromProp Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1
-λ> f = runSalak def { configName = Just "salak", loadExt = loaders $ YAML :|: TOML }
+λ> f = runSalak def { configName = Just "salak", loadExt = loadByExt $ YAML :|: TOML }
 λ> f (require "") >>= print @Config
 Config {name = "daniel", dir = Just "ls", ext = 2}
 ```

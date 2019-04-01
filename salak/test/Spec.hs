@@ -10,6 +10,7 @@ import           Control.Monad.Reader
 import           Control.Monad.Writer
 import           Data.Either
 import           Data.List            (intercalate)
+import           Data.Menshen
 import           Data.Text            (Text, pack, unpack)
 import           GHC.Generics
 import           Salak
@@ -51,7 +52,7 @@ data SubConf = SubConf
   { hello :: String } deriving (Eq, Show, Generic)
 
 instance FromProp SubConf where
-  fromProp = SubConf <$> "hello" .?= "yyy"
+  fromProp = SubConf <$> "hello" .?= "yyy" ? pattern "[a-z]{3,16}"
 
 instance FromProp Conf
 
