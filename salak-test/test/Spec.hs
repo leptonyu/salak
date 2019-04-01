@@ -55,7 +55,7 @@ instance FromProp SubConf where
 
 instance FromProp Conf
 
-exts = loaders $ YAML :|: TOML
+exts = YAML :|: TOML
 
 extProperty = do
   context "multiload" $ do

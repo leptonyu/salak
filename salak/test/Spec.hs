@@ -58,12 +58,14 @@ instance FromProp Conf
 specProperty = do
   context "selectors" $ do
     it "normal" $ do
-      selectors ""      `shouldBe` Right []
-      selectors "."     `shouldBe` Right []
-      selectors ".."    `shouldBe` Right []
-      selectors "xx"    `shouldBe` Right [SStr "xx"]
-      selectors "xx[0]" `shouldBe` Right [SStr "xx", SNum 0]
-      selectors "xx.yy" `shouldBe` Right [SStr "xx", SStr "yy"]
+      selectors ""         `shouldBe` Right []
+      selectors "."        `shouldBe` Right []
+      selectors ".."       `shouldBe` Right []
+      selectors "xx"       `shouldBe` Right [SStr "xx"]
+      selectors "xx[0]"    `shouldBe` Right [SStr "xx", SNum 0]
+      selectors "xx.yy"    `shouldBe` Right [SStr "xx", SStr "yy"]
+      selectors "xx[0][1]" `shouldBe` Right [SStr "xx", SNum 0, SNum 1]
+      toKey (reverse $ SStr "x" : (SNum <$> [0..9])) `shouldBe` "x[0][1][2][3][4][5][6][7][8][9]"
     it "QuickCheck" $ do
       quickCheck $ \s -> let s' = unKey s in (toKey . reverse <$> selectors s') `shouldBe` Right (unpack s')
   context "source" $ do

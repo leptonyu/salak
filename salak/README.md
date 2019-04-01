@@ -16,18 +16,22 @@ We can load configurations from command line, environment, configuration files s
 > 1. loadCommandLine
 > 2. loadEnvironment
 > 3. loadConfFiles
-> 3.1.1 load file from folder `salak.conf.dir` if defined
-> 3.1.2 load file from current folder if enabled
-> 3.1.3 load file from home folder if enabled
-> 3.2 file extension matching, support yaml or toml or any other loader.
+> 4. load file from folder `salak.conf.dir` if defined
+> 5. load file from current folder if enabled
+> 6. load file from home folder if enabled
+> 7. file extension matching, support yaml or toml or any other loader.
 
 Load earlier has higher orders, orders cannot be changed.
 
 `ReaderT SourcePack m` defines how to read properties:
-> require "abc.prop"
+```Haskell
+require "abc.prop"
+```
 
 `ReloadableSourcePackT m` defines how to read reloadable properties:
-> requireD "abc.dynamic.prop"
+```Haskell
+requireD "abc.dynamic.prop"
+```
 
 For commandline and environment, 
 ```
@@ -46,7 +50,7 @@ Current Directory:  salak.yaml
 ```YAML
 test.config:
   name: noop
-  pwd: ls
+  dir: ls
 ```
 Current Directory:  salak.toml
 ```TOML
@@ -72,7 +76,19 @@ main = runSalak def { configName = Just "salak", loadExt = loaders $ YAML :|: TO
   lift $ print c
 ```
 
+GHCi play
+```Haskell
+λ> import Salak
+λ> import Salak.Load.YAML
+λ> import Salak.Load.TOML
+λ> import Data.Menshen
+λ> :set -XTypeApplications
+λ> instance FromProp Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1
+λ> f = runSalak def { configName = Just "salak", loadExt = loaders $ YAML :|: TOML }
+λ> f (require "") >>= print @Config
+Config {name = "daniel", dir = Just "ls", ext = 2}
 ```
-λ> c
-Config {name = "daniel", dir = Just "ls" , ext = 2}
-```
+
+
+TODO:
+- Add git pull support.

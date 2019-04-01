@@ -22,11 +22,11 @@ module Salak(
     loadAndRunSalak
   , runSalak
   , PropConfig(..)
-  -- * Static Load
+  -- * Static Get Properties
   , HasSourcePack(..)
   , fetch
   , require
-  -- * Dynamic Load
+  -- * Dynamic Get Properties
   , ReloadableSourcePack
   , ReloadableSourcePackT
   , ReloadResult(..)
@@ -43,10 +43,11 @@ module Salak(
   -- * SourcePack
   , SourcePack
   , SourcePackT
+  -- * Load configurations
   , loadCommandLine
   , loadEnv
   , loadMock
-  -- ** Load Extension
+  -- ** Load By Extension
   , ExtLoad
   , loadByExt
   , HasLoad(..)
@@ -56,6 +57,7 @@ module Salak(
   , defaultParseCommandLine
   , Priority
   , Value(..)
+  , defaultLoadSalak
   ) where
 
 import           Control.Applicative
@@ -64,7 +66,6 @@ import           Control.Monad.IO.Class (MonadIO)
 import           Control.Monad.Reader
 import           Control.Monad.State
 import           Data.Default
-import           Data.Proxy
 import           Data.Text              (Text)
 import           Salak.Load.Dynamic
 import           Salak.Load.Env
@@ -81,7 +82,7 @@ data PropConfig = PropConfig
   , searchCurrent :: Bool          -- ^ Search current directory, default true
   , searchHome    :: Bool          -- ^ Search home directory, default false.
   , commandLine   :: ParseCommandLine -- ^ How to parse commandline
-  , loadExt       :: [ExtLoad]
+  , loadExt       :: FilePath -> SourcePackT IO ()
   }
 
 instance Default PropConfig where
@@ -91,7 +92,7 @@ instance Default PropConfig where
     True
     False
     defaultParseCommandLine
-    []
+    (\_ -> return ())
 
 -- | Load and run salak `SourcePack` and fetch properties.
 loadAndRunSalak
@@ -105,6 +106,8 @@ loadAndRunSalak spm a = do
   unless (null es) $ fail (head es)
   runReaderT a sp
 
+
+-- | Load file by extension
 type ExtLoad = (String, FilePath -> SourcePackT IO ())
 
 class HasLoad a where
@@ -116,8 +119,8 @@ infixr 3 :|:
 instance (HasLoad a, HasLoad b) => HasLoad (a :|: b) where
   loaders (a :|: b) = loaders a ++ loaders b
 
-loadByExt :: MonadIO m => [ExtLoad] -> FilePath -> SourcePackT m ()
-loadByExt xs f = mapM_ go xs
+loadByExt :: (HasLoad a, MonadIO m) => a -> FilePath -> SourcePackT m ()
+loadByExt xs f = mapM_ go (loaders xs)
   where
     go (ext, ly) = tryLoadFile (jump . ly) $ f ++ "." ++ ext
 
@@ -125,13 +128,15 @@ jump :: MonadIO m => StateT SourcePack IO a -> StateT SourcePack m ()
 jump a = get >>= lift . liftIO . execStateT a >>= put
 
 -- | Default load salak.
--- All these configuration sources has orders, from highest order to lowest order:
+-- All these configuration sources has orders, from highest priority to lowest priority:
 --
--- > 1. CommandLine
--- > 2. Environment
--- > 3. Specified Yaml file(file in `configDirKey`)
--- > 4. Yaml file in current directory
--- > 5. Yaml file in home directory
+-- > 1. loadCommandLine
+-- > 2. loadEnvironment
+-- > 3. loadConfFiles
+-- > 4. load file from folder `salak.conf.dir` if defined
+-- > 5. load file from current folder if enabled
+-- > 6. load file from home folder if enabled
+-- > 7. file extension matching, support yaml or toml or any other loader.
 --
 runSalak :: MonadIO m => PropConfig -> ReaderT SourcePack m a -> m a
 runSalak PropConfig{..} = loadAndRunSalak $ do
@@ -145,7 +150,12 @@ runSalak PropConfig{..} = loadAndRunSalak $ do
   where
     ifS True gxd = Just <$> liftIO gxd
     ifS _    _   = return Nothing
-    loadConf n mf = mf >>= mapM_ (jump . loadByExt loadExt . (</> n))
+    loadConf n mf = mf >>= mapM_ (jump . loadExt . (</> n))
+
+{-# DEPRECATED defaultLoadSalak "use runSalak instead" #-}
+defaultLoadSalak :: MonadIO m => PropConfig -> ReaderT SourcePack m a -> m a
+defaultLoadSalak = runSalak
+
 
   --   loadC ffa n = (mapM_ . mapM_) g
   -- cf <- fetch configDirKey
@@ -219,18 +229,41 @@ infixl 5 .?:
 
 -- $use
 --
--- | This library default a standard configuration load process. It can load properties from `CommandLine`, `Environment`,
--- `JSON value` and `Yaml` files. They all load to the same format `SourcePack`. Earler property source has higher order
--- to load property. For example:
+-- | This library define a universal procedure to load configurations and parse properties, also supports reload configuration files.
 --
--- > CommandLine:  --package.a.enabled=true
--- > Environment: PACKAGE_A_ENABLED: false
 --
--- > lookup "package.a.enabled" properties => Just True
+-- We can load configurations from command line, environment, configuration files such as yaml or toml etc, and we may want to have our own strategies to load configurations from multi sources and overwrite properties by orders of these sources.
 --
--- `CommandLine` has higher order then `Environment`, for the former load properties earler then later.
+-- `PropConfig` defines a common loading strategy:
+--
+-- > 1. loadCommandLine
+-- > 2. loadEnvironment
+-- > 3. loadConfFiles
+-- > 4. load file from folder `salak.conf.dir` if defined
+-- > 5. load file from current folder if enabled
+-- > 6. load file from home folder if enabled
+-- > 7. file extension matching, support yaml or toml or any other loader.
+--
+-- Load earlier has higher priority, priorities cannot be changed.
+--
 --
 -- Usage:
+--
+--
+-- Environment:
+--
+-- > export TEST_CONFIG_NAME=daniel
+--
+-- Current Directory:  salak.yaml
+--
+-- > test.config:
+-- >   name: noop
+-- >   dir: ls
+--
+-- Current Directory:  salak.toml
+--
+-- > [test.config]
+-- > ext=2
 --
 -- > data Config = Config
 -- >   { name :: Text
@@ -240,13 +273,22 @@ infixl 5 .?:
 -- >
 -- > instance FromProp Config where
 -- >   fromProp = Config
--- >     <$> "user"
+-- >     <$> "user" ? pattern "[a-z]{5,16}"
 -- >     <*> "pwd"
 -- >     <*> "ext" .?= 1
+-- >
+-- > main = runSalak def { configName = Just "salak", loadExt = loaders $ YAML :|: TOML } $ do
+-- >   c :: Config <- require "test.config"
+-- >   lift $ print c
 --
--- > main = do
--- >   c :: Config <- runSalak def $ require ""
--- >   print c
+-- GHCi play
 --
--- > λ> c
--- > Config {name = "daniel", dir = Nothing, ext = 1}
+-- > λ> import Salak
+-- > λ> import Salak.Load.YAML
+-- > λ> import Salak.Load.TOML
+-- > λ> :set -XTypeApplications
+-- > λ> instance FromProp Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1
+-- > λ> f = runSalak def { configName = Just "salak", loadExt = loaders $ YAML :|: TOML }
+-- > λ> f (require "") >>= print @Config
+-- > Config {name = "daniel", dir = Just "ls", ext = 2}
+--

@@ -12,6 +12,10 @@ data Selector
   | SNum !Int
   deriving (Eq, Ord)
 
+isStr :: Selector -> Bool
+isStr (SStr _) = True
+isStr _        = False
+
 instance Show Selector where
   show (SStr x) = T.unpack x
   show (SNum i) = "[" ++ show i ++ "]"
@@ -19,10 +23,9 @@ instance Show Selector where
 toKey :: [Selector] -> String
 toKey = intercalate "." . go . reverse
   where
-    -- TODO: fix snum
-    go (a@(SStr _):b@(SNum _):cs) = (show a ++ show b) : go cs
-    go (a:bs)                     = show a : go bs
-    go []                         = []
+    go (a@(SStr _):cs) = let (b,c) = break isStr cs in (show a ++ concat (show <$> b)) : go c
+    go (a:cs)          = show a : go cs
+    go []              = []
 
 simpleSelectors :: Text -> [Selector]
 simpleSelectors as = fmap SStr $ filter (not.T.null) $ T.splitOn "." as
