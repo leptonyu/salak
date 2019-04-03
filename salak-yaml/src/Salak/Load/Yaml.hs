@@ -1,23 +1,16 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE RecordWildCards  #-}
 {-# LANGUAGE TupleSections    #-}
-module Salak.Load.Yaml where
+module Salak.Load.Yaml(
+    YAML(..)
+  , loadYaml
+  ) where
 
-import           Control.Monad.Catch
-import           Control.Monad.Fail
-import           Control.Monad.IO.Class       (MonadIO, liftIO)
+import           Control.Exception      (throwIO)
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State
-import           Control.Monad.Trans.Resource
-import           Control.Monad.Writer
-import           Data.ByteString              (ByteString)
-import           Data.Conduit                 hiding (Source)
-import           Data.Conduit.Lift
-import qualified Data.HashMap.Strict          as HM
-import qualified Data.Map                     as M
-import           Data.Text                    (Text, pack)
-import           Data.Text.Encoding           (decodeUtf8)
-import qualified Data.Vector                  as V
-import           Debug.Trace
+import           Data.Conduit           hiding (Source)
+import           Data.Text.Encoding     (decodeUtf8)
 import           Salak
 import           Salak.Load
 import           Text.Libyaml
@@ -25,34 +18,36 @@ import           Text.Libyaml
 loadYaml :: MonadIO m => FilePath -> SourcePackT m ()
 loadYaml file = get >>= go >>= put
   where
-    go sp = loadFile (defReload file $ loadYaml file) sp $ \i s -> 
-      liftIO $ runConduitRes (decodeFileMarked file .| loadYAML i emptySource)
+    go sp = loadFile (defReload file $ loadYaml file) sp $ \i s ->
+      liftIO $ runConduitRes (decodeFileMarked file .| loadYAML i s)
 
 data YAML = YAML
 
 instance HasLoad YAML where
   loaders _ = (, loadYaml) <$> ["yaml", "yml"]
 
-loadYAML :: Monad m => Priority -> Source -> ConduitM MarkedEvent o m Source
-loadYAML i s = trace (show s) $ await >>= maybe (return s) (\e -> trace (show $ yamlEvent e) $ go e)
+loadYAML :: MonadIO m => Priority -> Source -> ConduitM MarkedEvent o m Source
+loadYAML i s = await >>= maybe (return s) go
   where
     go (MarkedEvent (EventScalar a _ _ _) _ _) = return (insertSource (VStr i $ decodeUtf8 a) s)
     go (MarkedEvent EventSequenceStart{}  _ _) = goSeq 0 s
     go (MarkedEvent EventSequenceEnd      _ _) = return emptySource
-    go (MarkedEvent EventMappingStart{}   _ _) = goMap s
+    go (MarkedEvent EventMappingStart{}  _ ee) = goMap ee s
     go _ = loadYAML i s
-    goSeq j s = do
+    goSeq j s1 = do
       s' <- loadYAML i emptySource
       if nullSource s'
-        then return s
-        else updateSource (SNum j) (\_ -> return s') s >>= goSeq (j+1)
-    goMap s = do
+        then return s1
+        else updateSource (SNum j) (\_ -> return s') s1 >>= goSeq (j+1)
+    goMap ee s1 = do
       v <- await
       case v of
-        Nothing -> return s
-        Just (MarkedEvent (EventScalar a _ _ _) _ _) -> 
-          updateSources (simpleSelectors $ decodeUtf8 a) (loadYAML i) s >>= goMap
-        _ -> return s
+        Nothing -> ge ee "suppose to have data"
+        Just (MarkedEvent (EventScalar a _ _ _) _ ee') ->
+          updateSources (simpleSelectors $ decodeUtf8 a) (loadYAML i) s1 >>= goMap ee'
+        Just (MarkedEvent EventMappingEnd _ _) -> return s1
+        Just e -> ge (yamlStartMark e) "suppose scalar and mapping end"
+    ge YamlMark{..} e = liftIO $ throwIO $ YamlException $ "(" ++ show yamlLine ++ "," ++ show yamlColumn ++ ")" ++ e
 
 
 

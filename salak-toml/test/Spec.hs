@@ -7,10 +7,8 @@
 module Main where
 
 import           Control.Monad.Reader
-import           Control.Monad.Writer
-import           Data.Either
 import           Data.List            (intercalate)
-import           Data.Text            (Text, pack, unpack)
+import           Data.Text            (Text, pack)
 import           GHC.Generics
 import           Salak
 import           Salak.Load.Toml

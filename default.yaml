@@ -5,5 +5,4 @@
   maintainer:          Daniel YU <leptonyu@gmail.com>
   copyright:           (c) 2018 Daniel YU
   category:            Library, Configuration
-
-# ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures

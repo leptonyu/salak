@@ -2,7 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections   #-}
 module Salak.Load.Toml(
-    TOML
+    TOML(..)
   , loadToml
   ) where
 
