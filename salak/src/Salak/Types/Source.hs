@@ -72,7 +72,7 @@ replace' ss i ns os = do
     g2 k (1, a) = (1, a >>= \a' -> replace' (k:ss) i emptySource a')
     g2 _ (_, a) = (2 :: Int, a)
 
-insert :: T.Text -> Value -> Source -> Writer [String] Source
+insert :: Monad m => T.Text -> Value -> Source -> WriterT [String] m Source
 insert k v s = case selectors k of
   Left  e  -> tell [e] >> return s
   Right k' -> return (insert' k' v s)

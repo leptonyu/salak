@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5f7e32f57a77f4e540cb5e40d2be4c98ab08e5be5a2aec8344d9e35b54548efc
+-- hash: 480897491a972b96d85e26e13b7e015da8e787b016197c945b3a44871bfe69ac
 
 name:           salak-yaml
 version:        0.2.9
@@ -29,13 +29,18 @@ library
   hs-source-dirs:
       src
   build-depends:
-      aeson
-    , base >=4.10 && <5
+      base >=4.10 && <5
+    , bytestring
+    , conduit
+    , containers
+    , exceptions
+    , libyaml
     , mtl
+    , resourcet
     , salak ==0.2.9
+    , text
     , unordered-containers
     , vector
-    , yaml
   default-language: Haskell2010
 
 test-suite spec
@@ -49,13 +54,17 @@ test-suite spec
       src
   build-depends:
       QuickCheck <2.14
-    , aeson
     , base >=4.10 && <5
+    , bytestring
+    , conduit
+    , containers
+    , exceptions
     , hspec ==2.*
+    , libyaml
     , mtl
+    , resourcet
     , salak ==0.2.9
     , text
     , unordered-containers
     , vector
-    , yaml
   default-language: Haskell2010

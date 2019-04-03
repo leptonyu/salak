@@ -5,6 +5,9 @@ array:
   - c
 hello:
   world
+a:
+  b:
+    c
 
 me.icymint.conf:
   name: daniel

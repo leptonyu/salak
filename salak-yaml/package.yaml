@@ -10,11 +10,16 @@ extra-source-files:
 dependencies:
   - base >= 4.10 && < 5
   - salak == 0.2.9
-  - aeson 
-  - yaml
   - mtl
   - unordered-containers
   - vector
+  - libyaml
+  - conduit
+  - containers
+  - bytestring
+  - text
+  - exceptions
+  - resourcet
 
 library:
   source-dirs: src

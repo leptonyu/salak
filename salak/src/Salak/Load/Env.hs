@@ -12,9 +12,9 @@ import           System.Environment
 loadEnv :: MonadIO m => SourcePackT m ()
 loadEnv = do
   args <- liftIO getEnvironment
-  modify $ load (emptyReload "environment") args go
+  get >>= load (emptyReload "environment") args go >>= put
   where
-    go p (k,v) = (g2 k, VStr p $ T.pack v)
+    go p (k,v) = return (g2 k, VStr p $ T.pack v)
     g2 = T.toLower . T.pack . map (\c -> if c == '_' then '.' else c)
 
 type ParseCommandLine = [String] -> IO [(T.Text,Priority -> Value)]
@@ -30,6 +30,6 @@ defaultParseCommandLine = return . mapMaybe go
 loadCommandLine :: MonadIO m => ParseCommandLine -> SourcePackT m ()
 loadCommandLine pcl = do
   args <- liftIO $ getArgs >>= pcl
-  modify $ load (emptyReload "commandline") args go
+  get >>= load (emptyReload "commandline") args go >>= put
   where
-    go i (k,fv) = (k, fv i)
+    go i (k,fv) = return (k, fv i)

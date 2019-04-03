@@ -21,6 +21,8 @@ module Salak.Load(
   , Selector(..)
   , simpleSelectors
   -- * Source
+  , emptySource
+  , nullSource
   , insertSource
   , updateSources
   , updateSource

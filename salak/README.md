@@ -96,3 +96,6 @@ Config {name = "daniel", dir = Just "ls", ext = 2}
 
 TODO:
 - Add git pull support.
+- Use libyaml instead of yaml.
+- Add automatic reloading.
+- Add property placeholder support.
