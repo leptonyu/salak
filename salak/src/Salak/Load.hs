@@ -7,6 +7,7 @@
 -- Portability: portable
 --
 -- This module is designed for implementating configuration file loading.
+-- Please don't use if you are not implemanting a new configuration file.
 --
 module Salak.Load(
   -- * Reload
@@ -15,8 +16,7 @@ module Salak.Load(
   -- * SourcePack
   , Source
   , SourcePack
-  , SourcePackT
-  , addErr'
+  , addErr
   -- * Selector
   , Selector(..)
   , simpleSelectors
@@ -29,6 +29,7 @@ module Salak.Load(
   -- * Load
   , tryLoadFile
   , loadFile
+  , loading
   ) where
 
 import           Salak.Types

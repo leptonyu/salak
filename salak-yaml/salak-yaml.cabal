@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e4349d5f67401a2bdbe23e47fd76838a47ce00c23684779176cd71e36150c90a
+-- hash: b34c5e07dd56872dac1692cae068c97b1588686d3a069fb9456e0fa26137a4d0
 
 name:           salak-yaml
 version:        0.2.9
@@ -23,7 +23,7 @@ extra-source-files:
 
 library
   exposed-modules:
-      Salak.Load.Yaml
+      Salak.Yaml
   other-modules:
       Paths_salak_yaml
   hs-source-dirs:
@@ -42,7 +42,7 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Salak.Load.Yaml
+      Salak.Yaml
       Paths_salak_yaml
   hs-source-dirs:
       test

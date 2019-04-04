@@ -1,5 +1,6 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections   #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE TupleSections              #-}
 module Salak.Load.Dynamic where
 
 import           Control.Concurrent.MVar
@@ -13,8 +14,8 @@ import           Salak.Types
 import           Salak.Types.Source
 
 data ReloadResult = ReloadResult
-  { isError :: Bool
-  , msg     :: [String]
+  { isError :: Bool     -- ^ msg stands for properties changing record if true, otherwise msg means reload error.
+  , msg     :: [String] -- ^ message log
   } deriving (Eq, Show)
 
 -- | Reloadable SourcePack
@@ -42,17 +43,26 @@ reloadableSourcePack sp = do
     g2 :: SourcePack -> (Int, ([String], Source)) -> SourcePack
     g2 p (i, (_, s)) = let (s', e) = runWriter $ replace i s (source p) in p { source = s', errs = errs p <> e}
 
-type ReloadableSourcePackT = StateT ReloadableSourcePack
+-- | RunSalak Monad Transfer
+newtype RunSalakT m a = RunSalakT { unRun :: StateT ReloadableSourcePack m a }
+  deriving (Functor, Applicative, Monad, MonadTrans)
 
-search' :: (MonadIO m, FromProp a) => Text -> ReloadableSourcePackT m (Either String (IO a))
-search' k = do
-  ReloadableSourcePack{..}  <- get
-  sp <- liftIO $ takeMVar sourcePack
+instance MonadIO m => MonadIO (RunSalakT m) where
+  liftIO = lift . liftIO
+
+askRSP :: MonadIO m => RunSalakT m SourcePack
+askRSP = RunSalakT $ do
+  ReloadableSourcePack{..} <- get
+  liftIO $ readMVar sourcePack
+
+search' :: (MonadIO m, FromProp a) => Text -> RunSalakT m (Either String (IO a))
+search' k = RunSalakT $ do
+  sp <- unRun askRSP
   case search k sp of
     Left  e -> return (Left e)
     Right r -> do
       v  <- liftIO $ newMVar r
-      put (ReloadableSourcePack sourcePack (reloadAll . go v))
+      modify $ \rsp -> rsp { reloadAll = reloadAll rsp . go v}
       return $ Right $ readMVar v
   where
     go x f sp = do
@@ -61,13 +71,15 @@ search' k = do
         Left  e -> return (as, e:es)
         Right r -> return (putMVar x r:as, es)
 
-reloadAction :: Monad m => ReloadableSourcePackT m (IO ReloadResult)
-reloadAction = do
+{-# DEPRECATED reloadAction "use `exec` instead" #-}
+reloadAction :: Monad m => RunSalakT m (IO ReloadResult)
+reloadAction = RunSalakT $ do
   ReloadableSourcePack{..} <- get
   return $ reloadAll $ \_ -> return ([], [])
 
-runReloadable :: MonadIO m => ReloadableSourcePackT m a -> SourcePack -> m a
-runReloadable r sp = reloadableSourcePack sp >>= evalStateT r
+runT :: MonadIO m => RunSalakT m a -> SourcePack -> m a
+runT (RunSalakT a) sp = reloadableSourcePack sp >>= evalStateT a
 
-
-
+-- | Run action in `RunSalakT`, `IO` `ReloadResult` is reloadable action.
+exec :: MonadIO m => (IO ReloadResult -> IO a) -> RunSalakT m a
+exec fa = reloadAction >>= lift . liftIO . fa

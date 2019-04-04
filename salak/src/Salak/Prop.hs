@@ -59,6 +59,7 @@ instance Monad PResult where
 newtype PropT m a = Prop { unProp :: ReaderT SourcePack m a }
   deriving (Functor, Applicative, Monad, MonadTrans, Alternative)
 
+-- | Monad used to parse properties to destination type.
 type Prop = PropT PResult
 
 runProp sp a = runReaderT (unProp a) sp

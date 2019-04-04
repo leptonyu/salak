@@ -1,24 +1,21 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards  #-}
 {-# LANGUAGE TupleSections    #-}
-module Salak.Load.Yaml(
+module Salak.Yaml(
     YAML(..)
   , loadYaml
   ) where
 
 import           Control.Exception      (throwIO)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Control.Monad.State
 import           Data.Conduit           hiding (Source)
 import           Data.Text.Encoding     (decodeUtf8)
 import           Salak
 import           Salak.Load
 import           Text.Libyaml
 
-loadYaml :: MonadIO m => FilePath -> SourcePackT m ()
-loadYaml file = get >>= go >>= put
-  where
-    go sp = loadFile (defReload file $ loadYaml file) sp $ \i s ->
+loadYaml :: MonadIO m => FilePath -> LoadSalakT m ()
+loadYaml file = loadFile (defReload file $ loadYaml file) $ \i s ->
       liftIO $ runConduitRes (decodeFileMarked file .| loadYAML i s)
 
 data YAML = YAML

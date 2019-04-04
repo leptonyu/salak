@@ -11,7 +11,7 @@ import           Data.List            (intercalate)
 import           Data.Text            (Text, pack)
 import           GHC.Generics
 import           Salak
-import           Salak.Load.Yaml
+import           Salak.Yaml
 import           Test.Hspec
 import           Test.QuickCheck
 

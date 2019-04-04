@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 088c5c9e944aad0439d69164e1132c3178909f5583c2688a88abf87e4200c57e
+-- hash: acbcac5583bed1b36c7e03ecab6c2cc9b7754a332998c98d22ec8d2233981de1
 
 name:           salak-toml
 version:        0.2.9
@@ -23,7 +23,7 @@ extra-source-files:
 
 library
   exposed-modules:
-      Salak.Load.Toml
+      Salak.Toml
   other-modules:
       Paths_salak_toml
   hs-source-dirs:
@@ -43,7 +43,7 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Salak.Load.Toml
+      Salak.Toml
       Paths_salak_toml
   hs-source-dirs:
       test

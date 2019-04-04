@@ -6,7 +6,6 @@
 
 module Main where
 
-import           Control.Monad.Reader
 import           Control.Monad.Writer
 import           Data.Either
 import           Data.List            (intercalate)
@@ -106,7 +105,7 @@ specProperty = do
       s5 `shouldBe` s
   context "Generic" $ do
     it "conf" $ do
-      sp <- runSourcePackT $ loadMock
+      sp <- runLoadT Nothing $ loadMock
         [ ("name", "Daniel")
         , ("age", "18")
         , ("male", "yes")

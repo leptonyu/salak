@@ -19,7 +19,7 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
-    - Salak.Load.Toml
+    - Salak.Toml
 tests:
   spec:
     main: Spec.hs

@@ -18,46 +18,45 @@ module Salak(
   -- * How to use this library
   -- $use
 
-  -- * Salak
+  -- * Salak Main Functions
     loadAndRunSalak
   , runSalak
+  , runSalakWith
   , PropConfig(..)
-  -- * Static Get Properties
+  -- * Load Salak
+  , LoadSalakT
+  , loadCommandLine
+  , ParseCommandLine
+  , defaultParseCommandLine
+  , loadEnv
+  , loadMock
+  -- ** Load Extensions
+  , ExtLoad
+  , loadByExt
+  , HasLoad(..)
+  , (:|:)(..)
+  -- * Run Salak
+  , RunSalakT
+  -- ** Get Static Properties
   , HasSourcePack(..)
   , fetch
   , require
-  -- * Dynamic Get Properties
-  , ReloadableSourcePack
-  , ReloadableSourcePackT
+  -- ** Dynamic Get Properties
   , ReloadResult(..)
-  , reloadable
-  , reloadAction
-  , fetchD
+  , exec
   , requireD
-  -- * Prop Parser
+  -- ** Parse properties
+  , SourcePack
+  , Priority
+  , Value(..)
   , Prop
   , FromProp(..)
   , FromEnumProp(..)
   , (.?=)
   , (.?:)
-  -- * SourcePack
-  , SourcePack
-  , SourcePackT
-  -- * Load configurations
-  , loadCommandLine
-  , loadEnv
-  , loadMock
-  -- ** Load By Extension
-  , ExtLoad
-  , loadByExt
-  , HasLoad(..)
-  , (:|:)(..)
-  -- * Other
-  , ParseCommandLine
-  , defaultParseCommandLine
-  , Priority
-  , Value(..)
+  -- * Deprecated functions
   , defaultLoadSalak
+  , reloadAction
   ) where
 
 import           Control.Applicative
@@ -82,7 +81,7 @@ data PropConfig = PropConfig
   , searchCurrent :: Bool          -- ^ Search current directory, default true
   , searchHome    :: Bool          -- ^ Search home directory, default false.
   , commandLine   :: ParseCommandLine -- ^ How to parse commandline
-  , loadExt       :: FilePath -> SourcePackT IO ()
+  , loadExt       :: FilePath -> LoadSalakT IO ()
   }
 
 instance Default PropConfig where
@@ -96,19 +95,19 @@ instance Default PropConfig where
 
 -- | Load and run salak `SourcePack` and fetch properties.
 loadAndRunSalak
-  :: Monad m
-  => SourcePackT m ()       -- ^ Load properties monad.
-  -> ReaderT SourcePack m a -- ^ Fetch properties monad.
+  :: MonadIO m
+  => LoadSalakT m ()       -- ^ Load properties monad.
+  -> RunSalakT m a -- ^ Fetch properties monad.
   -> m a
 loadAndRunSalak spm a = do
-  sp <- runSourcePackT spm
+  sp <- runLoadT Nothing spm
   let es = errs sp
   unless (null es) $ fail (head es)
-  runReaderT a sp
+  runT a sp
 
 
 -- | Load file by extension
-type ExtLoad = (String, FilePath -> SourcePackT IO ())
+type ExtLoad = (String, FilePath -> LoadSalakT IO ())
 
 class HasLoad a where
   loaders :: a -> [ExtLoad]
@@ -119,15 +118,12 @@ infixr 3 :|:
 instance (HasLoad a, HasLoad b) => HasLoad (a :|: b) where
   loaders (a :|: b) = loaders a ++ loaders b
 
-loadByExt :: (HasLoad a, MonadIO m) => a -> FilePath -> SourcePackT m ()
+loadByExt :: (HasLoad a, MonadIO m) => a -> FilePath -> LoadSalakT m ()
 loadByExt xs f = mapM_ go (loaders xs)
   where
     go (ext, ly) = tryLoadFile (jump . ly) $ f ++ "." ++ ext
 
-jump :: MonadIO m => StateT SourcePack IO a -> StateT SourcePack m ()
-jump a = get >>= lift . liftIO . execStateT a >>= put
-
--- | Default load salak.
+-- | Default run salak.
 -- All these configuration sources has orders, from highest priority to lowest priority:
 --
 -- > 1. loadCommandLine
@@ -138,7 +134,7 @@ jump a = get >>= lift . liftIO . execStateT a >>= put
 -- > 6. load file from home folder if enabled
 -- > 7. file extension matching, support yaml or toml or any other loader.
 --
-runSalak :: MonadIO m => PropConfig -> ReaderT SourcePack m a -> m a
+runSalak :: MonadIO m => PropConfig -> RunSalakT m a -> m a
 runSalak PropConfig{..} = loadAndRunSalak $ do
   loadCommandLine commandLine
   loadEnv
@@ -152,30 +148,23 @@ runSalak PropConfig{..} = loadAndRunSalak $ do
     ifS _    _   = return Nothing
     loadConf n mf = mf >>= mapM_ (jump . loadExt . (</> n))
 
-{-# DEPRECATED defaultLoadSalak "use runSalak instead" #-}
-defaultLoadSalak :: MonadIO m => PropConfig -> ReaderT SourcePack m a -> m a
+-- | Simplified run salak, should specified code name and file format.
+runSalakWith :: (HasLoad file, MonadIO m) => String -> file -> RunSalakT m a -> m a
+runSalakWith name a = runSalak def { configName = Just name, loadExt = loadByExt a}
+
+{-# DEPRECATED defaultLoadSalak "use `runSalak` instead" #-}
+defaultLoadSalak :: MonadIO m => PropConfig -> RunSalakT m a -> m a
 defaultLoadSalak = runSalak
 
-
-  --   loadC ffa n = (mapM_ . mapM_) g
-  -- cf <- fetch configDirKey
-  -- where
-  --   go ck n = do
-  --     case ck of
-  --       Left  _ -> return ()
-  --       Right d -> defaultLoadByExt $ d </> n
-  --     c <- liftIO getCurrentDirectory
-  --     when searchCurrent $ defaultLoadByExt $ c </> n
-  --     h <- liftIO getHomeDirectory
-  --     when searchHome    $ defaultLoadByExt $ h </> n
-
+-- | Monad that can fetch properties.
 class Monad m => HasSourcePack m where
   askSourcePack :: m SourcePack
 
-instance Monad m => HasSourcePack (ReaderT SourcePack m) where
-  askSourcePack = ask
-instance Monad m => HasSourcePack (StateT SourcePack m) where
-  askSourcePack = get
+instance MonadIO m => HasSourcePack (RunSalakT m) where
+  askSourcePack = askRSP
+
+instance Monad m => HasSourcePack (LoadSalakT m) where
+  askSourcePack = LoadSalakT get
 
 -- | Try fetch properties from `SourcePack`
 fetch
@@ -189,33 +178,14 @@ require
   :: (HasSourcePack m, FromProp a)
   => Text -- ^ Properties key
   -> m a
-require k = do
-  x <- fetch k
-  case x of
-    Left  e -> fail e
-    Right v -> return v
+require k = fetch k >>= either error return
 
 -- | Fetch dynamic properties from `SourcePack`, or throw fail
 requireD
   :: (MonadIO m, FromProp a)
   => Text -- ^ Properties key
-  -> ReloadableSourcePackT m (IO a)
-requireD k = do
-  x <- fetchD k
-  case x of
-    Left  e -> fail e
-    Right v -> return v
-
--- | Try fetch dynamic properties from `SourcePack`
-fetchD
-  :: (MonadIO m, FromProp a)
-  => Text -- ^ Properties key
-  -> ReloadableSourcePackT m (Either String (IO a))
-fetchD = search'
-
--- | Lift to reloadable environment for dynamic properties.
-reloadable :: (MonadIO m, HasSourcePack m) => ReloadableSourcePackT m a -> m a
-reloadable f = askSourcePack >>= runReloadable f
+  -> RunSalakT m (IO a)
+requireD k = search' k >>= either error return
 
 -- | Optional value.
 infixl 5 .?=
@@ -277,18 +247,18 @@ infixl 5 .?:
 -- >     <*> "pwd"
 -- >     <*> "ext" .?= 1
 -- >
--- > main = runSalak def { configName = Just "salak", loadExt = loadByExt $ YAML :|: TOML } $ do
+-- > main = runSalakWith "salak" (YAML :|: TOML) $ do
 -- >   c :: Config <- require "test.config"
 -- >   lift $ print c
 --
 -- GHCi play
 --
 -- > λ> import Salak
--- > λ> import Salak.Load.YAML
--- > λ> import Salak.Load.TOML
+-- > λ> import Salak.YAML
+-- > λ> import Salak.TOML
 -- > λ> :set -XTypeApplications
 -- > λ> instance FromProp Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1
--- > λ> f = runSalak def { configName = Just "salak", loadExt = loadByExt $ YAML :|: TOML }
+-- > λ> f = runSalakWith "salak" (YAML :|: TOML)
 -- > λ> f (require "") >>= print @Config
 -- > Config {name = "daniel", dir = Just "ls", ext = 2}
 --

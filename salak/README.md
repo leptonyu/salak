@@ -75,7 +75,7 @@ instance FromProp Config where
     <*> "pwd"
     <*> "ext" .?= 1
 
-main = runSalak def { configName = Just "salak", loadExt = loadByExt $ YAML :|: TOML } $ do
+main = runSalakWith "salak" (YAML :|: TOML) $ do
   c :: Config <- require "test.config"
   lift $ print c
 ```
@@ -83,12 +83,12 @@ main = runSalak def { configName = Just "salak", loadExt = loadByExt $ YAML :|: 
 GHCi play
 ```Haskell
 λ> import Salak
-λ> import Salak.Load.Yaml
-λ> import Salak.Load.Toml
+λ> import Salak.Yaml
+λ> import Salak.Toml
 λ> import Data.Menshen
 λ> :set -XTypeApplications
 λ> instance FromProp Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1
-λ> f = runSalak def { configName = Just "salak", loadExt = loadByExt $ YAML :|: TOML }
+λ> f = runSalakWith "salak" (YAML :|: TOML)
 λ> f (require "") >>= print @Config
 Config {name = "daniel", dir = Just "ls", ext = 2}
 ```
@@ -96,6 +96,5 @@ Config {name = "daniel", dir = Just "ls", ext = 2}
 
 TODO:
 - Add git pull support.
-- Use libyaml instead of yaml.
 - Add automatic reloading.
 - Add property placeholder support.

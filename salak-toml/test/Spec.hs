@@ -11,7 +11,7 @@ import           Data.List            (intercalate)
 import           Data.Text            (Text, pack)
 import           GHC.Generics
 import           Salak
-import           Salak.Load.Toml
+import           Salak.Toml
 import           Test.Hspec
 import           Test.QuickCheck
 
@@ -19,7 +19,7 @@ main = hspec spec
 
 spec :: Spec
 spec = do
-  describe "Salak.Load.Toml"  tomlProperty
+  describe "Salak.Toml"  tomlProperty
 
 newtype SKey = SKey { unKey :: Text } deriving Show
 

@@ -1,14 +1,13 @@
 {-# LANGUAGE GADTs           #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections   #-}
-module Salak.Load.Toml(
+module Salak.Toml(
     TOML(..)
   , loadToml
   ) where
 
 import           Control.Monad          (foldM, (>=>))
 import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Control.Monad.State
 import           Control.Monad.Writer
 import qualified Data.HashMap.Strict    as HM
 import qualified Data.List.NonEmpty     as N
@@ -57,11 +56,9 @@ h1 _ _        = return
 h2 :: Monad m => Priority -> PrefixMap T.TOML -> Source -> WriterT [String] m Source
 h2 i m s = HM.foldlWithKey' (g2 i) (return s) m
 
-loadToml :: MonadIO m => FilePath -> SourcePackT m ()
-loadToml file = get >>= go >>= put
-  where
-    go sp = do
-      re <- liftIO $ parse <$> IO.readFile file
-      case re of
-        Left  e -> return $ addErr' (show e) sp
-        Right a -> loadFile (defReload file $ loadToml file) sp (loadTOML a)
+loadToml :: MonadIO m => FilePath -> LoadSalakT m ()
+loadToml file = do
+  re <- liftIO $ parse <$> IO.readFile file
+  case re of
+      Left  e -> addErr (show e)
+      Right a -> loadFile (defReload file $ loadToml file) (loadTOML a)
