@@ -59,7 +59,6 @@ module Salak(
   , reloadAction
   ) where
 
-import           Control.Applicative
 import           Control.Monad          (unless)
 import           Control.Monad.IO.Class (MonadIO)
 import           Control.Monad.Reader
@@ -186,16 +185,6 @@ requireD
   => Text -- ^ Properties key
   -> RunSalakT m (IO a)
 requireD k = search' k >>= either error return
-
--- | Optional value.
-infixl 5 .?=
-(.?=) :: Alternative f => f a -> a -> f a
-(.?=) a b = a <|> pure b
-
--- | Default value.
-infixl 5 .?:
-(.?:) :: (Alternative f, Default b) => f a -> (b -> a) -> f a
-(.?:) fa b = fa .?= b def
 
 -- $use
 --

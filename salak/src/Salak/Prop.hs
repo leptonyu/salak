@@ -14,6 +14,7 @@ module Salak.Prop where
 
 import           Control.Applicative
 import           Control.Monad.Reader
+import           Data.Default
 import           Data.Int
 import qualified Data.Map.Strict      as M
 import           Data.Menshen
@@ -58,6 +59,16 @@ instance Monad PResult where
 
 newtype PropT m a = Prop { unProp :: ReaderT SourcePack m a }
   deriving (Functor, Applicative, Monad, MonadTrans, Alternative)
+
+-- | Optional value.
+infixl 5 .?=
+(.?=) :: Alternative f => f a -> a -> f a
+(.?=) a b = a <|> pure b
+
+-- | Default value.
+infixl 5 .?:
+(.?:) :: (Alternative f, Default b) => f a -> (b -> a) -> f a
+(.?:) fa b = fa .?= b def
 
 -- | Monad used to parse properties to destination type.
 type Prop = PropT PResult
