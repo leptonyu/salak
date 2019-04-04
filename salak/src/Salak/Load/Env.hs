@@ -12,7 +12,7 @@ import           System.Environment
 loadEnv :: MonadIO m => LoadSalakT m ()
 loadEnv = do
   args <- liftIO getEnvironment
-  loading (emptyReload "environment") args go
+  loading "environment" args go
   where
     go p (k,v) = return (g2 k, VStr p $ T.pack v)
     g2 = T.toLower . T.pack . map (\c -> if c == '_' then '.' else c)
@@ -33,6 +33,6 @@ defaultParseCommandLine = return . mapMaybe go
 loadCommandLine :: MonadIO m => ParseCommandLine -> LoadSalakT m ()
 loadCommandLine pcl = do
   args <- liftIO $ getArgs >>= pcl
-  loading (emptyReload "commandline") args go
+  loading "commandline" args go
   where
     go i (k,fv) = return (k, fv i)

@@ -15,8 +15,7 @@ import           Salak.Load
 import           Text.Libyaml
 
 loadYaml :: MonadIO m => FilePath -> LoadSalakT m ()
-loadYaml file = loadFile (defReload file $ loadYaml file) $ \i s ->
-      liftIO $ runConduitRes (decodeFileMarked file .| loadYAML i s)
+loadYaml file = loadFile file $ \i s -> liftIO $ runConduitRes (decodeFileMarked file .| loadYAML i s)
 
 data YAML = YAML
 

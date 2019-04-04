@@ -51,15 +51,27 @@ select sp n = sp { source = selectSource n (source sp), prefix = n : prefix sp}
 addErr :: Monad m => String -> LoadSalakT m ()
 addErr e = LoadSalakT $ get >>= (\sp -> return sp {errs = e : errs sp}) >>= put
 
-loadFile
+loadInternal
   :: Monad m
   => Reload
   -> (Priority -> Source -> WriterT [String] m Source)
   -> LoadSalakT m ()
-loadFile name go = LoadSalakT $ do
+loadInternal file go = LoadSalakT $ do
   SourcePack{..} <- get
   (s', e) <- lift $ runWriterT $ go packId source
-  put $ SourcePack prefix (packId+1) s' (MI.insert packId name reEnv) (errs ++ e)
+  put $ SourcePack prefix (packId+1) s' (MI.insert packId file reEnv) (errs ++ e)
+
+loadFile
+  :: MonadIO m
+  => String
+  -> (Priority -> Source -> WriterT [String] IO Source)
+  -> LoadSalakT m ()
+loadFile file go = loadInternal (defReload file $ loadFile file go) (\i -> x . go i)
+  where
+    x a = do
+      (s, w) <- liftIO $ runWriterT a
+      tell w
+      return s
 
 tryLoadFile :: MonadIO m => (FilePath -> LoadSalakT m ()) -> FilePath -> LoadSalakT m ()
 tryLoadFile f file = do
@@ -70,19 +82,19 @@ tryLoadFile f file = do
 
 loading
   :: (Foldable f, Monad m)
-  => Reload
+  => String
   -> f a
   -> (Priority -> a -> m (Text, Value))
   -> LoadSalakT m ()
-loading name fa f = loadFile name (\i s -> foldM (go i) s fa)
+loading name fa f = loadInternal (emptyReload name) $ \i s -> foldM (go i) s fa
   where
     go i s a = do
-      (k,v) <- lift $ f i a
+      (k, v) <- lift $ f i a
       insert k v s
 
 -- | Put key value pairs into `SourcePack`
 loadMock :: Monad m => [(Text, Text)] -> LoadSalakT m ()
-loadMock fs = loading (emptyReload "Mock") fs (\i (k,v) -> return (k, VStr i v))
+loadMock fs = loading "Mock" fs (\i (k,v) -> return (k, VStr i v))
 
 runLoadT :: Monad m => Maybe Priority -> LoadSalakT m a -> m SourcePack
 runLoadT i (LoadSalakT ac) = execStateT ac emptySourcePack { packId = fromMaybe 0 i }

@@ -10,11 +10,8 @@
 -- Please don't use if you are not implemanting a new configuration file.
 --
 module Salak.Load(
-  -- * Reload
-    Reload(..)
-  , defReload
   -- * SourcePack
-  , Source
+    Source
   , SourcePack
   , addErr
   -- * Selector

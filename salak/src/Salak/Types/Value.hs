@@ -55,11 +55,12 @@ insertQ = Q.insert
 
 replaceQ :: Monad m => String -> Priority -> QV -> QV -> WriterT [String] m QV
 replaceQ s i nq q = do
-  let (a,b) = Q.partition ((==i) . getPriority) q
+  let nq'   = Q.filter ((==i) . getPriority) nq
+      (a,b) = Q.partition ((==i) . getPriority) q
       go v  = tell $ (\vi -> "#" <> show i <> " " <> vi) <$> v
-  if a == nq
+  if a == nq'
     then return q
-    else case getQ nq of
+    else case getQ nq' of
       Just v -> do
         go [(if Q.null a then "Add " else "Mod ") ++ s]
         return $ Q.insert v b

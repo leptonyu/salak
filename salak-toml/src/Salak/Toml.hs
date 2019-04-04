@@ -56,8 +56,8 @@ foldArray :: Monad m => [a] -> (a -> Source -> m Source) -> Source -> m Source
 foldArray a g s = foldM (\s' (ix,x) -> updateSource (SNum ix) (g x) s') s $ zip [0..] a
 
 loadToml :: MonadIO m => FilePath -> LoadSalakT m ()
-loadToml file = do
-  re <- liftIO $ parse <$> IO.readFile file
+loadToml file = loadFile file $ \i s -> do
+  re <- liftIO (parse <$> IO.readFile file)
   case re of
-      Left  e -> addErr (show e)
-      Right a -> loadFile (defReload file $ loadToml file) (loadTOML a)
+      Left  e -> tell [show e] >> return s
+      Right a -> loadTOML a i s

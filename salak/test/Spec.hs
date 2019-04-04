@@ -78,7 +78,7 @@ specProperty = do
     it "normal - 3" $ do
       let (s2,e2) = runWriter $ insert "1"     (VStr 0 "world") emptySource
       sizeSource s2       `shouldBe` 1
-      length e2           `shouldBe` 00
+      length e2           `shouldBe` 0
     it "normal - 4" $ do
       let (s3,e3) = runWriter $ insert "a.b"   (VStr 0 "world") emptySource
       print s3
@@ -86,19 +86,34 @@ specProperty = do
       length e3           `shouldBe` 0
   context "source - merge" $ do
     let s  = fst $ runWriter $ insert "hello" (VStr 0 "world") emptySource
+        so = fst $ runWriter $ insert "hello" (VStr 1 "yyyyy") emptySource
         s1 = fst $ runWriter $ insert "hello" (VStr 0 "xxxxx") emptySource
     it "merge - del" $ do
       let (s2,e2) = runWriter $ replace 0 emptySource s
       s2 `shouldBe` emptySource
       e2 `shouldBe` ["#0 Del hello"]
+      let (s3,e3) = runWriter $ replace 1 emptySource s
+      s3 `shouldBe` s
+      e3 `shouldBe` []
     it "merge - mod" $ do
       let (s3,e3) = runWriter $ replace 0 s1 s
       e3 `shouldBe` ["#0 Mod hello"]
       s3 `shouldBe` s1
+      let (s2,e2) = runWriter $ replace 1 s1 s
+      e2 `shouldBe` []
+      s2 `shouldBe` s
+      let (_,e4) = runWriter $ replace 1 so s
+      e4 `shouldBe` ["#1 Add hello"]
     it "merge - add" $ do
       let (s4,e4) = runWriter $ replace 0 s emptySource
       e4 `shouldBe` ["#0 Add hello"]
       s4 `shouldBe` s
+      let (s2,e2) = runWriter $ replace 1 s emptySource
+      s2 `shouldBe` emptySource
+      e2 `shouldBe` []
+      let (s3,e3) = runWriter $ replace 1 so emptySource
+      e3 `shouldBe` ["#1 Add hello"]
+      s3 `shouldBe` so
     it "merge - unchange" $ do
       let (s5,e5) = runWriter $ replace 0 s s
       e5 `shouldBe` []
