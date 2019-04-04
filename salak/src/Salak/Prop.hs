@@ -171,9 +171,9 @@ evalV x (VRef i rs) = do
     then lift $ F x "self reference"
     else lift $ VStr i <$> foldM (go ps { cacheRef = M.insert x True $ cacheRef ps} ) "" rs
   where
-    go _  a (RVal b) = return (a <> b)
+    go _  a (RVal b) = return (T.append a b)
     go ps a (RRef f) = case convert $ runProp ps (selectP f) of
-        Right b -> return (a <> b)
+        Right b -> return (T.append a b)
         Left  e -> F f e
 evalV _ v           = return v
 
