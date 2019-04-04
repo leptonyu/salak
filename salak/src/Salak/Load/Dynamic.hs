@@ -71,7 +71,6 @@ search' k = RunSalakT $ do
         Left  e -> return (as, e:es)
         Right r -> return (putMVar x r:as, es)
 
-{-# DEPRECATED reloadAction "use `exec` instead" #-}
 reloadAction :: Monad m => RunSalakT m (IO ReloadResult)
 reloadAction = RunSalakT $ do
   ReloadableSourcePack{..} <- get

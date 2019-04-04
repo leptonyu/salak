@@ -25,7 +25,7 @@ instance HasLoad YAML where
 loadYAML :: MonadIO m => Priority -> Source -> ConduitM MarkedEvent o m Source
 loadYAML i s = await >>= maybe (return s) go
   where
-    go (MarkedEvent (EventScalar a _ _ _) _ _) = return (insertSource (VStr i $ decodeUtf8 a) s)
+    go (MarkedEvent (EventScalar a _ _ _) _ _) = return (insertSource (newVStr (decodeUtf8 a) i) s)
     go (MarkedEvent EventSequenceStart{}  _ _) = goSeq 0 s
     go (MarkedEvent EventSequenceEnd      _ _) = return emptySource
     go (MarkedEvent EventMappingStart{}  _ ee) = goMap ee s

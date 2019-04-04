@@ -39,21 +39,24 @@ selectors = go . parse exprs . flip T.snoc '\n'
 exprs :: Parser [Selector]
 exprs = concat <$> ( (expr <|> return []) `sepBy` char '.')
 
--- xx
--- xx.xx
--- xx.xx[0]
--- xx.xx[1].xx
-expr :: Parser [Selector]
-expr = do
-  name <- T.pack <$> do
+sName :: Parser Selector
+sName = SStr . T.pack <$> do
     a <- choice [letter, digit]
     b <- many' (choice [letter, digit, char '-',  char '_'])
     return (a:b)
-  ds   <- many' (paren decimal)
-  return $ SStr name : (SNum <$> ds)
+
+sNum :: Parser Selector
+sNum = SNum <$> paren decimal
   where
     paren e = do
       _  <- char '['
       ex <- e
       _  <- char ']'
       return ex
+
+-- xx
+-- xx.xx
+-- xx.xx[0]
+-- xx.xx[1].xx
+expr :: Parser [Selector]
+expr = (:) <$> sName <*> many' sNum

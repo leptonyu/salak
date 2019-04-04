@@ -14,7 +14,7 @@ loadEnv = do
   args <- liftIO getEnvironment
   loading "environment" args go
   where
-    go p (k,v) = return (g2 k, VStr p $ T.pack v)
+    go p (k,v) = return (g2 k, newVStr (T.pack v) p)
     g2 = T.toLower . T.pack . map (\c -> if c == '_' then '.' else c)
 
 -- | Convert arguments to properties
@@ -25,7 +25,7 @@ defaultParseCommandLine :: ParseCommandLine
 defaultParseCommandLine = return . mapMaybe go
   where
     go ('-':'-':as) = case break (=='=') as of
-      (a,'=':b) -> Just (T.pack a, \p -> VStr p $ T.pack b)
+      (a,'=':b) -> Just (T.pack a, newVStr (T.pack b))
       _         -> Nothing
     go _ = Nothing
 
