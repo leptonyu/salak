@@ -14,6 +14,7 @@ module Salak.Load(
     Source
   , SourcePack
   , addErr
+  , newVStr
   -- * Selector
   , Selector(..)
   , simpleSelectors
@@ -32,3 +33,4 @@ module Salak.Load(
 import           Salak.Types
 import           Salak.Types.Selector
 import           Salak.Types.Source
+import           Salak.Types.Value

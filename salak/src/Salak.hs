@@ -54,9 +54,6 @@ module Salak(
   , FromEnumProp(..)
   , (.?=)
   , (.?:)
-  -- * Deprecated functions
-  , defaultLoadSalak
-  , reloadAction
   ) where
 
 import           Control.Monad          (unless)
@@ -150,10 +147,6 @@ runSalak PropConfig{..} = loadAndRunSalak $ do
 -- | Simplified run salak, should specified code name and file format.
 runSalakWith :: (HasLoad file, MonadIO m) => String -> file -> RunSalakT m a -> m a
 runSalakWith name a = runSalak def { configName = Just name, loadExt = loadByExt a}
-
-{-# DEPRECATED defaultLoadSalak "use `runSalak` instead" #-}
-defaultLoadSalak :: MonadIO m => PropConfig -> RunSalakT m a -> m a
-defaultLoadSalak = runSalak
 
 -- | Monad that can fetch properties.
 class Monad m => HasSourcePack m where

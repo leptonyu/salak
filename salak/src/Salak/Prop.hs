@@ -57,7 +57,13 @@ instance Monad PResult where
   (N s  ) >>= _ = N s
   (F s e) >>= _ = F s e
 
-newtype PropT m a = Prop { unProp :: ReaderT SourcePack m a }
+data PropSource = PropSource
+  { originSP :: SourcePack
+  , currSP   :: SourcePack
+  , cacheRef :: M.Map [Selector] Bool
+  }
+
+newtype PropT m a = Prop { unProp :: ReaderT PropSource m a }
   deriving (Functor, Applicative, Monad, MonadTrans, Alternative)
 
 -- | Optional value.
@@ -75,9 +81,17 @@ type Prop = PropT PResult
 
 runProp sp a = runReaderT (unProp a) sp
 
+askSub :: (SourcePack -> SourcePack) -> Prop PropSource
+askSub f = do
+  ps <- Prop ask
+  return ps { currSP = f (currSP ps) }
+
+askOrigin :: Prop SourcePack
+askOrigin = originSP <$> Prop ask
+
 instance MonadReader SourcePack Prop where
-  ask = Prop ask
-  local f (Prop a) = Prop (local f a)
+  ask = currSP <$> Prop ask
+  local f (Prop a) = Prop (local (\sp -> sp { currSP = f (currSP sp) }) a)
 
 instance HasValid Prop where
   invalid = err . toI18n
@@ -127,8 +141,8 @@ instance {-# OVERLAPPABLE #-} (GFromProp a, GFromProp b) => GFromProp (a:+:b) wh
 
 instance FromProp a => FromProp (Maybe a) where
   fromProp = do
-    sp <- ask
-    lift $ case runProp sp (fromProp :: Prop a) of
+    fps <- askSub id
+    lift $ case runProp fps (fromProp :: Prop a) of
       O s a -> O s $ Just a
       N s   -> O s Nothing
       F s e -> F s e
@@ -140,22 +154,35 @@ instance {-# OVERLAPPABLE #-} FromProp a => FromProp [a] where
     return (reverse as)
     where
       go sp' as (ix,s) = do
-        a <- lift $ runProp sp' { prefix = ix : prefix sp', source = s} fromProp
+        so <- askSub $ \_ -> sp' { prefix = ix : prefix sp', source = s}
+        a <- lift $ runProp so fromProp
         return (a:as)
 
 instance {-# OVERLAPPABLE #-} FromEnumProp a => FromProp a where
   fromProp = readPrimitive $ \ss v -> case v of
-    VStr  _ s -> case fromEnumProp $ T.toLower s of
-      Left  e -> F ss e
-      Right r -> O ss r
+    VStr  _ s -> either (F ss) (O ss) $ fromEnumProp $ T.toLower s
     x         -> F ss $ getType x ++ " cannot be enum"
+
+evalV :: [Selector] -> Value -> Prop Value
+evalV x (VRef i rs) = do
+  sp <- askOrigin
+  ps <- askSub (\_ -> sp)
+  if M.member x (cacheRef ps)
+    then lift $ F x "self reference"
+    else lift $ VStr i <$> foldM (go ps { cacheRef = M.insert x True $ cacheRef ps} ) "" rs
+  where
+    go _  a (RVal b) = return (a <> b)
+    go ps a (RRef f) = case convert $ runProp ps (selectP f) of
+        Right b -> return (a <> b)
+        Left  e -> F f e
+evalV _ v           = return v
 
 -- | ReadPrimitive value
 readPrimitive :: ([Selector] -> Value -> PResult a) -> Prop a
 readPrimitive f = do
-  SourcePack{..}<- ask
+  SourcePack{..} <- ask
   case getQ (value source) of
-    Just v -> lift $ f prefix v
+    Just v -> evalV prefix v >>= lift . f prefix
     _      -> lift $ N prefix
 
 class FromEnumProp a where
@@ -171,13 +198,18 @@ err e = do
 readSelect :: FromProp a => Text -> Prop a
 readSelect key = case selectors key of
   Left  e -> err e
-  Right s -> local (\sp -> foldl select sp s) fromProp
+  Right s -> selectP s
+
+selectP :: FromProp a => [Selector] -> Prop a
+selectP s = local (\sp -> foldl select sp s) fromProp
 
 search :: FromProp a => Text -> SourcePack -> Either String a
-search key sp = case runProp sp (readSelect key) of
-  O _ x -> Right x
-  N s   -> Left $ "key " ++ toKey s ++ " not found"
-  F s e -> Left $ "key " ++ toKey s ++ " : " ++ e
+search key sp = convert $ runProp (PropSource sp sp M.empty) (readSelect key)
+
+convert :: PResult a -> Either String a
+convert (O _ x) = Right x
+convert (N s  ) = Left $ "key " ++ toKey s ++ " not found"
+convert (F s e) = Left $ "key " ++ toKey s ++ " : " ++ e
 
 instance FromProp Bool where
   fromProp = readPrimitive go
@@ -189,7 +221,7 @@ instance FromProp Bool where
         "false" -> O s False
         "no"    -> O s False
         _       -> F s "string convert bool failed"
-      go s x           = F s $ getType x ++ " cannot be bool"
+      go s x             = F s $ getType x ++ " cannot be bool"
 
 instance FromProp Text where
   fromProp = readPrimitive go

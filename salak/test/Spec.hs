@@ -17,6 +17,7 @@ import           Salak.Prop
 import           Salak.Types
 import           Salak.Types.Selector
 import           Salak.Types.Source
+import           Salak.Types.Value
 import           Test.Hspec
 import           Test.QuickCheck
 
@@ -68,6 +69,17 @@ specProperty = do
       toKey (reverse $ SStr "x" : (SNum <$> [0..9])) `shouldBe` "x[0][1][2][3][4][5][6][7][8][9]"
     it "QuickCheck" $ do
       quickCheck $ \s -> let s' = unKey s in (toKey . reverse <$> selectors s') `shouldBe` Right (unpack s')
+  context "value" $ do
+    it "basic" $ do
+      newVStr "xxxx"       0 `shouldBe` VStr 0 "xxxx"
+      newVStr "{x.y}"      0 `shouldBe` VStr 0 "{x.y}"
+      newVStr "${x*}"      0 `shouldBe` VStr 0 "${x*}"
+      newVStr "${x}"       0 `shouldBe` VRef 0 [RRef [SStr "x"]]
+      newVStr "${x.y}"     0 `shouldBe` VRef 0 [RRef [SStr "x", SStr "y"]]
+      newVStr "${x${y}}"   0 `shouldBe` VStr 0 "${x${y}}"
+      newVStr "a${x}b"     0 `shouldBe` VRef 0 [RVal "a", RRef [SStr "x"], RVal "b"]
+      newVStr "a${x}b${"   0 `shouldBe` VRef 0 [RVal "a", RRef [SStr "x"], RVal "b${"]
+      newVStr "a${x}b${c}" 0 `shouldBe` VRef 0 [RVal "a", RRef [SStr "x"], RVal "b", RRef [SStr "c"]]
   context "source" $ do
     it "normal" $ do
       sizeSource emptySource `shouldBe` 0
@@ -129,6 +141,25 @@ specProperty = do
       let a = search "" sp :: Either String Conf
       print a
       isRight a `shouldBe` True
+    it "placeholder" $ do
+      let xs = [ ("name", "daniel")
+               , ("user", "${name}")
+               , ("a","${b}")
+               , ("b","${a}")
+               , ("x", "${y}")
+               , ("y", "${z}")
+               , ("z", "Hey! you")
+               ]
+      loadAndRunSalak (loadMock xs) $ do
+        a <- require "name"
+        b <- require "user"
+        x <- require "x"
+        z <- require "z"
+        lift $ do
+          a `shouldBe` (b :: Text)
+          x `shouldBe` (z :: Text)
+      let x = loadAndRunSalak (loadMock xs) (require "a") :: IO Text
+      x `shouldThrow` anyErrorCall
 
 
 

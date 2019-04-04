@@ -94,7 +94,7 @@ loading name fa f = loadInternal (emptyReload name) $ \i s -> foldM (go i) s fa
 
 -- | Put key value pairs into `SourcePack`
 loadMock :: Monad m => [(Text, Text)] -> LoadSalakT m ()
-loadMock fs = loading "Mock" fs (\i (k,v) -> return (k, VStr i v))
+loadMock fs = loading "Mock" fs (\i (k,v) -> return (k, newVStr v i))
 
 runLoadT :: Monad m => Maybe Priority -> LoadSalakT m a -> m SourcePack
 runLoadT i (LoadSalakT ac) = execStateT ac emptySourcePack { packId = fromMaybe 0 i }
