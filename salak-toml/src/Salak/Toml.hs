@@ -1,6 +1,16 @@
 {-# LANGUAGE GADTs           #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections   #-}
+-- |
+-- Module:      Salak.Toml
+-- Copyright:   (c) 2019 Daniel YU
+-- License:     BSD3
+-- Maintainer:  leptonyu@gmail.com
+-- Stability:   experimental
+-- Portability: portable
+--
+-- Toml support for "Salak".
+--
 module Salak.Toml(
     TOML(..)
   , loadToml
@@ -18,6 +28,7 @@ import           Salak.Load
 import           Toml                   hiding (TOML)
 import qualified Toml                   as T
 
+-- | TOML notation for `loadToml`
 data TOML = TOML
 
 instance HasLoad TOML where
@@ -55,6 +66,7 @@ insertAnyValue i (AnyValue (Zoned (ZonedTime a b))) = return . insertSource (VZT
 foldArray :: Monad m => [a] -> (a -> Source -> m Source) -> Source -> m Source
 foldArray a g s = foldM (\s' (ix,x) -> updateSource (SNum ix) (g x) s') s $ zip [0..] a
 
+-- | Load Toml
 loadToml :: MonadIO m => FilePath -> LoadSalakT m ()
 loadToml file = loadFile file $ \i s -> do
   re <- liftIO (parse <$> IO.readFile file)
