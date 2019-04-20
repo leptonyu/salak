@@ -58,6 +58,7 @@ updateSource n f ss = do
 updateSources :: Monad m => [Selector] -> (Source -> m Source) -> Source -> m Source
 updateSources = flip (foldr updateSource)
 
+replace :: Priority -> Source -> Source -> Writer [String] Source
 replace = replace' []
 
 replace' :: [Selector] -> Priority -> Source -> Source -> Writer [String] Source

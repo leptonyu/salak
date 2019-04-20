@@ -21,6 +21,7 @@ import           Salak.Types.Value
 import           Test.Hspec
 import           Test.QuickCheck
 
+main :: IO ()
 main = hspec spec
 
 spec :: Spec
@@ -56,6 +57,7 @@ instance FromProp SubConf where
 
 instance FromProp Conf
 
+specProperty :: SpecWith ()
 specProperty = do
   context "selectors" $ do
     it "normal" $ do

@@ -15,6 +15,7 @@ import           Salak.Toml
 import           Test.Hspec
 import           Test.QuickCheck
 
+main :: IO ()
 main = hspec spec
 
 spec :: Spec
@@ -50,6 +51,7 @@ instance FromProp SubConf where
 
 instance FromProp Conf
 
+tomlProperty :: SpecWith ()
 tomlProperty = do
   context "load toml" $ do
     it "salak.toml" $ do

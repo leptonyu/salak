@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5d439cf4cf5b357760c32a8afb1d2c7c2216cfe7323b11bff1833df2368b8ec0
+-- hash: 0b00b84fa7899d9268e32b1e5caf24c6ac5324ad0dd57fbf54f5ba539ce29721
 
 name:           salak-toml
 version:        0.2.9.1
@@ -32,7 +32,7 @@ library
   build-depends:
       base >=4.10 && <5
     , mtl
-    , salak ==0.2.9
+    , salak ==0.2.9.*
     , text
     , time
     , tomland >=1.0
@@ -54,7 +54,7 @@ test-suite spec
     , base >=4.10 && <5
     , hspec ==2.*
     , mtl
-    , salak ==0.2.9
+    , salak ==0.2.9.*
     , text
     , time
     , tomland >=1.0

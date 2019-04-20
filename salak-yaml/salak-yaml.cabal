@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 042b80b85e47498e7ac325e82069b89511ae2fa869170dab9078cb4e282ebf01
+-- hash: cfb3e279b6408b62bae7ea037e154076a918188488e6fcdc1924375550dd127f
 
 name:           salak-yaml
 version:        0.2.9.1
@@ -34,7 +34,7 @@ library
     , conduit
     , libyaml
     , mtl
-    , salak ==0.2.9
+    , salak ==0.2.9.*
     , text
   default-language: Haskell2010
 
@@ -55,6 +55,6 @@ test-suite spec
     , hspec ==2.*
     , libyaml
     , mtl
-    , salak ==0.2.9
+    , salak ==0.2.9.*
     , text
   default-language: Haskell2010

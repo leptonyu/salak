@@ -41,16 +41,17 @@ toS :: Piece -> Selector
 toS = SStr . unPiece
 
 loadTOML :: Monad m => T.TOML -> Priority -> Source -> WriterT [String] m Source
-loadTOML T.TOML{..} i = foldPairs       i tomlPairs
-                    >=> foldTables      i tomlTables
-                    >=> foldTableArrays i tomlTableArrays
-foldToml go m s = HM.foldlWithKey' (\ms k v -> ms >>= go k v) (return s) m
-foldPairs  i      = foldToml (\k -> updateSources (toSs k) . insertAnyValue i)
-foldTables i      = foldToml (const go)
+loadTOML T.TOML{..} i = foldPairs       tomlPairs
+                    >=> foldTables      tomlTables
+                    >=> foldTableArrays tomlTableArrays
   where
-    go (Leaf   k     toml) = updateSources (toSs k) (loadTOML toml i)
-    go (Branch k v' tomap) = updateSources (toSs k) (maybe return (`loadTOML` i) v' >=> foldTables i tomap)
-foldTableArrays i = foldToml (\k v -> updateSources (toSs k) (foldArray (N.toList v) (`loadTOML` i)))
+    foldToml go m s = HM.foldlWithKey' (\ms k v -> ms >>= go k v) (return s) m
+    foldPairs       = foldToml (\k -> updateSources (toSs k) . insertAnyValue i)
+    foldTables      = foldToml (const go)
+      where
+        go (Leaf   k     toml) = updateSources (toSs k) (loadTOML toml i)
+        go (Branch k v' tomap) = updateSources (toSs k) (maybe return (`loadTOML` i) v' >=> foldTables tomap)
+    foldTableArrays = foldToml (\k v -> updateSources (toSs k) (foldArray (N.toList v) (`loadTOML` i)))
 
 insertAnyValue :: Monad m => Priority -> AnyValue -> Source -> m Source
 insertAnyValue i (AnyValue (Array   b))             = foldArray b (insertAnyValue i . AnyValue)

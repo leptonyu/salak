@@ -52,6 +52,8 @@ module Salak(
   , Prop
   , FromProp(..)
   , FromEnumProp(..)
+  , readPrimitive
+  , PResult(..)
   , (.?=)
   , (.?:)
   ) where

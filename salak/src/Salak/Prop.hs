@@ -8,7 +8,6 @@
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE TypeSynonymInstances       #-}
 {-# LANGUAGE UndecidableInstances       #-}
 module Salak.Prop where
 
@@ -84,6 +83,7 @@ infixl 5 .?:
 -- | Monad used to parse properties to destination type.
 type Prop = PropT PResult
 
+runProp :: PropSource -> PropT m a -> m a
 runProp sp a = runReaderT (unProp a) sp
 
 askSub :: (SourcePack -> SourcePack) -> Prop PropSource
@@ -118,6 +118,7 @@ instance {-# OVERLAPPABLE #-} (Constructor c, GFromProp a) => GFromProp (M1 C c 
       | otherwise     = fmap M1 $ gEnum $ T.pack (conName m)
       where m = undefined :: t c a x
 
+gEnum :: GFromProp f => Text -> PropT PResult (f a)
 gEnum va = do
   o <- gFromProp
   readPrimitive $ \ss v -> case v of
@@ -159,7 +160,7 @@ instance {-# OVERLAPPABLE #-} FromProp a => FromProp [a] where
     return (reverse as)
     where
       go sp' as (ix,s) = do
-        so <- askSub $ \_ -> sp' { prefix = ix : prefix sp', source = s}
+        so <- askSub $ const sp' { prefix = ix : prefix sp', source = s}
         a <- lift $ runProp so fromProp
         return (a:as)
 
@@ -171,7 +172,7 @@ instance {-# OVERLAPPABLE #-} FromEnumProp a => FromProp a where
 evalV :: [Selector] -> Value -> Prop Value
 evalV x (VRef i rs) = do
   sp <- askOrigin
-  ps <- askSub (\_ -> sp)
+  ps <- askSub (const sp)
   if M.member x (cacheRef ps)
     then lift $ F x "self reference"
     else lift $ VStr i <$> foldM (go ps { cacheRef = M.insert x True $ cacheRef ps} ) "" rs

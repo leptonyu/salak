@@ -15,6 +15,7 @@ import           Salak.Yaml
 import           Test.Hspec
 import           Test.QuickCheck
 
+main :: IO ()
 main = hspec spec
 
 spec :: Spec
@@ -50,6 +51,7 @@ instance FromProp SubConf where
 
 instance FromProp Conf
 
+jsonProperty :: SpecWith ()
 jsonProperty = do
   context "load json" $ do
     it "salak.yml" $ do

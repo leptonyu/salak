@@ -2,7 +2,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE TypeSynonymInstances       #-}
 module Salak.Types where
 
 import           Control.Monad.State
@@ -29,6 +28,7 @@ defReload s spt = Reload (T.pack s) (\i -> go <$> runLoadT (Just i) spt)
   where
     go SourcePack{..} = (errs, source)
 
+emptyReload :: String -> Reload
 emptyReload s = defReload s (return ())
 
 -- | Source package, used to store all properties.
@@ -40,6 +40,7 @@ data SourcePack = SourcePack
   , errs   :: [String]
   } deriving Show
 
+emptySourcePack :: SourcePack
 emptySourcePack = SourcePack [] 0 emptySource mempty []
 
 mapSource :: (Source -> Source) -> SourcePack -> SourcePack
