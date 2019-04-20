@@ -1,6 +1,6 @@
 _common: !include "../default.yaml"
 name:                salak-toml
-version:             0.2.9
+version:             0.2.9.1
 synopsis:            Configuration Loader for toml
 <<: *legal
 extra-source-files:

@@ -14,23 +14,28 @@ module Salak.Prop where
 
 import           Control.Applicative
 import           Control.Monad.Reader
+import qualified Data.ByteString         as B
+import qualified Data.ByteString.Lazy    as BL
 import           Data.Default
 import           Data.Int
-import qualified Data.Map.Strict      as M
+import qualified Data.Map.Strict         as M
 import           Data.Menshen
 import           Data.Scientific
-import           Data.Text            (Text)
-import qualified Data.Text            as T
-import qualified Data.Text.Lazy       as TL
+import           Data.Text               (Text)
+import qualified Data.Text               as T
+import qualified Data.Text.Encoding      as TB
+import qualified Data.Text.Lazy          as TL
+import qualified Data.Text.Lazy.Encoding as TBL
+import           Data.Time.Clock
 import           Data.Word
 import           GHC.Exts
-import           GHC.Generics         hiding (Selector)
-import qualified GHC.Generics         as G
+import           GHC.Generics            hiding (Selector)
+import qualified GHC.Generics            as G
 import           Salak.Types
 import           Salak.Types.Selector
 import           Salak.Types.Source
 import           Salak.Types.Value
-import           Text.Read            (readMaybe)
+import           Text.Read               (readMaybe)
 
 data PResult a
   = O [Selector] a      -- ^ Succeed value
@@ -232,6 +237,12 @@ instance FromProp Text where
 instance FromProp TL.Text where
   fromProp = TL.fromStrict <$> fromProp
 
+instance FromProp B.ByteString where
+  fromProp = TB.encodeUtf8 <$> fromProp
+
+instance FromProp BL.ByteString where
+  fromProp = TBL.encodeUtf8 <$> fromProp
+
 instance FromProp String where
   fromProp = T.unpack <$> fromProp
 
@@ -249,6 +260,9 @@ instance FromProp Float where
 
 instance FromProp Double where
   fromProp = toRealFloat <$> fromProp
+
+instance FromProp Integer where
+  fromProp = toInteger <$> (fromProp :: Prop Int)
 
 instance FromProp Int where
   fromProp = fromProp >>= toNum
@@ -279,6 +293,9 @@ instance FromProp Word32 where
 
 instance FromProp Word64 where
   fromProp = fromProp >>= toNum
+
+instance FromProp NominalDiffTime where
+  fromProp = fromInteger <$> fromProp
 
 toNum :: (Integral i, Bounded i) => Scientific -> Prop i
 toNum s = case toBoundedInteger s of

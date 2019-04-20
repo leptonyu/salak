@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 59150f522b592ec9aec7b98e92ec0c327d22a9d9578367dd19252e62191c233d
+-- hash: 53f5fa9fa6accfd44eab07bde9bce3c7943f77928066db324f6eca26398c22da
 
 name:           salak
-version:        0.2.9
+version:        0.2.10
 synopsis:       Configuration Loader
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme
@@ -38,6 +38,7 @@ library
   build-depends:
       attoparsec
     , base >=4.10 && <5
+    , bytestring
     , containers
     , data-default
     , directory
@@ -72,6 +73,7 @@ test-suite spec
       QuickCheck <2.14
     , attoparsec
     , base >=4.10 && <5
+    , bytestring
     , containers
     , data-default
     , directory
