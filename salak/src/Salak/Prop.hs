@@ -12,6 +12,7 @@
 module Salak.Prop where
 
 import           Control.Applicative
+import           Control.Monad.Identity
 import           Control.Monad.Reader
 import qualified Data.ByteString         as B
 import qualified Data.ByteString.Lazy    as BL
@@ -20,13 +21,15 @@ import           Data.Int
 import qualified Data.Map.Strict         as M
 import           Data.Menshen
 import           Data.Scientific
+import           Data.Semigroup
 import           Data.Text               (Text)
 import qualified Data.Text               as T
 import qualified Data.Text.Encoding      as TB
 import qualified Data.Text.Lazy          as TL
 import qualified Data.Text.Lazy.Encoding as TBL
-import           Data.Time.Clock
+import           Data.Time
 import           Data.Word
+import           Foreign.C
 import           GHC.Exts
 import           GHC.Generics            hiding (Selector)
 import qualified GHC.Generics            as G
@@ -153,6 +156,41 @@ instance FromProp a => FromProp (Maybe a) where
       N s   -> O s Nothing
       F s e -> F s e
 
+instance FromProp a => FromProp (Either String a) where
+  fromProp = do
+    fps <- askSub id
+    lift $ case runProp fps (fromProp :: Prop a) of
+      O s a -> O s $ Right a
+      N s   -> O s $ Left "null"
+      F s e -> O s $ Left e
+
+instance FromProp a => FromProp (Identity a) where
+  fromProp = Identity <$> fromProp
+
+instance (FromProp a, FromProp b) => FromProp (a,b) where
+  fromProp = (,) <$> fromProp <*> fromProp
+
+instance (FromProp a, FromProp b, FromProp c) => FromProp (a,b,c) where
+  fromProp = (,,) <$> fromProp <*> fromProp <*> fromProp
+
+instance (FromProp a, FromProp b, FromProp c, FromProp d) => FromProp (a,b,c,d) where
+  fromProp = (,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp
+
+instance (FromProp a, FromProp b, FromProp c, FromProp d, FromProp e) => FromProp (a,b,c,d,e) where
+  fromProp = (,,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp
+
+instance (FromProp a, FromProp b, FromProp c, FromProp d, FromProp e, FromProp f) => FromProp (a,b,c,d,e,f) where
+  fromProp = (,,,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp
+
+instance (FromProp a, FromProp b, FromProp c, FromProp d, FromProp e, FromProp f, FromProp g) => FromProp (a,b,c,d,e,f,g) where
+  fromProp = (,,,,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp
+
+instance (FromProp a, FromProp b, FromProp c, FromProp d, FromProp e, FromProp f, FromProp g, FromProp h) => FromProp (a,b,c,d,e,f,g,h) where
+  fromProp = (,,,,,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp
+
+instance (FromProp a, FromProp b, FromProp c, FromProp d, FromProp e, FromProp f, FromProp g, FromProp h, FromProp i) => FromProp (a,b,c,d,e,f,g,h,i) where
+  fromProp = (,,,,,,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp
+
 instance {-# OVERLAPPABLE #-} FromProp a => FromProp [a] where
   fromProp = do
     sp@SourcePack{..} <- ask
@@ -163,6 +201,30 @@ instance {-# OVERLAPPABLE #-} FromProp a => FromProp [a] where
         so <- askSub $ const sp' { prefix = ix : prefix sp', source = s}
         a <- lift $ runProp so fromProp
         return (a:as)
+
+instance FromProp a => FromProp (Min a) where
+  fromProp = Min <$> fromProp
+
+instance FromProp a => FromProp (Max a) where
+  fromProp = Max <$> fromProp
+
+instance FromProp a => FromProp (First a) where
+  fromProp = First <$> fromProp
+
+instance FromProp a => FromProp (Last a) where
+  fromProp = Last <$> fromProp
+
+instance FromProp a => FromProp (Dual a) where
+  fromProp = Dual <$> fromProp
+
+instance FromProp a => FromProp (Sum a) where
+  fromProp = Sum <$> fromProp
+
+instance FromProp a => FromProp (Product a) where
+  fromProp = Product <$> fromProp
+
+instance FromProp a => FromProp (Option a) where
+  fromProp = Option <$> fromProp
 
 instance {-# OVERLAPPABLE #-} FromEnumProp a => FromProp a where
   fromProp = readPrimitive $ \ss v -> case v of
@@ -298,7 +360,83 @@ instance FromProp Word64 where
 instance FromProp NominalDiffTime where
   fromProp = fromInteger <$> fromProp
 
+instance FromProp DiffTime where
+  fromProp = timeOfDayToTime <$> fromProp
+
 toNum :: (Integral i, Bounded i) => Scientific -> Prop i
 toNum s = case toBoundedInteger s of
   Just v -> return v
   _      -> err "scientific number doesn't fit in the target representation"
+
+instance FromProp UTCTime where
+  fromProp = readPrimitive go
+    where
+      go s (VZTime _ a b) = O s (zonedTimeToUTC $ ZonedTime b a)
+      go s x              = F s $ getType x ++ " cannot be UTCTime"
+
+instance FromProp ZonedTime where
+  fromProp = readPrimitive go
+    where
+      go s (VZTime _ a b) = O s (ZonedTime b a)
+      go s x              = F s $ getType x ++ " cannot be ZonedTime"
+
+instance FromProp LocalTime where
+  fromProp = readPrimitive go
+    where
+      go s (VLTime _   b) = O s b
+      go s (VZTime _ _ b) = O s b
+      go s x              = F s $ getType x ++ " cannot be LocalTime"
+
+instance FromProp Day where
+  fromProp = readPrimitive go
+    where
+      go s (VDay   _ b) = O s b
+      go s (VLTime _ b) = O s (localDay b)
+      go s x            = F s $ getType x ++ " cannot be Day"
+
+instance FromProp TimeOfDay where
+  fromProp = readPrimitive readTimeOfDay
+
+readTimeOfDay s (VHour  _ b) = O s b
+readTimeOfDay s (VLTime _ b) = O s (localTimeOfDay b)
+readTimeOfDay s x            = F s $ getType x ++ " cannot be TimeOfDay"
+
+instance FromProp CBool where
+  fromProp = do
+    b <- fromProp
+    return $ if b then 1 else 0
+
+instance FromProp CShort where
+  fromProp = CShort <$> fromProp
+
+instance FromProp CUShort where
+  fromProp = CUShort <$> fromProp
+
+instance FromProp CInt where
+  fromProp = CInt <$> fromProp
+
+instance FromProp CUInt where
+  fromProp = CUInt <$> fromProp
+
+instance FromProp CLong where
+  fromProp = CLong <$> fromProp
+
+instance FromProp CULong where
+  fromProp = CULong <$> fromProp
+
+instance FromProp CLLong where
+  fromProp = CLLong <$> fromProp
+
+instance FromProp CULLong where
+  fromProp = CULLong <$> fromProp
+
+instance FromProp CFloat where
+  fromProp = CFloat <$> fromProp
+
+instance FromProp CDouble where
+  fromProp = CDouble <$> fromProp
+
+
+
+
+
