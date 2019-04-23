@@ -397,6 +397,7 @@ instance FromProp Day where
 instance FromProp TimeOfDay where
   fromProp = readPrimitive readTimeOfDay
 
+readTimeOfDay :: [Selector] -> Value -> PResult TimeOfDay
 readTimeOfDay s (VHour  _ b) = O s b
 readTimeOfDay s (VLTime _ b) = O s (localTimeOfDay b)
 readTimeOfDay s x            = F s $ getType x ++ " cannot be TimeOfDay"
