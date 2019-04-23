@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f46cd81c1fc358e73dd44c74a44729ea0dfa4f28f9a1b4be323b7b5079ef4505
+-- hash: d052979f655b29d5f3316ff4cb22fb76f8f447983ce59b3b1650b4f43d12ebb7
 
 name:           salak
-version:        0.2.9.2
+version:        0.2.9.3
 synopsis:       Configuration Loader
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme

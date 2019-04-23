@@ -25,6 +25,8 @@ module Salak(
   , PropConfig(..)
   -- * Load Salak
   , LoadSalakT
+  , loadSalak
+  , loadSalakFile
   , loadCommandLine
   , ParseCommandLine
   , defaultParseCommandLine
@@ -132,8 +134,8 @@ loadByExt xs f = mapM_ go (loaders xs)
 -- > 6. load file from home folder if enabled
 -- > 7. file extension matching, support yaml or toml or any other loader.
 --
-runSalak :: MonadIO m => PropConfig -> RunSalakT m a -> m a
-runSalak PropConfig{..} = loadAndRunSalak $ do
+loadSalak :: MonadIO m => PropConfig -> LoadSalakT m ()
+loadSalak PropConfig{..} = do
   loadCommandLine commandLine
   loadEnv
   forM_ configName $ forM_
@@ -146,9 +148,37 @@ runSalak PropConfig{..} = loadAndRunSalak $ do
     ifS _    _   = return Nothing
     loadConf n mf = mf >>= mapM_ (jump . loadExt . (</> n))
 
+-- | Default run salak.
+-- All these configuration sources has orders, from highest priority to lowest priority:
+--
+-- > 1. loadCommandLine
+-- > 2. loadEnvironment
+-- > 3. loadConfFiles
+-- > 4. load file from folder `salak.conf.dir` if defined
+-- > 5. load file from current folder if enabled
+-- > 6. load file from home folder if enabled
+-- > 7. file extension matching, support yaml or toml or any other loader.
+--
+loadSalakFile :: (HasLoad file, MonadIO m) => String -> file -> LoadSalakT m ()
+loadSalakFile name a = loadSalak def { configName = Just name, loadExt = loadByExt a}
+
+-- | Default run salak.
+-- All these configuration sources has orders, from highest priority to lowest priority:
+--
+-- > 1. loadCommandLine
+-- > 2. loadEnvironment
+-- > 3. loadConfFiles
+-- > 4. load file from folder `salak.conf.dir` if defined
+-- > 5. load file from current folder if enabled
+-- > 6. load file from home folder if enabled
+-- > 7. file extension matching, support yaml or toml or any other loader.
+--
+runSalak :: MonadIO m => PropConfig -> RunSalakT m a -> m a
+runSalak = loadAndRunSalak . loadSalak
+
 -- | Simplified run salak, should specified code name and file format.
 runSalakWith :: (HasLoad file, MonadIO m) => String -> file -> RunSalakT m a -> m a
-runSalakWith name a = runSalak def { configName = Just name, loadExt = loadByExt a}
+runSalakWith name a = loadAndRunSalak (loadSalakFile name a)
 
 -- | Monad that can fetch properties.
 class Monad m => HasSourcePack m where
