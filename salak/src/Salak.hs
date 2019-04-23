@@ -64,7 +64,7 @@ import           Control.Monad.IO.Class (MonadIO)
 import           Control.Monad.Reader
 import           Control.Monad.State
 import           Data.Default
-import           Data.Text              (Text)
+import           Data.Text              (Text, cons)
 import           Salak.Load.Dynamic
 import           Salak.Load.Env
 import           Salak.Prop
@@ -189,7 +189,7 @@ requireD
   :: (MonadIO m, FromProp a)
   => Text -- ^ Properties key
   -> RunSalakT m (IO a)
-requireD k = logSP ("@" <> k) >> search' k >>= either error return
+requireD k = logSP ('@' `cons` k) >> search' k >>= either error return
 
 -- $use
 --
