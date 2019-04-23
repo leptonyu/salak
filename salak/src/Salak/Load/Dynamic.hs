@@ -1,10 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TupleSections              #-}
 module Salak.Load.Dynamic where
 
 import           Control.Concurrent.MVar
 import           Control.Monad.IO.Class  (MonadIO, liftIO)
+import           Control.Monad.IO.Unlift
 import           Control.Monad.State
 import           Control.Monad.Writer
 import qualified Data.IntMap.Strict      as MI
@@ -41,16 +43,9 @@ reloadableSourcePack sp = do
         (ac, msErr) <- f sp''
         runWith msErr $ swapMVar v sp'' >> sequence_ ac >> return (ReloadResult False modLog)
     go b i (Reload _ True f) = ((i,) <$> f i) : b
-    go b _ (Reload _ _ _)    = b
+    go b _  _                = b
     g2 :: SourcePack -> (Int, ([String], Source)) -> SourcePack
     g2 p (i, (_, s)) = let (s', e) = runWriter $ replace i s (source p) in p { source = s', errs = errs p <> e}
-
--- | Read query logs for 'RunSalakT'
-readLogs :: Monad m => RunSalakT m [Text]
-readLogs = RunSalakT $ do
-  rsp <- get
-  put rsp { logs = [] }
-  return (reverse $ logs rsp)
 
 -- | RunSalak Monad Transfer
 newtype RunSalakT m a = RunSalakT { unRun :: StateT ReloadableSourcePack m a }
@@ -58,6 +53,19 @@ newtype RunSalakT m a = RunSalakT { unRun :: StateT ReloadableSourcePack m a }
 
 instance MonadIO m => MonadIO (RunSalakT m) where
   liftIO = lift . liftIO
+
+instance MonadUnliftIO m => MonadUnliftIO (RunSalakT m) where
+  askUnliftIO = RunSalakT $ do
+    rsp <- get
+    f   <- lift askUnliftIO
+    return $ UnliftIO $ unliftIO f . (`evalStateT` rsp) . unRun
+
+liftNT :: Monad n => (forall x. m x -> n x) -> RunSalakT m a -> RunSalakT n a
+liftNT f (RunSalakT ma) = RunSalakT $ do
+  rsp    <- get
+  (a, s) <- lift $ f (runStateT ma rsp)
+  put s
+  return a
 
 askRSP :: MonadIO m => RunSalakT m SourcePack
 askRSP = RunSalakT $ do

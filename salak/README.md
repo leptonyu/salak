@@ -96,4 +96,3 @@ Config {name = "daniel", dir = Just "ls", ext = 2}
 TODO:
 - Add git pull support.
 - Add automatic reloading.
-- Add FromProp instance of Time. 

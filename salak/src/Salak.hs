@@ -37,7 +37,7 @@ module Salak(
   , (:|:)(..)
   -- * Run Salak
   , RunSalakT
-  , readLogs
+  , liftNT
   -- ** Get Static Properties
   , HasSourcePack(..)
   , fetch
@@ -104,7 +104,6 @@ loadAndRunSalak spm a = do
   unless (null es) $ fail (head es)
   runT a sp
 
-
 -- | Load file by extension
 type ExtLoad = (String, FilePath -> LoadSalakT IO ())
 
@@ -156,10 +155,17 @@ class Monad m => HasSourcePack m where
   askSourcePack :: m SourcePack
   logSP :: Text -> m ()
   logSP _ = return ()
+  readLogs :: m [Text]
+  readLogs = return []
 
 instance MonadIO m => HasSourcePack (RunSalakT m) where
   askSourcePack = askRSP
   logSP key = RunSalakT $ modify $ \rsp -> rsp { logs = key : logs rsp}
+  readLogs = RunSalakT $ do
+    rsp <- get
+    let ls = logs rsp
+    put rsp { logs = [] }
+    return (reverse ls)
 
 instance Monad m => HasSourcePack (LoadSalakT m) where
   askSourcePack = LoadSalakT get
@@ -183,7 +189,7 @@ requireD
   :: (MonadIO m, FromProp a)
   => Text -- ^ Properties key
   -> RunSalakT m (IO a)
-requireD k = logSP k >> search' k >>= either error return
+requireD k = logSP ("@" <> k) >> search' k >>= either error return
 
 -- $use
 --

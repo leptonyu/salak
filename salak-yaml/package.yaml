@@ -10,7 +10,6 @@ extra-source-files:
 dependencies:
   - base >= 4.10 && < 5
   - salak == 0.2.9.*
-  - mtl
   - libyaml
   - conduit
   - text

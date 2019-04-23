@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 261fbcf8b6f4371dfe9c77380f6ce9ac43c921a7278beb1c1d17d0c352724c6e
+-- hash: f46cd81c1fc358e73dd44c74a44729ea0dfa4f28f9a1b4be323b7b5079ef4505
 
 name:           salak
 version:        0.2.9.2
@@ -49,6 +49,7 @@ library
     , scientific
     , text
     , time
+    , unliftio-core
   default-language: Haskell2010
 
 test-suite spec
@@ -85,4 +86,5 @@ test-suite spec
     , scientific
     , text
     , time
+    , unliftio-core
   default-language: Haskell2010
