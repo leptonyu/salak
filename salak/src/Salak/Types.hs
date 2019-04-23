@@ -17,19 +17,20 @@ import           System.Directory
 
 data Reload = Reload
   { sourceName :: Text
+  , canReload  :: Bool
   , reload     :: Priority -> IO ([String], Source)
   }
 
 instance Show Reload where
-  show (Reload s _) = T.unpack s
+  show (Reload s _ _) = T.unpack s
 
-defReload :: String -> LoadSalakT IO () -> Reload
-defReload s spt = Reload (T.pack s) (\i -> go <$> runLoadT (Just i) spt)
+defReload :: Bool -> String -> LoadSalakT IO () -> Reload
+defReload cr s spt = Reload (T.pack s) cr (\i -> go <$> runLoadT (Just i) spt)
   where
     go SourcePack{..} = (errs, source)
 
 emptyReload :: String -> Reload
-emptyReload s = defReload s (return ())
+emptyReload s = defReload False s (return ())
 
 -- | Source package, used to store all properties.
 data SourcePack = SourcePack
@@ -67,7 +68,7 @@ loadFile
   => String
   -> (Priority -> Source -> WriterT [String] IO Source)
   -> LoadSalakT m ()
-loadFile file go = loadInternal (defReload file $ loadFile file go) (\i -> x . go i)
+loadFile file go = loadInternal (defReload True file $ loadFile file go) (\i -> x . go i)
   where
     x a = do
       (s, w) <- liftIO $ runWriterT a

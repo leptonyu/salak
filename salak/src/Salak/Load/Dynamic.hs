@@ -21,13 +21,14 @@ data ReloadResult = ReloadResult
 -- | Reloadable SourcePack
 data ReloadableSourcePack = ReloadableSourcePack
   { sourcePack :: MVar SourcePack
+  , logs       :: [Text]
   , reloadAll  :: (SourcePack -> IO ([IO ()], [String])) -> IO ReloadResult
   }
 
 reloadableSourcePack :: MonadIO m => SourcePack -> m ReloadableSourcePack
 reloadableSourcePack sp = do
   msp <- liftIO $ newMVar sp
-  return $ ReloadableSourcePack msp (reloadAll' msp)
+  return $ ReloadableSourcePack msp [] (reloadAll' msp)
   where
     reloadAll' v f = do
       sp' <- readMVar v
@@ -38,10 +39,18 @@ reloadableSourcePack sp = do
         let sp''    = foldl g2 sp' {errs = []} as
             modLog  = errs sp''
         (ac, msErr) <- f sp''
-        runWith msErr $ putMVar v sp'' >>  sequence_ ac >> return (ReloadResult False modLog)
-    go b i (Reload _ f) = ((i,) <$> f i) : b
+        runWith msErr $ swapMVar v sp'' >> sequence_ ac >> return (ReloadResult False modLog)
+    go b i (Reload _ True f) = ((i,) <$> f i) : b
+    go b _ (Reload _ _ _)    = b
     g2 :: SourcePack -> (Int, ([String], Source)) -> SourcePack
     g2 p (i, (_, s)) = let (s', e) = runWriter $ replace i s (source p) in p { source = s', errs = errs p <> e}
+
+-- | Read query logs for 'RunSalakT'
+readLogs :: Monad m => RunSalakT m [Text]
+readLogs = RunSalakT $ do
+  rsp <- get
+  put rsp { logs = [] }
+  return (reverse $ logs rsp)
 
 -- | RunSalak Monad Transfer
 newtype RunSalakT m a = RunSalakT { unRun :: StateT ReloadableSourcePack m a }
@@ -69,7 +78,7 @@ search' k = RunSalakT $ do
       (as,es) <- f sp
       case search k sp of
         Left  e -> return (as, e:es)
-        Right r -> return (putMVar x r:as, es)
+        Right r -> return (void (swapMVar x r):as, es)
 
 reloadAction :: Monad m => RunSalakT m (IO ReloadResult)
 reloadAction = RunSalakT $ do

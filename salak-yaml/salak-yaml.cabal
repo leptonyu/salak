@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cfb3e279b6408b62bae7ea037e154076a918188488e6fcdc1924375550dd127f
+-- hash: 0dec009e9addda7be84a0b191c79d7a770ad731039ca402a8f2abd548143a7d2
 
 name:           salak-yaml
-version:        0.2.9.1
+version:        0.2.9.2
 synopsis:       Configuration Loader for yaml
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme

@@ -1,6 +1,6 @@
 _common: !include "../default.yaml"
 name:                salak-yaml
-version:             0.2.9.1
+version:             0.2.9.2
 synopsis:            Configuration Loader for yaml
 <<: *legal
 extra-source-files:

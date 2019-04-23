@@ -37,6 +37,7 @@ module Salak(
   , (:|:)(..)
   -- * Run Salak
   , RunSalakT
+  , readLogs
   -- ** Get Static Properties
   , HasSourcePack(..)
   , fetch
@@ -153,9 +154,12 @@ runSalakWith name a = runSalak def { configName = Just name, loadExt = loadByExt
 -- | Monad that can fetch properties.
 class Monad m => HasSourcePack m where
   askSourcePack :: m SourcePack
+  logSP :: Text -> m ()
+  logSP _ = return ()
 
 instance MonadIO m => HasSourcePack (RunSalakT m) where
   askSourcePack = askRSP
+  logSP key = RunSalakT $ modify $ \rsp -> rsp { logs = key : logs rsp}
 
 instance Monad m => HasSourcePack (LoadSalakT m) where
   askSourcePack = LoadSalakT get
@@ -165,7 +169,7 @@ fetch
   :: (HasSourcePack m, FromProp a)
   => Text -- ^ Properties key
   -> m (Either String a)
-fetch key = search key <$> askSourcePack
+fetch key = logSP key >> search key <$> askSourcePack
 
 -- | Fetch properties from `SourcePack`, or throw fail
 require
@@ -179,7 +183,7 @@ requireD
   :: (MonadIO m, FromProp a)
   => Text -- ^ Properties key
   -> RunSalakT m (IO a)
-requireD k = search' k >>= either error return
+requireD k = logSP k >> search' k >>= either error return
 
 -- $use
 --
