@@ -29,3 +29,4 @@ tests:
       - hspec == 2.*
       - QuickCheck < 2.14
       - text
+      - mtl
