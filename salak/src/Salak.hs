@@ -32,6 +32,7 @@ module Salak(
   , defaultParseCommandLine
   , loadEnv
   , loadMock
+  , loadOnceMock
   -- ** Load Extensions
   , ExtLoad
   , loadByExt

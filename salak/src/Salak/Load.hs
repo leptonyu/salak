@@ -26,11 +26,12 @@ module Salak.Load(
   , updateSource
   -- * Load
   , tryLoadFile
-  , loadFile
-  , loading
+  , load
+  , loadOnce
   ) where
 
 import           Salak.Types
 import           Salak.Types.Selector
 import           Salak.Types.Source
 import           Salak.Types.Value
+

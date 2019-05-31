@@ -2,7 +2,23 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RecordWildCards            #-}
-module Salak.Types where
+{-# LANGUAGE TupleSections              #-}
+module Salak.Types(
+    SourcePack(..)
+  , emptySourcePack
+  , mapSource
+  , select
+  , addErr
+  , tryLoadFile
+  , load
+  , loadOnce
+  , loadMock
+  , loadOnceMock
+  , runLoadT
+  , LoadSalakT(..)
+  , jump
+  , runReload
+  ) where
 
 import           Control.Monad.State
 import           Control.Monad.Writer
@@ -18,8 +34,11 @@ import           System.Directory
 data Reload = Reload
   { sourceName :: Text
   , canReload  :: Bool
-  , reload     :: Priority -> IO ([String], Source)
+  , reloadS    :: Priority -> IO ([String], Source)
   }
+
+runReload :: [IO (Priority, ([String], Source))] -> Priority -> Reload -> [IO (Priority, ([String], Source))]
+runReload b i Reload{..} = if canReload then ((i,) <$> reloadS i) : b else b
 
 instance Show Reload where
   show (Reload s _ _) = T.unpack s
@@ -63,12 +82,13 @@ loadInternal file go = LoadSalakT $ do
   (s', e) <- lift $ runWriterT $ go packId source
   put $ SourcePack prefix (packId+1) s' (MI.insert packId file reEnv) (errs ++ e)
 
-loadFile
+-- ^ Load properties, supports reload when triggered.
+load
   :: MonadIO m
-  => String
-  -> (Priority -> Source -> WriterT [String] IO Source)
+  => String -- ^ Loading name
+  -> (Priority -> Source -> WriterT [String] IO Source) -- ^ Convert properties
   -> LoadSalakT m ()
-loadFile file go = loadInternal (defReload True file $ loadFile file go) (\i -> x . go i)
+load file go = loadInternal (defReload True file $ load file go) (\i -> x . go i)
   where
     x a = do
       (s, w) <- liftIO $ runWriterT a
@@ -82,21 +102,30 @@ tryLoadFile f file = do
     liftIO $ putStrLn $ "Load " <> file
     f file
 
-loading
+-- | Load properties only once
+loadOnce
   :: (Foldable f, Monad m)
-  => String
-  -> f a
-  -> (Priority -> a -> m (Text, Value))
+  => String -- ^ Loading name
+  -> f a -- ^ Properties
+  -> (Priority -> a -> m (Text, Value)) -- ^ Convert properties to Value
   -> LoadSalakT m ()
-loading name fa f = loadInternal (emptyReload name) $ \i s -> foldM (go i) s fa
+loadOnce name fa f = loadInternal (emptyReload name) $ \i s -> foldM (go i) s fa
   where
     go i s a = do
       (k, v) <- lift $ f i a
       insert k v s
 
 -- | Put key value pairs into `SourcePack`
-loadMock :: Monad m => [(Text, Text)] -> LoadSalakT m ()
-loadMock fs = loading "Mock" fs (\i (k,v) -> return (k, newVStr v i))
+loadOnceMock :: Monad m => [(Text, Text)] -> LoadSalakT m ()
+loadOnceMock fs = loadOnce "Mock" fs (\i (k,v) -> return (k, newVStr v i))
+
+loadMock :: MonadIO m => [(Text, IO Text)] -> LoadSalakT m ()
+loadMock fs = load "Mock" $ \i s -> foldM (go i) s fs
+  where
+    go :: Priority -> Source -> (Text, IO Text) -> WriterT [String] IO Source
+    go i s (k, iov) = do
+      v <- lift iov
+      insert k (VStr i v) s
 
 runLoadT :: Monad m => Maybe Priority -> LoadSalakT m a -> m SourcePack
 runLoadT i (LoadSalakT ac) = execStateT ac emptySourcePack { packId = fromMaybe 0 i }

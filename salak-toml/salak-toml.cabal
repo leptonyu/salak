@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 73471786f377d5c12ca81a0fdfd4b178810a58020c815fac52d02c3ce71bdd62
+-- hash: abd838a729c87b45d125033d8c730d5b9ef4910ed738773615fd9c8ba2368695
 
 name:           salak-toml
-version:        0.2.9.3
+version:        0.2.10
 synopsis:       Configuration Loader for toml
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme
@@ -32,10 +32,10 @@ library
   build-depends:
       base >=4.10 && <5
     , mtl
-    , salak ==0.2.9.*
+    , salak
     , text
     , time
-    , tomland >=1.0
+    , tomland
     , unordered-containers
   default-language: Haskell2010
 
@@ -54,9 +54,9 @@ test-suite spec
     , base >=4.10 && <5
     , hspec ==2.*
     , mtl
-    , salak ==0.2.9.*
+    , salak
     , text
     , time
-    , tomland >=1.0
+    , tomland
     , unordered-containers
   default-language: Haskell2010

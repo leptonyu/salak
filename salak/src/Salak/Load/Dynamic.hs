@@ -34,7 +34,7 @@ reloadableSourcePack sp = do
   where
     reloadAll' v f = do
       sp' <- readMVar v
-      as  <- sequence $ MI.foldlWithKey' go [] (reEnv sp')
+      as  <- sequence $ MI.foldlWithKey' runReload [] (reEnv sp')
       let loadErr = concat $ fst . snd <$> as
           runWith e a = if null e then a else return $ ReloadResult True e
       runWith loadErr $ do
@@ -42,8 +42,6 @@ reloadableSourcePack sp = do
             modLog  = errs sp''
         (ac, msErr) <- f sp''
         runWith msErr $ swapMVar v sp'' >> sequence_ ac >> return (ReloadResult False modLog)
-    go b i (Reload _ True f) = ((i,) <$> f i) : b
-    go b _  _                = b
     g2 :: SourcePack -> (Int, ([String], Source)) -> SourcePack
     g2 p (i, (_, s)) = let (s', e) = runWriter $ replace i s (source p) in p { source = s', errs = errs p <> e}
 

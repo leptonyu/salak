@@ -1,4 +1,5 @@
 - &legal
+  version:             0.2.10
   homepage:            https://github.com/leptonyu/salak#readme
   license:             BSD3
   author:              Daniel YU

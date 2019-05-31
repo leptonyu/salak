@@ -5,6 +5,7 @@
 dist
 dist-*
 cabal-dev
+*.lock
 *.o
 *.hi
 *.chi

@@ -69,7 +69,7 @@ foldArray a g s = foldM (\s' (ix,x) -> updateSource (SNum ix) (g x) s') s $ zip 
 
 -- | Load Toml
 loadToml :: MonadIO m => FilePath -> LoadSalakT m ()
-loadToml file = loadFile file $ \i s -> do
+loadToml file = load file $ \i s -> do
   re <- liftIO (parse <$> IO.readFile file)
   case re of
       Left  e -> tell [show e] >> return s

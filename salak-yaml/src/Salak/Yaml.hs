@@ -26,7 +26,7 @@ import           Text.Libyaml
 
 -- | Load Yaml
 loadYaml :: MonadIO m => FilePath -> LoadSalakT m ()
-loadYaml file = loadFile file $ \i s -> liftIO $ runConduitRes (decodeFileMarked file .| loadYAML i s)
+loadYaml file = load file $ \i s -> liftIO $ runConduitRes (decodeFileMarked file .| loadYAML i s)
 
 -- | YAML notation for `loadYaml`
 data YAML = YAML

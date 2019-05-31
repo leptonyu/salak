@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 48d0dd772022b07077ccc00796efbf2ad3b14bf24d856ac95521e6942a83d333
+-- hash: b9b60c9dc09b68e33e5c7d424dca3e7d08b02cf3c1ad4a64e427eccec372e8e6
 
 name:           salak-yaml
-version:        0.2.9.3
+version:        0.2.10
 synopsis:       Configuration Loader for yaml
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme
@@ -33,7 +33,7 @@ library
       base >=4.10 && <5
     , conduit
     , libyaml
-    , salak ==0.2.9.*
+    , salak
     , text
   default-language: Haskell2010
 
@@ -54,6 +54,6 @@ test-suite spec
     , hspec ==2.*
     , libyaml
     , mtl
-    , salak ==0.2.9.*
+    , salak
     , text
   default-language: Haskell2010

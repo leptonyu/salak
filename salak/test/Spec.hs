@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
@@ -13,11 +14,13 @@ import           Data.Menshen
 import           Data.Text            (Text, pack, unpack)
 import           GHC.Generics
 import           Salak
+import           Salak.Load.Dynamic
 import           Salak.Prop
 import           Salak.Types
 import           Salak.Types.Selector
 import           Salak.Types.Source
 import           Salak.Types.Value
+import           System.Random        (randomIO)
 import           Test.Hspec
 import           Test.QuickCheck
 
@@ -134,7 +137,7 @@ specProperty = do
       s5 `shouldBe` s
   context "Generic" $ do
     it "conf" $ do
-      sp <- runLoadT Nothing $ loadMock
+      sp <- runLoadT Nothing $ loadOnceMock
         [ ("name", "Daniel")
         , ("age", "18")
         , ("male", "yes")
@@ -152,7 +155,7 @@ specProperty = do
                , ("y", "${z}")
                , ("z", "Hey! you")
                ]
-      loadAndRunSalak (loadMock xs) $ do
+      loadAndRunSalak (loadOnceMock xs) $ do
         a <- require "name"
         b <- require "user"
         x <- require "x"
@@ -160,9 +163,20 @@ specProperty = do
         lift $ do
           a `shouldBe` (b :: Text)
           x `shouldBe` (z :: Text)
-      let x = loadAndRunSalak (loadMock xs) (require "a") :: IO Text
+      let x = loadAndRunSalak (loadOnceMock xs) (require "a") :: IO Text
       x `shouldThrow` anyErrorCall
-
+  context "Reload test" $ do
+    it "reload" $ do
+      (x :: IO Int,r) <- loadAndRunSalak (loadMock [("hello", pack . show <$> (randomIO :: IO Int))]) $ do
+        v <- requireD "hello"
+        a <- reloadAction
+        return (v,a)
+      a <- x
+      ReloadResult{..} <- r
+      isError  `shouldBe` False
+      mapM_ print msg
+      b <- x
+      a  `shouldNotBe` b
 
 
 
