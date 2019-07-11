@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.1.
+-- This file has been generated from package.yaml by hpack version 0.31.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 85b5e186622d3fa1999c1ebe04136e4230ce1321de44c371f421293e8b71b983
+-- hash: b63a003293377d1f8076e36498df9a4a19e56c841e46b605e52fbaf28bdd52da
 
 name:           salak-toml
 version:        0.2.10
@@ -35,7 +35,7 @@ library
     , salak
     , text
     , time
-    , tomland >=1.0.0
+    , tomland >=1.0 && <1.2
     , unordered-containers
   default-language: Haskell2010
 
@@ -57,6 +57,6 @@ test-suite spec
     , salak
     , text
     , time
-    , tomland >=1.0.0
+    , tomland >=1.0 && <1.2
     , unordered-containers
   default-language: Haskell2010

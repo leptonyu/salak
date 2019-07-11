@@ -1,6 +1,9 @@
-resolver: nightly-2019-05-31
+resolver: nightly-2019-07-07
 packages:
 - salak
 - salak-yaml
 - salak-toml
+extra-deps:
+- tomland-1.1.0.1
+- parser-combinators-1.1.0
 pvp-bounds: both

@@ -9,7 +9,7 @@ extra-source-files:
 dependencies:
   - base >= 4.10 && < 5
   - salak
-  - tomland >= 1.0
+  - tomland >= 1.0 && < 1.2
   - mtl
   - unordered-containers
   - time
