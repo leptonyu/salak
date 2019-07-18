@@ -41,7 +41,6 @@ data Value
 instance Show Value where
   show v = let (a,b) = typeOfV v in b ++ "::" ++ a
 
-
 typeOfV :: Value -> (String, String)
 typeOfV (VT  b)   = ("Str",       show b)
 typeOfV (VI  b)   = ("Num",       show b)

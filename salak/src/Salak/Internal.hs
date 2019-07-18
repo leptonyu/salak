@@ -10,22 +10,17 @@
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TupleSections              #-}
 module Salak.Internal(
-    UpdateTrie(..)
-  , getTrie
-  , load
+    load
   , loadTrie
   , UpdateResult(..)
-  , runT
-  , packT
   , runTrie
-  , trie
+  , runSource
+  , receive
+  , receive_
   , fetchTrie
   , searchTrie
-  , parse
   , RunSalak
   , RunSalakT
-  , LoadSalakT
-  , LoadSalak
   , HasSalak(..)
   , loadMock
   , loadEnv
@@ -56,6 +51,7 @@ import           Data.HashMap.Strict     (HashMap)
 import qualified Data.HashMap.Strict     as HM
 import           Data.Maybe
 import           Data.Text               (Text, pack)
+import qualified Data.Text               as TT
 import           Salak.Internal.Key
 import           Salak.Internal.Prop
 import           Salak.Internal.Trie
@@ -64,7 +60,6 @@ import qualified Salak.Trie              as T
 import           System.Directory
 import           System.Environment
 
-
 data UpdateTrie = UpdateTrie
   {  ref    :: MVar Source
   ,  refNo  :: Int
@@ -72,9 +67,6 @@ data UpdateTrie = UpdateTrie
   ,  update :: IO ( TraceSource -- Updated Tries
                   , IO ())    -- Confirm action
   }
-
-getTrie :: UpdateTrie -> IO Source
-getTrie UpdateTrie{..} = readMVar ref
 
 loadTrie :: Bool -> String -> (Int -> IO TraceSource) -> RunSalak ()
 loadTrie canReload name f = RunSalakT $ do
@@ -106,7 +98,7 @@ data UpdateResult = UpdateResult
   , msgs   :: [String]
   } deriving Show
 
-runT :: MonadIO m => LoadSalakT m a -> m (a, UpdateTrie)
+runT :: MonadIO m => RunSalakT m a -> m (a, UpdateTrie)
 runT (RunSalakT m) = do
   r <- liftIO $ newMVar T.empty
   MS.runStateT m (UpdateTrie r 0 HM.empty $ return (T.empty,return ()))
@@ -122,15 +114,27 @@ packT UpdateTrie{..} = (readMVar ref, go)
         then a >> swapMVar ref t1 >> return (UpdateResult False $ lines $ show cs)
         else return (UpdateResult True es)
 
-runTrie :: MonadIO m => LoadSalakT m (IO UpdateResult -> IO a) -> m a
+-- | Execute all loading functions and return reloadable action
+runTrie :: MonadIO m => RunSalakT m (IO UpdateResult -> IO a) -> m a
 runTrie m = do
   (fa, ut) <- runT m
   liftIO $ fa $ snd (packT ut)
 
+-- | return Source from `RunSalakT`
 trie :: MonadIO m => RunSalakT m Source
 trie = RunSalakT $ do
   UpdateTrie{..} <- MS.get
   liftIO $ readMVar ref
+
+-- | Test function for return a `Source`
+runSource :: RunSalak () -> IO Source
+runSource ts = runTrie (ts >> receive trie)
+
+receive :: RunSalak a -> RunSalak (IO UpdateResult -> IO a)
+receive ra = ra >>= \a -> return (\_ -> return a)
+
+receive_ :: RunSalak (IO UpdateResult -> IO ())
+receive_ = return (\_ -> return ())
 
 fetchTrie :: (ToKeys k, FromProp a, MonadIO m) => k -> RunSalakT m (Either String (IO a))
 fetchTrie = fetchTrie1 True
@@ -167,8 +171,6 @@ parse k t = case search k t of
 newtype RunSalakT  m a = RunSalakT  { unRun  :: MS.StateT UpdateTrie m a } deriving (Functor, Applicative, Monad, MS.MonadTrans)
 
 type RunSalak = RunSalakT IO
-type LoadSalakT = RunSalakT
-type LoadSalak = RunSalak
 
 instance MonadIO m => MonadIO (RunSalakT m) where
   liftIO = RunSalakT . liftIO
@@ -188,14 +190,17 @@ instance MonadIO m => HasSalak (RunSalakT m) where
 instance Monad m => HasSalak (MR.ReaderT Source m) where
   askSalak = MR.ask
 
+-- | Load mock variables into `Source`
 loadMock :: [(Text, Text)] -> RunSalak ()
 loadMock fa = load False "mock" (return fa)
 
--- | Load environment variables into `SourcePack`
+-- | Load environment variables into `Source`
 loadEnv :: RunSalak ()
 loadEnv = load False "environment" go
   where
-    go = filter ((/= '_') . head . fst) <$> getEnvironment
+    go = concat . fmap split2 . filter ((/= '_') . head . fst) <$> getEnvironment
+    split2 (k,v) = [(TT.pack k,v),(convert k,v)]
+    convert = TT.toLower . TT.pack . map (\c -> if c == '_' then '.' else c)
 
 -- | Convert arguments to properties
 type ParseCommandLine = [String] -> IO [(Text, Text)]
@@ -213,7 +218,8 @@ defaultParseCommandLine = return . mapMaybe go
 loadCommandLine :: ParseCommandLine -> RunSalak ()
 loadCommandLine pcl = load False "commandLine" (getArgs >>= pcl)
 
-tryLoadFile :: MonadIO m => (FilePath -> LoadSalakT m ()) -> FilePath -> LoadSalakT m ()
+-- | Try load file, if file does not exist then do nothing.
+tryLoadFile :: MonadIO m => (FilePath -> RunSalakT m ()) -> FilePath -> RunSalakT m ()
 tryLoadFile f file = do
   b <- liftIO $ doesFileExist file
   when b $ do

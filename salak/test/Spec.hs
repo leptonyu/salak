@@ -56,7 +56,7 @@ data SubConf = SubConf
   { hello :: String } deriving (Eq, Show, Generic)
 
 instance FromProp SubConf where
-  fromProp = SubConf <$> "hello" .?= "yyy" -- ? pattern "[a-z]{3,16}"
+  fromProp = SubConf <$> "hello" .?= "yyy" ? pattern "[a-z]{3,16}"
 
 instance FromProp Conf
 
@@ -64,16 +64,16 @@ specProperty :: SpecWith ()
 specProperty = do
   context "selectors" $ do
     it "normal" $ do
-      selectors ""         `shouldBe` Right []
-      selectors "."        `shouldBe` Right []
-      selectors ".."       `shouldBe` Right []
-      selectors "xx"       `shouldBe` Right [KT "xx"]
-      selectors "xx[0]"    `shouldBe` Right [KT "xx", KI 0]
-      selectors "xx.yy"    `shouldBe` Right [KT "xx", KT "yy"]
-      selectors "xx[0][1]" `shouldBe` Right [KT "xx", KI 0, KI 1]
-      toKey (KT "x" : (KI <$> [0..9])) `shouldBe` "x[0][1][2][3][4][5][6][7][8][9]"
+      toKeys (""         :: Text) `shouldBe` Right (Keys $ [])
+      toKeys ("."        :: Text) `shouldBe` Right (Keys $ [])
+      toKeys (".."       :: Text) `shouldBe` Right (Keys $ [])
+      toKeys ("xx"       :: Text) `shouldBe` Right (Keys $ [KT "xx"])
+      toKeys ("xx[0]"    :: Text) `shouldBe` Right (Keys $ [KT "xx", KI 0])
+      toKeys ("xx.yy"    :: Text) `shouldBe` Right (Keys $ [KT "xx", KT "yy"])
+      toKeys ("xx[0][1]" :: Text) `shouldBe` Right (Keys $ [KT "xx", KI 0, KI 1])
+      show (Keys $ KT "x" : (KI <$> [0..9])) `shouldBe` "x[0][1][2][3][4][5][6][7][8][9]"
     it "QuickCheck" $ do
-      quickCheck $ \s -> let s' = unKey s in (toKey <$> selectors s') `shouldBe` Right (unpack s')
+      quickCheck $ \s -> let s' = unKey s in (show <$> toKeys s') `shouldBe` Right (unpack s')
   -- context "value" $ do
   --   it "basic" $ do
   --     newVT "xxxx"       0 `shouldBe` VT 0 "xxxx"

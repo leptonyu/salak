@@ -19,7 +19,7 @@ import           Text.Show           (Show (..))
 data Trie v = Trie !(Maybe v) !(HashMap Key (Trie v)) deriving (Eq, Functor)
 
 instance Show v => Show (Trie v) where
-  show t = intercalate "\n" $ map (\(k,v)->toKey (unKeys k) ++ ":" ++ show v) $ Salak.Trie.toList t
+  show t = intercalate "\n" $ map (\(k,v)-> show k ++ ":" ++ show v) $ Salak.Trie.toList t
 
 empty :: Trie v
 empty = Trie Nothing HM.empty

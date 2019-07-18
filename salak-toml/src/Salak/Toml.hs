@@ -42,7 +42,7 @@ toSs (T.Key ps) = toS <$> N.toList ps
 toS :: Piece -> Key
 toS = KT . unPiece
 
-loadTOML :: Int -> T.TOML -> TraceSource-> TraceSource
+loadTOML :: Int -> T.TOML -> TraceSource -> TraceSource
 loadTOML i T.TOML{..}
   = foldPairs       tomlPairs
   . foldTables      tomlTables
@@ -76,7 +76,7 @@ newtype TomlException = TomlException Text deriving Show
 instance Exception TomlException
 
 -- | Load Toml
-loadToml :: FilePath -> LoadSalak ()
+loadToml :: FilePath -> RunSalak ()
 loadToml file = loadTrie True file $ \i -> do
   re <- T.parse <$> IO.readFile file
   case re of

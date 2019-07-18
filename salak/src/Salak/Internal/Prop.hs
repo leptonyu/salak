@@ -19,6 +19,7 @@ import           Data.Default
 import qualified Data.HashMap.Strict     as HM
 import           Data.Int
 import           Data.List               (sortBy)
+import           Data.Menshen
 import           Data.Scientific
 import           Data.Semigroup
 import           Data.Text               (Text)
@@ -76,6 +77,9 @@ newtype PropT m a = Prop { unProp :: MR.ReaderT ([Key], Source) m a }
 
 -- | Monad used to parse properties to destination type.
 type Prop = PropT PResult
+
+instance HasValid Prop where
+  invalid = err . toI18n
 
 instance FromProp a => IsString (Prop a) where
   fromString k = Prop $ do
@@ -141,13 +145,13 @@ instance FromProp a => FromProp (Either String a) where
     kt <- MR.ask
     MR.lift $ case runProp kt (fromProp :: Prop a) of
       O s a -> O s $ Right a
-      N s   -> O s $ Left $ "null value " <> toKey s
+      N s   -> O s $ Left $ "null value " <> show (Keys s)
       F s e -> O s $ Left e
 
 instance {-# OVERLAPPABLE #-} FromProp a => FromProp [a] where
   fromProp = Prop $ do
     (k,TR.Trie _ m) <- MR.ask
-    MR.lift $ foldM (go k) [] $ sortBy g2 $ filter (not.isStr.fst) $ HM.toList m
+    MR.lift $ foldM (go k) [] $ sortBy g2 $ filter (isNum.fst) $ HM.toList m
     where
       go ks vs (k,t) = do
         v  <- runProp (k:ks, t) (fromProp :: Prop a)
@@ -206,6 +210,7 @@ instance FromProp a => FromProp (Product a) where
 instance FromProp a => FromProp (Option a) where
   fromProp = Option <$> fromProp
 
+-- | Parse primitive value from `Value`
 readPrimitive :: ([Key] -> Value -> PResult a) -> Prop a
 readPrimitive f = Prop $ do
   (k,TR.Trie v _) <- MR.ask

@@ -36,7 +36,7 @@ extract o t =
   , concatMap (\(k,v)-> fmap (k++) v) list)
   where
     t1   = fmap snd t
-    list = fmap (\(Keys k,v)->(toKey k,v)) $ T.toList $ fmap fst t
+    list = fmap (\(k,v)->(show k,v)) $ T.toList $ fmap fst t
 
 generate :: (Foldable f, ToKeys k, ToValue v) => Int -> f (k,v) -> TraceSource
 generate i = foldr go T.empty

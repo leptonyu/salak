@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE NoOverloadedLists   #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE RecordWildCards     #-}
@@ -22,10 +23,7 @@ module Salak(
     runSalak
   , runSalakWith
   , PropConfig(..)
-  -- * Load Salak
-  , LoadSalak
-  , loadSalak
-  , loadSalakFile
+  -- ** Basic Load
   , loadCommandLine
   , ParseCommandLine
   , defaultParseCommandLine
@@ -36,20 +34,22 @@ module Salak(
   , loadByExt
   , HasLoad(..)
   , (:|:)(..)
-  -- * Run Salak
+  -- * Salak Monad
   , RunSalak
-  -- ** Get Static Properties
   , HasSalak(..)
-  , fetch
+  -- ** Get Properties
   , require
-  -- ** Dynamic Get Properties
-  , UpdateResult(..)
   , requireD
-  -- ** Parse properties
+  -- ** Reload Result
+  , UpdateResult(..)
+  , receive
+  , receive_
+  -- * Properties Parsers
   , (.?=)
   , (.?:)
   , FromProp(..)
   , readPrimitive
+  , PResult(..)
   ) where
 
 import           Control.Monad.IO.Class  (MonadIO)
@@ -69,7 +69,7 @@ data PropConfig = PropConfig
   , searchCurrent :: Bool          -- ^ Search current directory, default true
   , searchHome    :: Bool          -- ^ Search home directory, default false.
   , commandLine   :: ParseCommandLine -- ^ How to parse commandline
-  , loadExt       :: FilePath -> LoadSalakT IO ()
+  , loadExt       :: FilePath -> RunSalak ()
   }
 
 instance Default PropConfig where
@@ -81,9 +81,8 @@ instance Default PropConfig where
     defaultParseCommandLine
     (\_ -> return ())
 
-
 -- | Load file by extension
-type ExtLoad = (String, FilePath -> LoadSalakT IO ())
+type ExtLoad = (String, FilePath -> RunSalak ())
 
 class HasLoad a where
   loaders :: a -> [ExtLoad]
@@ -94,7 +93,8 @@ infixr 3 :|:
 instance (HasLoad a, HasLoad b) => HasLoad (a :|: b) where
   loaders (a :|: b) = loaders a ++ loaders b
 
-loadByExt :: (HasLoad a) => a -> FilePath -> LoadSalakT IO ()
+-- | Load files with specified format, yaml or toml, etc.
+loadByExt :: HasLoad a => a -> FilePath -> RunSalakT IO ()
 loadByExt xs f = mapM_ go (loaders xs)
   where
     go (ext, ly) = tryLoadFile ly $ f ++ "." ++ ext
@@ -110,15 +110,15 @@ loadByExt xs f = mapM_ go (loaders xs)
 -- > 6. load file from home folder if enabled
 -- > 7. file extension matching, support yaml or toml or any other loader.
 --
-loadSalak :: PropConfig -> LoadSalak ()
+loadSalak :: PropConfig -> RunSalak ()
 loadSalak PropConfig{..} = do
   loadCommandLine commandLine
   loadEnv
   forM_ configName $ forM_
-    ([ require configDirKey
+    [ require configDirKey
     , ifS searchCurrent getCurrentDirectory
     , ifS searchHome    getHomeDirectory
-    ] :: [LoadSalakT IO (Maybe FilePath)]) . loadConf
+    ] . loadConf
   where
     ifS True gxd = Just <$> liftIO gxd
     ifS _    _   = return Nothing
@@ -135,49 +135,23 @@ loadSalak PropConfig{..} = do
 -- > 6. load file from home folder if enabled
 -- > 7. file extension matching, support yaml or toml or any other loader.
 --
-loadSalakFile :: HasLoad file => String -> file -> LoadSalak ()
-loadSalakFile name a = loadSalak def { configName = Just name, loadExt = loadByExt a}
-
--- | Default run salak.
--- All these configuration sources has orders, from highest priority to lowest priority:
---
--- > 1. loadCommandLine
--- > 2. loadEnvironment
--- > 3. loadConfFiles
--- > 4. load file from folder `salak.conf.dir` if defined
--- > 5. load file from current folder if enabled
--- > 6. load file from home folder if enabled
--- > 7. file extension matching, support yaml or toml or any other loader.
---
-runSalak :: PropConfig -> RunSalak a -> IO a
-runSalak p sa = runTrie $ do
-  loadSalak p
-  a <- sa
-  return $ \_ -> return a
+runSalak :: PropConfig -> RunSalak (IO UpdateResult -> IO a) -> IO a
+runSalak p sa = runTrie $ loadSalak p >> sa
 
 -- | Simplified run salak, should specified code name and file format.
-runSalakWith :: (HasLoad file) => String -> file -> RunSalak a -> IO a
-runSalakWith name f sa = runTrie $ do
-  loadSalakFile name f
-  a <- sa
-  return (\_ -> return a)
+runSalakWith :: HasLoad file => String -> file -> RunSalak (IO UpdateResult -> IO a) -> IO a
+runSalakWith name f sa = runTrie $ loadSalakFile >> sa
+  where
+    loadSalakFile = loadSalak def { configName = Just name, loadExt = loadByExt f}
 
-
--- | Try fetch properties from `SourcePack`
-fetch
-  :: (HasSalak m, FromProp a)
-  => Text -- ^ Properties key
-  -> m (Either String a)
-fetch = searchTrie
-
--- | Fetch properties from `SourcePack`, or throw fail
+-- | Fetch properties from `Source`, or throw fail
 require
   :: (HasSalak m, FromProp a)
   => Text -- ^ Properties key
   -> m a
-require k = fetch k >>= either error return
+require k = searchTrie k >>= either error return
 
--- | Fetch dynamic properties from `SourcePack`, or throw fail
+-- | Fetch dynamic properties from `Source`, or throw fail
 requireD
   :: (MonadIO m, FromProp a)
   => Text -- ^ Properties key
@@ -237,15 +211,15 @@ requireD k = fetchTrie k >>= either error return
 -- > main = runSalakWith "salak" (YAML :|: TOML) $ do
 -- >   c :: Config <- require "test.config"
 -- >   lift $ print c
+-- >   receive_
 --
 -- GHCi play
 --
 -- > λ> import Salak
--- > λ> import Salak.YAML
--- > λ> import Salak.TOML
--- > λ> :set -XTypeApplications
+-- > λ> import Salak.Internal
+-- > λ> import Data.Text(Text)
+-- > λ> data Config = Config { name :: Text, dir  :: Maybe Text, ext  :: Int} deriving (Eq, Show)
 -- > λ> instance FromProp Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1
--- > λ> f = runSalakWith "salak" (YAML :|: TOML)
--- > λ> f (require "") >>= print @Config
+-- > λ> runSalak def (receive $ require "") :: IO Config
 -- > Config {name = "daniel", dir = Just "ls", ext = 2}
 --

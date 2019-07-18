@@ -1,9 +1,16 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Salak.Internal.Key where
+module Salak.Internal.Key(
+    Key(..)
+  , Keys(..)
+  , simpleKeys
+  , ToKeys(..)
+  , isNum
+  ) where
 
 import           Control.Applicative  ((<|>))
 import           Data.Attoparsec.Text
+import           Data.Coerce          (coerce)
 import           Data.Hashable
 import           Data.List            (intercalate)
 import           Data.Text            (Text)
@@ -20,11 +27,23 @@ instance Ord Key where
   compare (KI _) _      = LT
   compare _      _      = GT
 
-newtype Keys = Keys { unKeys :: [Key] } deriving (Eq, Show)
+newtype Keys = Keys { unKeys :: [Key] } deriving Eq
+
+instance Show Keys where
+  show ks = toKey (coerce ks)
+    where
+      toKey = intercalate "." . go
+      go (a@(KT _):cs) = let (b,c) = break isStr cs in (show a ++ concat (show <$> b)) : go c
+      go (a:cs)          = show a : go cs
+      go []              = []
 
 isStr :: Key -> Bool
 isStr (KT _) = True
 isStr _      = False
+
+isNum :: Key -> Bool
+isNum (KI _) = True
+isNum _      = False
 
 instance Hashable Key where
   hash (KT a) = hash a
@@ -36,21 +55,8 @@ instance Show Key where
   show (KT x) = T.unpack x
   show (KI i) = "[" ++ show i ++ "]"
 
-toKey :: [Key] -> String
-toKey = intercalate "." . go
-  where
-    go (a@(KT _):cs) = let (b,c) = break isStr cs in (show a ++ concat (show <$> b)) : go c
-    go (a:cs)          = show a : go cs
-    go []              = []
-
 simpleKeys :: Text -> [Key]
 simpleKeys as = fmap KT $ filter (not.T.null) $ T.splitOn "." as
-
-selectors :: Text -> Either String [Key]
-selectors = go . parse exprs . flip T.snoc '\n'
-  where
-    go (Done i r) = if i /= "\n" then Left $ "uncomplete parse" ++ T.unpack i else Right r
-    go a          = Left (show a)
 
 exprs :: Parser [Key]
 exprs = concat <$> ( (expr <|> return []) `sepBy` char '.')
@@ -85,6 +91,10 @@ instance ToKeys Keys where
 
 instance ToKeys Text where
   toKeys = fmap Keys . selectors
+    where
+      selectors = go . parse exprs . flip T.snoc '\n'
+      go (Done i r) = if i /= "\n" then Left $ "uncomplete parse" ++ T.unpack i else Right r
+      go a          = Left (show a)
 
 instance ToKeys String where
   toKeys = toKeys . T.pack
