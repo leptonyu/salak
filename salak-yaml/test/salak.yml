@@ -6,8 +6,7 @@ array:
 hello:
   world
 a:
-  b:
-    c
+  b: c
 
 me.icymint.conf:
   name: daniel
@@ -15,3 +14,7 @@ me.icymint.conf:
   male: yes
   det:
     hello: abc
+
+xyz:
+  - bcd: hello
+  - bcd: world

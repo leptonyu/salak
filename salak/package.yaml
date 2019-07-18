@@ -12,28 +12,27 @@ dependencies:
   - scientific
   - time
   - mtl
-  - pqueue
-  - containers
   - attoparsec
   - data-default
   - filepath
   - directory
   - menshen
   - unliftio-core
+  - heaps
+  - hashable
+  - unordered-containers
 
 library:
   source-dirs: src
   exposed-modules:
     - Salak
-    - Salak.Load
+    - Salak.Trie
+    - Salak.Internal
   other-modules:
-    - Salak.Types
-    - Salak.Types.Value
-    - Salak.Types.Selector
-    - Salak.Types.Source
-    - Salak.Load.Env
-    - Salak.Load.Dynamic
-    - Salak.Prop
+    - Salak.Internal.Key
+    - Salak.Internal.Val
+    - Salak.Internal.Trie
+    - Salak.Internal.Prop
 
 tests:
   spec:

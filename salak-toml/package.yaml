@@ -10,15 +10,16 @@ dependencies:
   - base >= 4.10 && < 5
   - salak
   - tomland >= 1.0 && < 1.2
-  - mtl
   - unordered-containers
   - time
   - text
+  # - htoml
 
 library:
   source-dirs: src
   exposed-modules:
     - Salak.Toml
+    # - Salak.HToml
 tests:
   spec:
     main: Spec.hs
@@ -29,3 +30,4 @@ tests:
       - hspec == 2.*
       - QuickCheck < 2.14
       - text
+      - mtl

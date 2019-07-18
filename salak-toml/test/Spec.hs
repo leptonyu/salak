@@ -9,8 +9,10 @@ module Main where
 import           Control.Monad.Reader
 import           Data.List            (intercalate)
 import           Data.Text            (Text, pack)
+import           Debug.Trace
 import           GHC.Generics
 import           Salak
+import           Salak.Internal
 import           Salak.Toml
 import           Test.Hspec
 import           Test.QuickCheck
@@ -55,13 +57,16 @@ tomlProperty :: SpecWith ()
 tomlProperty = do
   context "load toml" $ do
     it "salak.toml" $ do
-      loadAndRunSalak (loadToml "test/salak.toml") $ do
+      runTrie $ do
+        loadToml "test/salak.toml"
+        t  <- askSalak
         cf <- require "me.icymint.conf"
         lift $ do
           name cf `shouldBe` "shelly"
           age  cf `shouldBe` 16
           male cf `shouldBe` False
           det  cf `shouldBe` SubConf "def"
+        return (\_ -> return ())
 
 
 

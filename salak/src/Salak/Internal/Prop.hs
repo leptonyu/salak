@@ -3,23 +3,22 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE UndecidableInstances       #-}
-module Salak.Prop where
+module Salak.Internal.Prop where
 
-import           Control.Applicative
-import           Control.Monad.Identity
-import           Control.Monad.Reader
+import qualified Control.Applicative     as A
+import           Control.Monad
+import qualified Control.Monad.Identity  as MI
+import qualified Control.Monad.Reader    as MR
+import qualified Control.Monad.State     as MS
 import qualified Data.ByteString         as B
 import qualified Data.ByteString.Lazy    as BL
 import           Data.Default
+import qualified Data.HashMap.Strict     as HM
 import           Data.Int
-import qualified Data.Map.Strict         as M
-import           Data.Menshen
+import           Data.List               (sortBy)
 import           Data.Scientific
 import           Data.Semigroup
 import           Data.Text               (Text)
@@ -27,22 +26,20 @@ import qualified Data.Text               as T
 import qualified Data.Text.Encoding      as TB
 import qualified Data.Text.Lazy          as TL
 import qualified Data.Text.Lazy.Encoding as TBL
-import           Data.Time
 import           Data.Word
 import           Foreign.C
 import           GHC.Exts
-import           GHC.Generics            hiding (Selector)
-import qualified GHC.Generics            as G
-import           Salak.Types
-import           Salak.Types.Selector
-import           Salak.Types.Source
-import           Salak.Types.Value
+import           GHC.Generics
+import           Salak.Internal.Key
+import           Salak.Internal.Trie
+import           Salak.Internal.Val
+import qualified Salak.Trie              as TR
 import           Text.Read               (readMaybe)
 
 data PResult a
-  = O [Selector] a      -- ^ Succeed value
-  | N [Selector]        -- ^ Empty value
-  | F [Selector] String -- ^ Fail value
+  = O [Key] a      -- ^ Succeed value
+  | N [Key]        -- ^ Empty value
+  | F [Key] String -- ^ Fail value
   deriving (Eq, Show, Functor)
 
 instance Applicative PResult where
@@ -53,7 +50,7 @@ instance Applicative PResult where
   (N s)   <*> _       = N s
   _       <*> (N s)   = N s
 
-instance Alternative PResult where
+instance A.Alternative PResult where
   empty = N []
   (O s f) <|> _ = O s f
   _       <|> x = x
@@ -64,48 +61,28 @@ instance Monad PResult where
   (N s  ) >>= _ = N s
   (F s e) >>= _ = F s e
 
-data PropSource = PropSource
-  { originSP :: SourcePack
-  , currSP   :: SourcePack
-  , cacheRef :: M.Map [Selector] Bool
-  }
-
-newtype PropT m a = Prop { unProp :: ReaderT PropSource m a }
-  deriving (Functor, Applicative, Monad, MonadTrans, Alternative)
-
 -- | Optional value.
 infixl 5 .?=
-(.?=) :: Alternative f => f a -> a -> f a
-(.?=) a b = a <|> pure b
+(.?=) :: A.Alternative f => f a -> a -> f a
+(.?=) a b = a A.<|> pure b
 
 -- | Default value.
 infixl 5 .?:
-(.?:) :: (Alternative f, Default b) => f a -> (b -> a) -> f a
+(.?:) :: (A.Alternative f, Default b) => f a -> (b -> a) -> f a
 (.?:) fa b = fa .?= b def
+
+newtype PropT m a = Prop { unProp :: MR.ReaderT ([Key], Source) m a }
+  deriving (Functor, Applicative, Monad, MS.MonadTrans, A.Alternative)
 
 -- | Monad used to parse properties to destination type.
 type Prop = PropT PResult
 
-runProp :: PropSource -> PropT m a -> m a
-runProp sp a = runReaderT (unProp a) sp
-
-askSub :: (SourcePack -> SourcePack) -> Prop PropSource
-askSub f = do
-  ps <- Prop ask
-  return ps { currSP = f (currSP ps) }
-
-askOrigin :: Prop SourcePack
-askOrigin = originSP <$> Prop ask
-
-instance MonadReader SourcePack Prop where
-  ask = currSP <$> Prop ask
-  local f (Prop a) = Prop (local (\sp -> sp { currSP = f (currSP sp) }) a)
-
-instance HasValid Prop where
-  invalid = err . toI18n
-
 instance FromProp a => IsString (Prop a) where
-  fromString = readSelect . T.pack
+  fromString k = Prop $ do
+    (p, t) <- MR.ask
+    case search k t of
+      Left  e      -> MR.lift $ F p e
+      Right (ks,v) -> MR.withReaderT (const (p ++ unKeys ks,v)) (unProp fromProp)
 
 class FromProp a where
   fromProp :: Prop a
@@ -125,13 +102,13 @@ gEnum :: GFromProp f => Text -> PropT PResult (f a)
 gEnum va = do
   o <- gFromProp
   readPrimitive $ \ss v -> case v of
-    VStr _ x -> if x /= va then N ss else O ss o
-    _        -> N ss
+    VT x -> if x /= va then N ss else O ss o
+    _    -> N ss
 
-instance {-# OVERLAPPABLE #-} (G.Selector s, GFromProp a) => GFromProp (M1 S s a) where
-  gFromProp = local go $ M1 <$> gFromProp
-    where
-      go sp = select sp (SStr $ T.pack $ selName (undefined :: t s a p))
+instance {-# OVERLAPPABLE #-} (Selector s, GFromProp a) => GFromProp (M1 S s a) where
+  gFromProp = Prop $ do
+    let k = KT $ T.pack $ selName (undefined :: t s a p)
+    MR.withReaderT (\(ks,t) -> (k:ks,search1 t k)) $ unProp $ M1 <$> gFromProp
 
 instance {-# OVERLAPPABLE #-} GFromProp a => GFromProp (M1 D i a) where
   gFromProp = M1 <$> gFromProp
@@ -146,26 +123,39 @@ instance {-# OVERLAPPABLE #-} (GFromProp a, GFromProp b) => GFromProp (a:*:b) wh
   gFromProp = (:*:) <$> gFromProp <*> gFromProp
 
 instance {-# OVERLAPPABLE #-} (GFromProp a, GFromProp b) => GFromProp (a:+:b) where
-  gFromProp = fmap L1 gFromProp <|> fmap R1 gFromProp
+  gFromProp = fmap L1 gFromProp A.<|> fmap R1 gFromProp
+
+runProp :: ([Key], Source) -> PropT m a -> m a
+runProp sp a = MR.runReaderT (unProp a) sp
 
 instance FromProp a => FromProp (Maybe a) where
-  fromProp = do
-    fps <- askSub id
-    lift $ case runProp fps (fromProp :: Prop a) of
+  fromProp = Prop $ do
+    kt <- MR.ask
+    MR.lift $ case runProp kt (fromProp :: Prop a) of
       O s a -> O s $ Just a
       N s   -> O s Nothing
       F s e -> F s e
 
 instance FromProp a => FromProp (Either String a) where
-  fromProp = do
-    fps <- askSub id
-    lift $ case runProp fps (fromProp :: Prop a) of
+  fromProp = Prop $ do
+    kt <- MR.ask
+    MR.lift $ case runProp kt (fromProp :: Prop a) of
       O s a -> O s $ Right a
-      N s   -> O s $ Left "null"
+      N s   -> O s $ Left $ "null value " <> toKey s
       F s e -> O s $ Left e
 
-instance FromProp a => FromProp (Identity a) where
-  fromProp = Identity <$> fromProp
+instance {-# OVERLAPPABLE #-} FromProp a => FromProp [a] where
+  fromProp = Prop $ do
+    (k,TR.Trie _ m) <- MR.ask
+    MR.lift $ foldM (go k) [] $ sortBy g2 $ filter (not.isStr.fst) $ HM.toList m
+    where
+      go ks vs (k,t) = do
+        v  <- runProp (k:ks, t) (fromProp :: Prop a)
+        return (v:vs)
+      g2 (a,_) (b,_) = compare b a
+
+instance FromProp a => FromProp (MI.Identity a) where
+  fromProp = MI.Identity <$> fromProp
 
 instance (FromProp a, FromProp b) => FromProp (a,b) where
   fromProp = (,) <$> fromProp <*> fromProp
@@ -191,16 +181,6 @@ instance (FromProp a, FromProp b, FromProp c, FromProp d, FromProp e, FromProp f
 instance (FromProp a, FromProp b, FromProp c, FromProp d, FromProp e, FromProp f, FromProp g, FromProp h, FromProp i) => FromProp (a,b,c,d,e,f,g,h,i) where
   fromProp = (,,,,,,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp
 
-instance {-# OVERLAPPABLE #-} FromProp a => FromProp [a] where
-  fromProp = do
-    sp@SourcePack{..} <- ask
-    as <- foldM (go sp) [] $ M.toList (mapValue source)
-    return (reverse as)
-    where
-      go sp' as (ix,s) = do
-        so <- askSub $ const sp' { prefix = ix : prefix sp', source = s}
-        a <- lift $ runProp so fromProp
-        return (a:as)
 
 instance FromProp a => FromProp (Min a) where
   fromProp = Min <$> fromProp
@@ -226,64 +206,23 @@ instance FromProp a => FromProp (Product a) where
 instance FromProp a => FromProp (Option a) where
   fromProp = Option <$> fromProp
 
-instance {-# OVERLAPPABLE #-} FromEnumProp a => FromProp a where
-  fromProp = readPrimitive $ \ss v -> case v of
-    VStr  _ s -> either (F ss) (O ss) $ fromEnumProp $ T.toLower s
-    x         -> F ss $ getType x ++ " cannot be enum"
-
-evalV :: [Selector] -> Value -> Prop Value
-evalV x (VRef i rs) = do
-  sp <- askOrigin
-  ps <- askSub (const sp)
-  if M.member x (cacheRef ps)
-    then lift $ F x "self reference"
-    else lift $ VStr i <$> foldM (go ps { cacheRef = M.insert x True $ cacheRef ps} ) "" rs
-  where
-    go _  a (RVal b) = return (T.append a b)
-    go ps a (RRef f) = case convert $ runProp ps (selectP f) of
-        Right b -> return (T.append a b)
-        Left  e -> F f e
-evalV _ v           = return v
-
--- | ReadPrimitive value
-readPrimitive :: ([Selector] -> Value -> PResult a) -> Prop a
-readPrimitive f = do
-  SourcePack{..} <- ask
-  case getQ (value source) of
-    Just v -> evalV prefix v >>= lift . f prefix
-    _      -> lift $ N prefix
+readPrimitive :: ([Key] -> Value -> PResult a) -> Prop a
+readPrimitive f = Prop $ do
+  (k,TR.Trie v _) <- MR.ask
+  MR.lift $ case v >>= getVal of
+    Just x -> f k x
+    _      -> N k
 
 class FromEnumProp a where
   fromEnumProp :: Text -> Either String a
   {-# MINIMAL fromEnumProp #-}
 
-err :: String -> Prop a
-err e = do
-  sp <- ask
-  lift $ F (prefix sp) e
-
--- | Parse value
-readSelect :: FromProp a => Text -> Prop a
-readSelect key = case selectors key of
-  Left  e -> err e
-  Right s -> selectP s
-
-selectP :: FromProp a => [Selector] -> Prop a
-selectP s = local (\sp -> foldl select sp s) fromProp
-
-search :: FromProp a => Text -> SourcePack -> Either String a
-search key sp = convert $ runProp (PropSource sp sp M.empty) (readSelect key)
-
-convert :: PResult a -> Either String a
-convert (O _ x) = Right x
-convert (N s  ) = Left $ "key " ++ toKey s ++ " not found"
-convert (F s e) = Left $ "key " ++ toKey s ++ " : " ++ e
 
 instance FromProp Bool where
   fromProp = readPrimitive go
     where
-      go s (VBool _ x) = O s x
-      go s (VStr  _ x) = case T.toLower x of
+      go s (VB x) = O s x
+      go s (VT x) = case T.toLower x of
         "true"  -> O s True
         "yes"   -> O s True
         "false" -> O s False
@@ -294,8 +233,8 @@ instance FromProp Bool where
 instance FromProp Text where
   fromProp = readPrimitive go
     where
-      go s (VStr  _ x) = O s x
-      go s x           = O s $ T.pack (getV x)
+      go s (VT x) = O s x
+      go s x      = O s $ T.pack $ snd $ typeOfV x
 
 instance FromProp TL.Text where
   fromProp = TL.fromStrict <$> fromProp
@@ -312,11 +251,11 @@ instance FromProp String where
 instance FromProp Scientific where
   fromProp = readPrimitive go
     where
-      go s (VStr  _ x) = case readMaybe $ T.unpack x of
+      go s (VT x) = case readMaybe $ T.unpack x of
         Just v -> O s v
         _      -> F s "string convert number failed"
-      go s (VNum  _ x) = O s x
-      go s x           = F s $ getType x ++ " cannot be number"
+      go s (VI x) = O s x
+      go s x      = F s $ getType x ++ " cannot be number"
 
 instance FromProp Float where
   fromProp = toRealFloat <$> fromProp
@@ -357,50 +296,10 @@ instance FromProp Word32 where
 instance FromProp Word64 where
   fromProp = fromProp >>= toNum
 
-instance FromProp NominalDiffTime where
-  fromProp = fromInteger <$> fromProp
-
-instance FromProp DiffTime where
-  fromProp = timeOfDayToTime <$> fromProp
-
 toNum :: (Integral i, Bounded i) => Scientific -> Prop i
 toNum s = case toBoundedInteger s of
   Just v -> return v
   _      -> err "scientific number doesn't fit in the target representation"
-
-instance FromProp UTCTime where
-  fromProp = readPrimitive go
-    where
-      go s (VZTime _ a b) = O s (zonedTimeToUTC $ ZonedTime b a)
-      go s x              = F s $ getType x ++ " cannot be UTCTime"
-
-instance FromProp ZonedTime where
-  fromProp = readPrimitive go
-    where
-      go s (VZTime _ a b) = O s (ZonedTime b a)
-      go s x              = F s $ getType x ++ " cannot be ZonedTime"
-
-instance FromProp LocalTime where
-  fromProp = readPrimitive go
-    where
-      go s (VLTime _   b) = O s b
-      go s (VZTime _ _ b) = O s b
-      go s x              = F s $ getType x ++ " cannot be LocalTime"
-
-instance FromProp Day where
-  fromProp = readPrimitive go
-    where
-      go s (VDay   _ b) = O s b
-      go s (VLTime _ b) = O s (localDay b)
-      go s x            = F s $ getType x ++ " cannot be Day"
-
-instance FromProp TimeOfDay where
-  fromProp = readPrimitive readTimeOfDay
-
-readTimeOfDay :: [Selector] -> Value -> PResult TimeOfDay
-readTimeOfDay s (VHour  _ b) = O s b
-readTimeOfDay s (VLTime _ b) = O s (localTimeOfDay b)
-readTimeOfDay s x            = F s $ getType x ++ " cannot be TimeOfDay"
 
 instance FromProp CBool where
   fromProp = do
@@ -438,6 +337,7 @@ instance FromProp CDouble where
   fromProp = CDouble <$> fromProp
 
 
-
-
-
+err :: String -> Prop a
+err e = Prop $ do
+  (k, _) <- MR.ask
+  MR.lift $ F k e

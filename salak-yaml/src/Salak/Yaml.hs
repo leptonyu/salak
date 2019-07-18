@@ -21,12 +21,13 @@ import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Conduit           hiding (Source)
 import           Data.Text.Encoding     (decodeUtf8)
 import           Salak
-import           Salak.Load
+import           Salak.Internal
+import qualified Salak.Trie             as T
 import           Text.Libyaml
 
 -- | Load Yaml
-loadYaml :: MonadIO m => FilePath -> LoadSalakT m ()
-loadYaml file = load file $ \i s -> liftIO $ runConduitRes (decodeFileMarked file .| loadYAML i s)
+loadYaml :: FilePath -> LoadSalak ()
+loadYaml file = loadTrie True file (\i -> runConduitRes (decodeFileMarked file .| loadYAML i T.empty))
 
 -- | YAML notation for `loadYaml`
 data YAML = YAML
@@ -34,32 +35,34 @@ data YAML = YAML
 instance HasLoad YAML where
   loaders _ = (, loadYaml) <$> ["yaml", "yml"]
 
-loadYAML :: MonadIO m => Priority -> Source -> ConduitM MarkedEvent o m Source
-loadYAML i s = await >>= maybe (return s) go
+loadYAML :: MonadIO m => Int -> TraceSource -> ConduitM MarkedEvent o m TraceSource
+loadYAML i = start
   where
-    go (MarkedEvent (EventScalar a _ _ _) _ _) = return (insertSource (newVStr (decodeUtf8 a) i) s)
-    go (MarkedEvent EventSequenceStart{}  _ _) = goSeq 0 s
-    go (MarkedEvent EventSequenceEnd      _ _) = return emptySource
-    go (MarkedEvent EventMappingStart{}  _ ee) = goMap ee s
-    go (MarkedEvent (EventAlias a)       _ ee) = ge ee $ "alias " ++ a ++ " not supported by salak"
-    go _ = loadYAML i s
-    goSeq j s1 = do
-      s' <- loadYAML i emptySource
-      if nullSource s'
-        then return s1
-        else updateSource (SNum j) (\_ -> return s') s1 >>= goSeq (j+1)
-    goMap ee s1 = do
+    start ts = await >>= maybe (return ts) (go ts)
+
+    go _  (MarkedEvent (EventAlias a) _ ee)       = ge ee $ "alias " ++ a ++ " not supported by salak"
+    go ts (MarkedEvent (EventScalar a _ _ _) _ _) = return $ setVal i a ts
+    go ts (MarkedEvent EventSequenceStart{}  _ _) = goS 0 ts
+    go ts (MarkedEvent EventMappingStart{}   _ _) = goM ts
+    go ts  _                                      = start ts
+
+    goS j ts = do
       v <- await
       case v of
-        Nothing -> ge ee "suppose to have data"
-        Just (MarkedEvent (EventScalar a _ _ _) _ ee') ->
-          updateSources (simpleSelectors $ decodeUtf8 a) (loadYAML i) s1 >>= goMap ee'
-        Just (MarkedEvent EventMappingEnd _ _) -> return s1
+        Nothing -> liftIO $ throwIO $ YamlException "unexpected end"
+        Just (MarkedEvent EventSequenceEnd _ _) -> return ts
+        Just e -> do
+          val <- go T.empty e
+          goS (j+1) (T.modify (KI j) (const val) ts)
+
+    goM ts = do
+      v <- await
+      case v of
+        Nothing -> liftIO $ throwIO $ YamlException "unexpected end"
+        Just (MarkedEvent EventMappingEnd _ _) -> return ts
+        Just (MarkedEvent (EventScalar a _ _ _) _ _) -> do
+                val <- start T.empty
+                goM $ T.modify' (Keys $ simpleKeys $ decodeUtf8 a) (const val) ts
         Just e -> ge (yamlStartMark e) ("suppose scalar and mapping end, but is " ++ show (yamlEvent e))
     ge YamlMark{..} e = liftIO $ throwIO $ YamlException $ "(" ++ show yamlLine ++ "," ++ show yamlColumn ++ ")" ++ e
-
-
-
-
-
 

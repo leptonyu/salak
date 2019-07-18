@@ -19,12 +19,11 @@ module Salak(
   -- $use
 
   -- * Salak Main Functions
-    loadAndRunSalak
-  , runSalak
+    runSalak
   , runSalakWith
   , PropConfig(..)
   -- * Load Salak
-  , LoadSalakT
+  , LoadSalak
   , loadSalak
   , loadSalakFile
   , loadCommandLine
@@ -32,49 +31,36 @@ module Salak(
   , defaultParseCommandLine
   , loadEnv
   , loadMock
-  , loadOnceMock
   -- ** Load Extensions
   , ExtLoad
   , loadByExt
   , HasLoad(..)
   , (:|:)(..)
   -- * Run Salak
-  , RunSalakT
-  , liftNT
+  , RunSalak
   -- ** Get Static Properties
-  , HasSourcePack(..)
+  , HasSalak(..)
   , fetch
   , require
   -- ** Dynamic Get Properties
-  , ReloadResult(..)
-  , exec
+  , UpdateResult(..)
   , requireD
   -- ** Parse properties
-  , SourcePack
-  , Priority
-  , Value(..)
-  , Prop
-  , FromProp(..)
-  , FromEnumProp(..)
-  , readPrimitive
-  , PResult(..)
   , (.?=)
   , (.?:)
+  , FromProp(..)
+  , readPrimitive
   ) where
 
-import           Control.Monad          (unless)
-import           Control.Monad.IO.Class (MonadIO)
+import           Control.Monad.IO.Class  (MonadIO)
+import           Control.Monad.IO.Unlift
 import           Control.Monad.Reader
-import           Control.Monad.State
 import           Data.Default
-import           Data.Text              (Text, cons)
-import           Salak.Load.Dynamic
-import           Salak.Load.Env
-import           Salak.Prop
-import           Salak.Types
-import           Salak.Types.Value
+import           Data.Text               (Text)
+import           Salak.Internal
+import           Salak.Internal.Prop
 import           System.Directory
-import           System.FilePath        ((</>))
+import           System.FilePath         ((</>))
 
 -- | Prop load configuration
 data PropConfig = PropConfig
@@ -95,17 +81,6 @@ instance Default PropConfig where
     defaultParseCommandLine
     (\_ -> return ())
 
--- | Load and run salak `SourcePack` and fetch properties.
-loadAndRunSalak
-  :: MonadIO m
-  => LoadSalakT m ()       -- ^ Load properties monad.
-  -> RunSalakT m a -- ^ Fetch properties monad.
-  -> m a
-loadAndRunSalak spm a = do
-  sp <- runLoadT Nothing spm
-  let es = errs sp
-  unless (null es) $ fail (head es)
-  runT a sp
 
 -- | Load file by extension
 type ExtLoad = (String, FilePath -> LoadSalakT IO ())
@@ -119,10 +94,10 @@ infixr 3 :|:
 instance (HasLoad a, HasLoad b) => HasLoad (a :|: b) where
   loaders (a :|: b) = loaders a ++ loaders b
 
-loadByExt :: (HasLoad a, MonadIO m) => a -> FilePath -> LoadSalakT m ()
+loadByExt :: (HasLoad a) => a -> FilePath -> LoadSalakT IO ()
 loadByExt xs f = mapM_ go (loaders xs)
   where
-    go (ext, ly) = tryLoadFile (jump . ly) $ f ++ "." ++ ext
+    go (ext, ly) = tryLoadFile ly $ f ++ "." ++ ext
 
 -- | Default run salak.
 -- All these configuration sources has orders, from highest priority to lowest priority:
@@ -135,19 +110,19 @@ loadByExt xs f = mapM_ go (loaders xs)
 -- > 6. load file from home folder if enabled
 -- > 7. file extension matching, support yaml or toml or any other loader.
 --
-loadSalak :: MonadIO m => PropConfig -> LoadSalakT m ()
+loadSalak :: PropConfig -> LoadSalak ()
 loadSalak PropConfig{..} = do
   loadCommandLine commandLine
   loadEnv
   forM_ configName $ forM_
-    [ require configDirKey
+    ([ require configDirKey
     , ifS searchCurrent getCurrentDirectory
     , ifS searchHome    getHomeDirectory
-    ] . loadConf
+    ] :: [LoadSalakT IO (Maybe FilePath)]) . loadConf
   where
     ifS True gxd = Just <$> liftIO gxd
     ifS _    _   = return Nothing
-    loadConf n mf = mf >>= mapM_ (jump . loadExt . (</> n))
+    loadConf n mf = mf >>= mapM_ (loadExt . (</> n))
 
 -- | Default run salak.
 -- All these configuration sources has orders, from highest priority to lowest priority:
@@ -160,7 +135,7 @@ loadSalak PropConfig{..} = do
 -- > 6. load file from home folder if enabled
 -- > 7. file extension matching, support yaml or toml or any other loader.
 --
-loadSalakFile :: (HasLoad file, MonadIO m) => String -> file -> LoadSalakT m ()
+loadSalakFile :: HasLoad file => String -> file -> LoadSalak ()
 loadSalakFile name a = loadSalak def { configName = Just name, loadExt = loadByExt a}
 
 -- | Default run salak.
@@ -174,43 +149,30 @@ loadSalakFile name a = loadSalak def { configName = Just name, loadExt = loadByE
 -- > 6. load file from home folder if enabled
 -- > 7. file extension matching, support yaml or toml or any other loader.
 --
-runSalak :: MonadIO m => PropConfig -> RunSalakT m a -> m a
-runSalak = loadAndRunSalak . loadSalak
+runSalak :: PropConfig -> RunSalak a -> IO a
+runSalak p sa = runTrie $ do
+  loadSalak p
+  a <- sa
+  return $ \_ -> return a
 
 -- | Simplified run salak, should specified code name and file format.
-runSalakWith :: (HasLoad file, MonadIO m) => String -> file -> RunSalakT m a -> m a
-runSalakWith name a = loadAndRunSalak (loadSalakFile name a)
+runSalakWith :: (HasLoad file) => String -> file -> RunSalak a -> IO a
+runSalakWith name f sa = runTrie $ do
+  loadSalakFile name f
+  a <- sa
+  return (\_ -> return a)
 
--- | Monad that can fetch properties.
-class Monad m => HasSourcePack m where
-  askSourcePack :: m SourcePack
-  logSP :: Text -> m ()
-  logSP _ = return ()
-  readLogs :: m [Text]
-  readLogs = return []
-
-instance MonadIO m => HasSourcePack (RunSalakT m) where
-  askSourcePack = askRSP
-  logSP key = RunSalakT $ modify $ \rsp -> rsp { logs = key : logs rsp}
-  readLogs = RunSalakT $ do
-    rsp <- get
-    let ls = logs rsp
-    put rsp { logs = [] }
-    return (reverse ls)
-
-instance Monad m => HasSourcePack (LoadSalakT m) where
-  askSourcePack = LoadSalakT get
 
 -- | Try fetch properties from `SourcePack`
 fetch
-  :: (HasSourcePack m, FromProp a)
+  :: (HasSalak m, FromProp a)
   => Text -- ^ Properties key
   -> m (Either String a)
-fetch key = logSP key >> search key <$> askSourcePack
+fetch = searchTrie
 
 -- | Fetch properties from `SourcePack`, or throw fail
 require
-  :: (HasSourcePack m, FromProp a)
+  :: (HasSalak m, FromProp a)
   => Text -- ^ Properties key
   -> m a
 require k = fetch k >>= either error return
@@ -220,7 +182,7 @@ requireD
   :: (MonadIO m, FromProp a)
   => Text -- ^ Properties key
   -> RunSalakT m (IO a)
-requireD k = logSP ('@' `cons` k) >> search' k >>= either error return
+requireD k = fetchTrie k >>= either error return
 
 -- $use
 --

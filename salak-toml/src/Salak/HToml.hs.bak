@@ -1,0 +1,44 @@
+{-# LANGUAGE TupleSections #-}
+module Salak.HToml where
+
+
+import           Control.Exception   (Exception, throwIO)
+import qualified Data.HashMap.Strict as HM
+import           Data.Text           (Text, pack)
+import qualified Data.Text.IO        as IO
+import           Salak
+import           Salak.Internal
+import qualified Salak.Trie          as T
+import           Text.Toml
+import           Text.Toml.Types
+
+loadTOML :: Int -> Table -> TraceSource -> TraceSource
+loadTOML i m t = HM.foldlWithKey' (\s k v -> T.modify' (Keys $ simpleKeys k) (go v) s) t m
+  where
+    go (VTable    v) = loadTOML i v
+    go (VTArray   v) = foldArr (loadTOML i) v
+    go (VString   v) = setVal i v
+    go (VInteger  v) = setVal i v
+    go (VFloat    v) = setVal i v
+    go (VBoolean  v) = setVal i v
+    go (VDatetime v) = setVal i v
+    go (VArray    v) = foldArr go v
+    foldArr f v = snd . flip (foldl (\(j,ts) w -> (j+1, T.modify (KI j) (f w) ts))) v . (0,)
+
+newtype TomlException = TomlException Text deriving Show
+
+instance Exception TomlException
+
+-- | Load Toml
+loadToml :: FilePath -> LoadSalak ()
+loadToml file = loadTrie True file $ \i -> do
+  re <- parseTomlDoc file <$> IO.readFile file
+  case re of
+      Left  e -> throwIO (TomlException $ pack $ show e)
+      Right a -> return  (loadTOML i a T.empty)
+
+-- | TOML notation for `loadToml`
+data TOML = TOML
+
+instance HasLoad TOML where
+  loaders _ = (, loadToml) <$> ["toml", "tml"]

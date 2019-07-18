@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.1.
+-- This file has been generated from package.yaml by hpack version 0.31.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3cf16086e25545a5a5f013215edb80cd1be1a8f91216f1bcd19b2e48075ca114
+-- hash: c028fea9fc6e65137f0db34505bea46a19d2808184780e60f079e7867b06a21c
 
 name:           salak
-version:        0.2.10
+version:        0.3
 synopsis:       Configuration Loader
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme
@@ -23,15 +23,13 @@ extra-source-files:
 library
   exposed-modules:
       Salak
-      Salak.Load
+      Salak.Trie
+      Salak.Internal
   other-modules:
-      Salak.Types
-      Salak.Types.Value
-      Salak.Types.Selector
-      Salak.Types.Source
-      Salak.Load.Env
-      Salak.Load.Dynamic
-      Salak.Prop
+      Salak.Internal.Key
+      Salak.Internal.Val
+      Salak.Internal.Trie
+      Salak.Internal.Prop
   hs-source-dirs:
       src
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
@@ -39,17 +37,18 @@ library
       attoparsec
     , base >=4.10 && <5
     , bytestring
-    , containers
     , data-default
     , directory
     , filepath
+    , hashable
+    , heaps
     , menshen
     , mtl
-    , pqueue
     , scientific
     , text
     , time
     , unliftio-core
+    , unordered-containers
   default-language: Haskell2010
 
 test-suite spec
@@ -57,14 +56,12 @@ test-suite spec
   main-is: Spec.hs
   other-modules:
       Salak
-      Salak.Load
-      Salak.Load.Dynamic
-      Salak.Load.Env
-      Salak.Prop
-      Salak.Types
-      Salak.Types.Selector
-      Salak.Types.Source
-      Salak.Types.Value
+      Salak.Internal
+      Salak.Internal.Key
+      Salak.Internal.Prop
+      Salak.Internal.Trie
+      Salak.Internal.Val
+      Salak.Trie
       Paths_salak
   hs-source-dirs:
       test
@@ -75,17 +72,18 @@ test-suite spec
     , attoparsec
     , base >=4.10 && <5
     , bytestring
-    , containers
     , data-default
     , directory
     , filepath
+    , hashable
+    , heaps
     , hspec ==2.*
     , menshen
     , mtl
-    , pqueue
     , random
     , scientific
     , text
     , time
     , unliftio-core
+    , unordered-containers
   default-language: Haskell2010

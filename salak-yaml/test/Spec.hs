@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
@@ -9,8 +10,10 @@ module Main where
 import           Control.Monad.Reader
 import           Data.List            (intercalate)
 import           Data.Text            (Text, pack)
+import           Debug.Trace
 import           GHC.Generics
 import           Salak
+import           Salak.Internal
 import           Salak.Yaml
 import           Test.Hspec
 import           Test.QuickCheck
@@ -55,8 +58,10 @@ jsonProperty :: SpecWith ()
 jsonProperty = do
   context "load json" $ do
     it "salak.yml" $ do
-      loadAndRunSalak (loadYaml "test/salak.yml") $ do
-        as <- require "array"
+      runTrie $ do
+        loadYaml "test/salak.yml"
+        t  <- askSalak
+        as <- trace (show t) $ require "array"
         cf <- require "me.icymint.conf"
         lift $ do
           as      `shouldBe` ["a","b","d","c" :: String]
@@ -64,6 +69,7 @@ jsonProperty = do
           age  cf `shouldBe` 18
           male cf `shouldBe` True
           det  cf `shouldBe` SubConf "abc"
+        return (\_ -> return ())
 
 
 
