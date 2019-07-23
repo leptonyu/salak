@@ -31,3 +31,4 @@ tests:
       - QuickCheck < 2.14
       - text
       - mtl
+      - exceptions

@@ -32,6 +32,9 @@ data SourcePack = SourcePack
 class Monad m => MonadSalak m where
   askSalak :: m SourcePack
 
+askReload :: MonadSalak m => m (IO ReloadResult)
+askReload = reload <$> askSalak
+
 diff :: Source -> Source -> T.Trie ModType
 diff = T.merge go
   where
@@ -71,6 +74,9 @@ search :: (ToKeys k) => k -> Source -> Either String (Keys, Source)
 search k t = fmap (go . unKeys) (toKeys k)
   where
     go ks = (Keys ks, foldl search1 t ks)
+
+search2 :: Source -> [Key] -> Source
+search2 = foldl search1
 
 search1 :: Source -> Key -> Source
 search1 (T.Trie _ m) key = fromMaybe T.empty $ HM.lookup key m

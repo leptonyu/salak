@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3d22a1819c56fcbfdc8da092a9569481bb2e3a25fdece200aea15cf7398aced4
+-- hash: df6b7cd714c6db5fee119092164bacece4693efd54baca880c1db74105c44a55
 
 name:           salak-yaml
 version:        0.3
@@ -51,6 +51,7 @@ test-suite spec
       QuickCheck <2.14
     , base >=4.10 && <5
     , conduit
+    , exceptions
     , hspec ==2.*
     , libyaml
     , mtl

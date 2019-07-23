@@ -1,12 +1,15 @@
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE DeriveGeneric       #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 
 module Main where
 
+import           Control.Monad.Catch
 import           Control.Monad.Reader
 import           Data.List            (intercalate)
 import           Data.Text            (Text, pack)
@@ -49,10 +52,10 @@ data Conf = Conf
 data SubConf = SubConf
   { hello :: String } deriving (Eq, Show, Generic)
 
-instance FromProp SubConf where
+instance MonadCatch m => FromProp m SubConf where
   fromProp = SubConf <$> "hello" .?= "yyy"
 
-instance FromProp Conf
+instance MonadCatch m => FromProp m Conf
 
 jsonProperty :: SpecWith ()
 jsonProperty = do

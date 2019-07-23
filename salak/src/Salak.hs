@@ -51,6 +51,8 @@ module Salak(
   , readPrimitive
   , readEnum
   , Source
+  , SourcePack
+  , askReload
   ) where
 
 import           Control.Monad.Catch

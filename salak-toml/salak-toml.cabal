@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c0ec44edc9670e3ef8258f50dfcb1204fa4bbbc269e09c114f5af58eaac07db3
+-- hash: 80727004692d0fc294ebbc7374a1222b4833a8904c9e30c2c9a94d1b67656189
 
 name:           salak-toml
 version:        0.3
@@ -51,6 +51,7 @@ test-suite spec
   build-depends:
       QuickCheck <2.14
     , base >=4.10 && <5
+    , exceptions
     , hspec ==2.*
     , mtl
     , salak

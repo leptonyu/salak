@@ -85,6 +85,11 @@ instance MonadIO m => MonadSalak (LoadSalakT m) where
 instance MonadThrow m => MonadThrow (LoadSalakT m) where
   throwM = LoadSalakT . throwM
 
+instance MonadCatch m => MonadCatch (LoadSalakT m) where
+  catch m f = do
+    us <- MS.get
+    lift $ MS.evalStateT (unLoad m) us `catch` (\e -> MS.evalStateT (unLoad $ f e) us)
+
 instance Monad m => MS.MonadState UpdateSource (LoadSalakT m) where
   state f = LoadSalakT $ MS.state f
 
@@ -110,6 +115,14 @@ instance Monad m => MonadReader SourcePack (RunSalakT m)  where
 
 instance MonadThrow m => MonadThrow (RunSalakT m) where
   throwM = RunSalakT . throwM
+
+instance MonadCatch m => MonadCatch (RunSalakT m) where
+  catch m f = do
+    us <- ask
+    lift $ runReaderT (unRun m) us `catch` (\e -> runReaderT (unRun $ f e) us)
+
+instance MonadIO m => MonadIO (RunSalakT m) where
+  liftIO = RunSalakT . liftIO
 
 runRunSalak :: SourcePack -> RunSalakT m a -> m a
 runRunSalak sp (RunSalakT m) = runReaderT m sp

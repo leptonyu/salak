@@ -1,17 +1,21 @@
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE DeriveGeneric       #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 
 module Main where
 
+import           Control.Monad.Catch
 import           Control.Monad.Writer
 import           Data.Either
 import           Data.List             (intercalate)
 import           Data.Menshen
 import           Data.Text             (Text, pack, unpack)
+import           Debug.Trace
 import           GHC.Generics
 import           Salak
 import           Salak.Internal
@@ -45,20 +49,18 @@ instance Arbitrary SKey where
         return (v ++ "[" ++ show x ++ "]")
     return (SKey $ pack $ intercalate "." vs)
 
-data Conf = Conf
-  { name :: String
-  , age  :: Int
-  , male :: Bool
-  , det  :: SubConf
-  } deriving (Eq, Show, Generic)
+data Hello = Hello
+  { hello :: IO Int
+  } deriving Generic
 
-data SubConf = SubConf
-  { hello :: String } deriving (Eq, Show, Generic)
+instance (MonadThrow m, MonadIO m) => FromProp m Hello
 
-instance FromProp SubConf where
-  fromProp = SubConf <$> "hello" .?= "yyy" ? pattern "[a-z]{3,16}"
-
-instance FromProp Conf
+loadRandom :: MonadIO m => Text -> LoadSalakT m ()
+loadRandom key = loadList True (unpack key) go
+  where
+    go = do
+      a :: Int <- randomIO
+      return [(key, a)]
 
 specProperty :: SpecWith ()
 specProperty = do
@@ -163,22 +165,19 @@ specProperty = do
   --         x `shouldBe` (z :: Text)
   --     let x = loadAndRunSalak (loadOnceMock xs) (require "a") :: IO Text
   --     x `shouldThrow` anyErrorCall
-  -- context "Reload test" $ do
-  --   it "reload" $ do
-  --     (x :: IO Int,r) <- loadAndRunSalak (loadMock [("hello", pack . show <$> (randomIO :: IO Int))]) $ do
-  --       v <- requireD "hello"
-  --       a <- reloadAction
-  --       return (v,a)
-  --     a <- x
-  --     ReloadResult{..} <- r
-  --     isError  `shouldBe` False
-  --     mapM_ print msg
-  --     b <- x
-  --     a  `shouldNotBe` b
-
-
-
-
+  context "Reload test" $ do
+    it "reload" $ do
+      loadAndRunSalak (loadRandom "hello") $ do
+        Hello{..} <- require ""
+        x <- liftIO hello
+        liftIO $ print x
+        r <- askReload
+        lift $ quickCheck $ \(_ :: Int) -> do
+          ReloadResult{..} <- liftIO r
+          hasError `shouldBe` False
+          msgs     `shouldBe` ["hello:Mod"]
+          y <- hello
+          x  `shouldNotBe` y
 
 
 
