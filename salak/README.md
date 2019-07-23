@@ -78,18 +78,17 @@ instance FromProp Config where
 main = runSalakWith "salak" (YAML :|: TOML) $ do
   c :: Config <- require "test.config"
   lift $ print c
+  receive_
 ```
 
 GHCi play
 ```Haskell
 λ> import Salak
-λ> import Salak.Yaml
-λ> import Salak.Toml
-λ> import Data.Menshen
-λ> :set -XTypeApplications
+λ> import Salak.Internal
+λ> import Data.Text(Text)
+λ> data Config = Config { name :: Text, dir  :: Maybe Text, ext  :: Int} deriving (Eq, Show)
 λ> instance FromProp Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1
-λ> f = runSalakWith "salak" (YAML :|: TOML)
-λ> f (require "") >>= print @Config
+λ> runSalak def (receive $ require "") :: IO Config
 Config {name = "daniel", dir = Just "ls", ext = 2}
 ```
 

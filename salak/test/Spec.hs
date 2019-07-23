@@ -9,18 +9,18 @@ module Main where
 
 import           Control.Monad.Writer
 import           Data.Either
-import           Data.List            (intercalate)
+import           Data.List             (intercalate)
 import           Data.Menshen
-import           Data.Text            (Text, pack, unpack)
+import           Data.Text             (Text, pack, unpack)
 import           GHC.Generics
 import           Salak
 import           Salak.Internal
 import           Salak.Internal.Key
 import           Salak.Internal.Prop
-import           Salak.Internal.Trie
+import           Salak.Internal.Source
 import           Salak.Internal.Val
-import qualified Salak.Trie           as T
-import           System.Random        (randomIO)
+import qualified Salak.Trie            as T
+import           System.Random         (randomIO)
 import           Test.Hspec
 import           Test.QuickCheck
 
@@ -87,7 +87,7 @@ specProperty = do
       -- newVT "a${x}b${c}" 0 `shouldBe` VRef 0 [RVal "a", RRef [KT "x"], RVal "b", RRef [KT "c"]]
   context "source" $ do
     it "normal - 2" $ do
-      let (a,b,c) = extract T.empty $ Salak.Internal.Trie.generate 0 ([("hello", "world")] :: [(Text, Text)])
+      let (a,b,c) = extract T.empty $ Salak.Internal.Source.generate 0 ([("hello", "world")] :: [(Text, Text)])
       length c `shouldBe` 0
       length (T.toList b) `shouldBe` 1
   --   it "normal - 3" $ do

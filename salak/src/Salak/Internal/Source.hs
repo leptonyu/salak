@@ -1,18 +1,36 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NoOverloadedLists #-}
-module Salak.Internal.Trie where
+module Salak.Internal.Source where
 
-import           Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Heap           as H
+import           Control.Concurrent.MVar
+import           Data.HashMap.Strict     (HashMap)
+import qualified Data.HashMap.Strict     as HM
+import qualified Data.Heap               as H
 import           Data.Maybe
 import           Salak.Internal.Key
 import           Salak.Internal.Val
-import qualified Salak.Trie          as T
+import qualified Salak.Trie              as T
 
 type Source = T.Trie Vals
 type TraceSource = T.Trie ([String], Vals)
+
+data ReloadResult = ReloadResult
+  { hasError :: Bool
+  , msgs     :: [String]
+  }
+
+type QFunc = Source -> Either String (IO ())
+
+data SourcePack = SourcePack
+  { source :: Source
+  , pref   :: [Key]
+  , qref   :: MVar QFunc
+  , reload :: IO ReloadResult
+  }
+
+class Monad m => MonadSalak m where
+  askSalak :: m SourcePack
 
 diff :: Source -> Source -> T.Trie ModType
 diff = T.merge go

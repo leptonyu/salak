@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
@@ -51,22 +52,21 @@ data SubConf = SubConf
 instance FromProp SubConf where
   fromProp = SubConf <$> "hello" .?= "yyy"
 
-instance FromProp Conf
+instance FromProp Conf where
+  fromProp = Conf <$> "name" <*> "age" <*> "male" <*> "det"
 
 tomlProperty :: SpecWith ()
 tomlProperty = do
   context "load toml" $ do
     it "salak.toml" $ do
-      runTrie $ do
-        loadToml "test/salak.toml"
-        t  <- askSalak
+      loadAndRunSalak (loadToml "test/salak.toml") $ do
+        SourcePack{..}  <- askSalak
         cf <- require "me.icymint.conf"
         lift $ do
           name cf `shouldBe` "shelly"
           age  cf `shouldBe` 16
           male cf `shouldBe` False
           det  cf `shouldBe` SubConf "def"
-        return (\_ -> return ())
 
 
 

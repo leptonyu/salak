@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c028fea9fc6e65137f0db34505bea46a19d2808184780e60f079e7867b06a21c
+-- hash: 5041aad3075f0220abde3b13214069e6a845652d48a6a976ea6da73ad43a046a
 
 name:           salak
 version:        0.3
@@ -28,7 +28,7 @@ library
   other-modules:
       Salak.Internal.Key
       Salak.Internal.Val
-      Salak.Internal.Trie
+      Salak.Internal.Source
       Salak.Internal.Prop
   hs-source-dirs:
       src
@@ -39,6 +39,7 @@ library
     , bytestring
     , data-default
     , directory
+    , exceptions
     , filepath
     , hashable
     , heaps
@@ -59,7 +60,7 @@ test-suite spec
       Salak.Internal
       Salak.Internal.Key
       Salak.Internal.Prop
-      Salak.Internal.Trie
+      Salak.Internal.Source
       Salak.Internal.Val
       Salak.Trie
       Paths_salak
@@ -74,6 +75,7 @@ test-suite spec
     , bytestring
     , data-default
     , directory
+    , exceptions
     , filepath
     , hashable
     , heaps

@@ -58,10 +58,9 @@ jsonProperty :: SpecWith ()
 jsonProperty = do
   context "load json" $ do
     it "salak.yml" $ do
-      runTrie $ do
-        loadYaml "test/salak.yml"
-        t  <- askSalak
-        as <- trace (show t) $ require "array"
+      loadAndRunSalak (loadYaml "test/salak.yml") $ do
+        SourcePack{..}  <- askSalak
+        as <- trace (show source) $ require "array"
         cf <- require "me.icymint.conf"
         lift $ do
           as      `shouldBe` ["a","b","d","c" :: String]
@@ -69,7 +68,6 @@ jsonProperty = do
           age  cf `shouldBe` 18
           male cf `shouldBe` True
           det  cf `shouldBe` SubConf "abc"
-        return (\_ -> return ())
 
 
 

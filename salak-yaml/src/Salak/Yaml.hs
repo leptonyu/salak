@@ -26,7 +26,7 @@ import qualified Salak.Trie             as T
 import           Text.Libyaml
 
 -- | Load Yaml
-loadYaml :: FilePath -> RunSalak ()
+loadYaml :: FilePath -> LoadSalak ()
 loadYaml file = loadTrie True file (\i -> runConduitRes (decodeFileMarked file .| loadYAML i T.empty))
 
 -- | YAML notation for `loadYaml`

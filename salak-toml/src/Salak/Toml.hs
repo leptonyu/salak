@@ -76,7 +76,7 @@ newtype TomlException = TomlException Text deriving Show
 instance Exception TomlException
 
 -- | Load Toml
-loadToml :: FilePath -> RunSalak ()
+loadToml :: FilePath -> LoadSalak ()
 loadToml file = loadTrie True file $ \i -> do
   re <- T.parse <$> IO.readFile file
   case re of
