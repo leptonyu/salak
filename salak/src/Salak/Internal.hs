@@ -168,7 +168,7 @@ loadMock fa = loadList False "mock" (return fa)
 loadEnv :: MonadIO m => LoadSalakT m ()
 loadEnv = loadList False "environment" go
   where
-    go = concat . fmap split2 . filter ((/= '_') . head . fst) <$> getEnvironment
+    go = concatMap split2 . filter ((/= '_') . head . fst) <$> getEnvironment
     split2 (k,v) = [(TT.pack k,v),(convert k,v)]
     convert = TT.toLower . TT.pack . map (\c -> if c == '_' then '.' else c)
 

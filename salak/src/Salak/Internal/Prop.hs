@@ -110,7 +110,7 @@ instance (MonadIO m, MonadThrow m, FromProp a) => FromPropT m (IO a) where
       return (swapMVar aref b >> io)
     return (readMVar aref)
 
-data PropException = PropException String deriving Show
+newtype PropException = PropException String deriving Show
 
 instance Exception PropException
 
