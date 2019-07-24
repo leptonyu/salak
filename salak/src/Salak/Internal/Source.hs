@@ -59,8 +59,8 @@ extract o t =
     t1   = fmap snd t
     list = fmap (\(k,v)->(show k,v)) $ T.toList $ fmap fst t
 
-generate :: (Foldable f, ToKeys k, ToValue v) => Int -> f (k,v) -> TraceSource
-generate i = foldr go T.empty
+gen :: (Foldable f, ToKeys k, ToValue v) => Int -> f (k,v) -> TraceSource
+gen i = foldr go T.empty
   where
     go (k,v) x = case toKeys k of
       Left  e  -> T.alter (g3 e) (Keys []) x

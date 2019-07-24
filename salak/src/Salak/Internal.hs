@@ -9,6 +9,8 @@
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TupleSections              #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE UndecidableInstances       #-}
 module Salak.Internal(
     load
   , loadTrie
@@ -66,8 +68,8 @@ data UpdateSource = UpdateSource
   ,  refNo  :: Int
   ,  refMap :: HashMap Int String
   ,  qfunc  :: MVar QFunc
-  ,  update :: IO ( TraceSource -- Updated Tries
-                  , IO ())    -- Confirm action
+  ,  update :: MVar (IO ( TraceSource -- Updated Tries
+                  , IO ()))    -- Confirm action
   }
 
 newtype LoadSalakT  m a = LoadSalakT  { unLoad  :: MS.StateT UpdateSource m a } deriving (Functor, Applicative, Monad, MS.MonadTrans)
@@ -106,7 +108,7 @@ newtype RunSalakT m a = RunSalakT { unRun :: ReaderT SourcePack m a } deriving (
 
 type RunSalak = RunSalakT IO
 
-instance MonadIO m => MonadSalak (RunSalakT m) where
+instance Monad m => MonadSalak (RunSalakT m) where
   askSalak = RunSalakT ask
 
 instance Monad m => MonadReader SourcePack (RunSalakT m)  where
@@ -124,6 +126,15 @@ instance MonadCatch m => MonadCatch (RunSalakT m) where
 instance MonadIO m => MonadIO (RunSalakT m) where
   liftIO = RunSalakT . liftIO
 
+instance IU.MonadUnliftIO m => IU.MonadUnliftIO (RunSalakT m) where
+  askUnliftIO = RunSalakT $ do
+    ut <- ask
+    f  <- lift IU.askUnliftIO
+    return $ IU.UnliftIO $ IU.unliftIO f . (`runReaderT` ut) . unRun
+
+instance {-# OVERLAPPABLE #-} (m' ~ t (RunSalakT m), MonadTrans t, Monad m, Monad m') => MonadSalak m' where
+  askSalak = lift askSalak
+
 runRunSalak :: SourcePack -> RunSalakT m a -> m a
 runRunSalak sp (RunSalakT m) = runReaderT m sp
 
@@ -135,28 +146,25 @@ loadTrie canReload name f = do
   let (t,_,es) = extract v ts
   if null es
     then do
-      let nut = UpdateSource ref (refNo + 1) (HM.insert refNo name refMap) qfunc (go update refNo)
+      liftIO $ modifyMVar_ update $ \u -> go ts u refNo
+      let nut = UpdateSource ref (refNo + 1) (HM.insert refNo name refMap) qfunc update
       _ <- liftIO $ swapMVar ref t
       MS.put nut
     else error $ show es
   where
-    go ud n = if canReload
-      then do
-        (c,d) <- ud
-        c1    <- loadSource f n c
-        return (c1,d)
-      else ud
+    go ts ud n = return $ do
+      (c,d) <- ud
+      c1    <- loadSource (if canReload then f else (\_ -> return ts)) n c
+      return (c1,d)
 
 loadList :: (MonadIO m, Foldable f, ToKeys k, ToValue v) => Bool -> String -> IO (f (k,v)) -> LoadSalakT m ()
-loadList canReload name iof = loadTrie canReload name go
-  where
-    go i = generate i <$> iof
+loadList canReload name iof = loadTrie canReload name (\i -> gen i <$> iof)
 
 load :: MonadIO m => LoadSalakT m () -> m SourcePack
 load (LoadSalakT lm) = do
   r <- liftIO $ newMVar T.empty
-  q <- liftIO $ newMVar $ \_ -> Right (return ())
-  let u = return (T.empty, return ())
+  q <- liftIO $ newMVar $ \s -> Right $ void $ swapMVar r s
+  u <- liftIO $ newMVar $ return (T.empty, return ())
   MS.execStateT lm (UpdateSource r 0 HM.empty q u) >>= toSourcePack
 
 toSourcePack :: MonadIO m => UpdateSource -> m SourcePack
@@ -164,7 +172,7 @@ toSourcePack UpdateSource{..} = liftIO (readMVar ref) >>= \s -> return $ SourceP
   where
     go = do
       t        <- readMVar ref
-      (ts, ac) <- update
+      (ts, ac) <- join $ readMVar update
       let (s,cs,es) = extract t ts
       f <- readMVar qfunc
       if null es

@@ -22,6 +22,7 @@ import           Control.Monad.Reader
 import qualified Data.ByteString         as B
 import qualified Data.ByteString.Lazy    as BL
 import           Data.Default
+import           Data.Fixed
 import qualified Data.HashMap.Strict     as HM
 import           Data.Int
 import           Data.List               (sortBy)
@@ -33,6 +34,7 @@ import qualified Data.Text               as T
 import qualified Data.Text.Encoding      as TB
 import qualified Data.Text.Lazy          as TL
 import qualified Data.Text.Lazy.Encoding as TBL
+import           Data.Time
 import           Data.Word
 import           Foreign.C
 import           GHC.Exts
@@ -73,6 +75,9 @@ instance (MonadThrow m, MonadSalak m) => HasSalak m where
 instance Monad m => MonadSalak (Prop m) where
   askSalak = Prop ask
 
+instance MonadIO m => MonadIO (Prop m) where
+  liftIO = Prop . liftIO
+
 instance MonadThrow m => MonadThrow (Prop m) where
   throwM = Prop . throwM
 
@@ -108,15 +113,17 @@ instance {-# OVERLAPPABLE #-} FromProp m a => FromProp m [a] where
 instance {-# OVERLAPPABLE #-} (MonadThrow m, MonadIO m, FromProp (Either SomeException) a) => FromProp m (IO a) where
   fromProp = Prop $ do
     sp   <- ask
-    either throwM (go sp) $ runProp sp (fromProp :: Prop (Either SomeException) a)
-    where
-      go sp a = liftIO $ do
-        aref <- newMVar a
-        modifyMVar_ (qref sp) $ \f -> return $ \s -> do
-          b  <- convertExp $ runProp sp {source = search2 s (pref sp), pref = pref sp} fromProp
-          io <- f s
-          return (swapMVar aref b >> io)
-        return (readMVar aref)
+    either throwM (buildIO sp) $ runProp sp (fromProp :: Prop (Either SomeException) a)
+
+
+buildIO :: (MonadIO m, FromProp (Either SomeException) a) => SourcePack -> a -> m (IO a)
+buildIO sp a = liftIO $ do
+  aref <- newMVar a
+  modifyMVar_ (qref sp) $ \f -> return $ \s -> do
+    b  <- convertExp $ runProp sp {source = search2 s (pref sp), pref = pref sp} fromProp
+    io <- f s
+    return (swapMVar aref b >> io)
+  return (readMVar aref)
 
 convertExp :: Either SomeException a -> Either String a
 convertExp = either (Left . readExp) Right
@@ -153,6 +160,16 @@ infixl 5 .?=
 infixl 5 .?:
 (.?:) :: (A.Alternative f, Default b) => f a -> (b -> a) -> f a
 (.?:) fa b = fa .?= b def
+
+-- | Default IO value.
+infixl 5 .?|
+(.?|) :: (MonadCatch m, MonadIO m, FromProp (Either SomeException) a) => Prop m (IO a) -> a -> Prop m (IO a)
+(.?|) ma a = do
+  sp <- askSalak
+  v  <- try ma
+  case v of
+    Left  (_ :: SomeException) -> buildIO sp a
+    Right o                    -> return o
 
 instance MonadThrow m => HasValid (Prop m) where
   invalid = err . toI18n
@@ -336,6 +353,15 @@ instance MonadThrow m => FromProp m Word32 where
 
 instance MonadThrow m => FromProp m Word64 where
   fromProp = fromProp >>= toNum
+
+instance MonadThrow m => FromProp m NominalDiffTime where
+  fromProp = fromInteger <$> fromProp
+
+instance MonadThrow m => FromProp m DiffTime where
+  fromProp = fromInteger <$> fromProp
+
+instance (HasResolution a, MonadThrow m) => FromProp m (Fixed a) where
+  fromProp = fromInteger <$> fromProp
 
 toNum :: (MonadThrow m, Integral i, Bounded i) => Scientific -> Prop m i
 toNum s = case toBoundedInteger s of

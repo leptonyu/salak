@@ -13,7 +13,6 @@ import           Control.Monad.Catch
 import           Control.Monad.Reader
 import           Data.List            (intercalate)
 import           Data.Text            (Text, pack)
-import           Debug.Trace
 import           GHC.Generics
 import           Salak
 import           Salak.Internal

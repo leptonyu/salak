@@ -30,6 +30,8 @@ module Salak(
   , defaultParseCommandLine
   , loadEnv
   , loadMock
+  , loadSalak
+  , loadSalakWithFile
   -- ** Load Extensions
   , ExtLoad
   , loadByExt
@@ -47,12 +49,16 @@ module Salak(
   -- * Properties Parsers
   , (.?=)
   , (.?:)
+  , (.?|)
   , FromProp(..)
+  , Prop
   , readPrimitive
   , readEnum
   , Source
   , SourcePack
   , askReload
+  , MonadCatch
+  , MonadThrow
   ) where
 
 import           Control.Monad.Catch
@@ -130,6 +136,8 @@ loadSalak PropConfig{..} = do
     ifS _    _   = return Nothing
     loadConf n mf = lift mf >>= mapM_ (liftNT . loadExt . (</> n))
 
+loadSalakWithFile :: (MonadThrow m, MonadIO m, HasLoad file) => file -> FilePath -> LoadSalakT m ()
+loadSalakWithFile file name = loadSalak def { configName = Just name, loadExt = loadByExt file }
 
 loadAndRunSalak' :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> (SourcePack -> m a) -> m a
 loadAndRunSalak' lstm f = load lstm >>= f
