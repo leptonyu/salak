@@ -12,13 +12,13 @@
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE UndecidableInstances       #-}
 module Salak.Internal(
-    load
+    loadAndRunSalak'
   , loadTrie
   , loadList
-  , LoadSalak
   , LoadSalakT
-  , RunSalak
+  , LoadSalak
   , RunSalakT
+  , RunSalak
   , runRunSalak
   , HasSalak(..)
   , MonadSalak(..)
@@ -40,6 +40,7 @@ module Salak.Internal(
   , ToValue(..)
   , liftNT
   , SourcePack(..)
+  , MonadIO
   ) where
 
 
@@ -72,8 +73,10 @@ data UpdateSource = UpdateSource
                   , IO ()))    -- Confirm action
   }
 
+-- | Configuration Loader Monad, used for load properties from sources. Custom loaders using `loadTrie`
 newtype LoadSalakT  m a = LoadSalakT  { unLoad  :: MS.StateT UpdateSource m a } deriving (Functor, Applicative, Monad, MS.MonadTrans)
 
+-- | Simple IO Monad
 type LoadSalak = LoadSalakT IO
 
 liftNT :: MonadIO m => LoadSalak () -> LoadSalakT m ()
@@ -104,8 +107,10 @@ instance IU.MonadUnliftIO m => IU.MonadUnliftIO (LoadSalakT m) where
     f  <- MS.lift IU.askUnliftIO
     return $ IU.UnliftIO $ IU.unliftIO f . (`MS.evalStateT` ut) . unLoad
 
+-- | Standard `HasSalak` instance.
 newtype RunSalakT m a = RunSalakT { unRun :: ReaderT SourcePack m a } deriving (Functor, Applicative, Monad, MonadTrans)
 
+-- | Simple IO Monad
 type RunSalak = RunSalakT IO
 
 instance Monad m => MonadSalak (RunSalakT m) where
@@ -138,6 +143,7 @@ instance {-# OVERLAPPABLE #-} (m' ~ t (RunSalakT m), MonadTrans t, Monad m, Mona
 runRunSalak :: SourcePack -> RunSalakT m a -> m a
 runRunSalak sp (RunSalakT m) = runReaderT m sp
 
+-- | Basic loader
 loadTrie :: MonadIO m => Bool -> String -> (Int -> IO TraceSource) -> LoadSalakT m ()
 loadTrie canReload name f = do
   UpdateSource{..} <- MS.get
@@ -157,8 +163,14 @@ loadTrie canReload name f = do
       c1    <- loadSource (if canReload then f else (\_ -> return ts)) n c
       return (c1,d)
 
+-- | Simple loader
 loadList :: (MonadIO m, Foldable f, ToKeys k, ToValue v) => Bool -> String -> IO (f (k,v)) -> LoadSalakT m ()
 loadList canReload name iof = loadTrie canReload name (\i -> gen i <$> iof)
+
+-- | Standard salak functions, by load and with a `SourcePack` instance.
+--  Users should use `SourcePack` to create custom `MonadSalak` instances, then you get will an instance of `HasSalak`.
+loadAndRunSalak' :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> (SourcePack -> m a) -> m a
+loadAndRunSalak' lstm f = load lstm >>= f
 
 load :: MonadIO m => LoadSalakT m () -> m SourcePack
 load (LoadSalakT lm) = do

@@ -15,10 +15,11 @@ import qualified Salak.Trie              as T
 type Source = T.Trie Vals
 type TraceSource = T.Trie ([String], Vals)
 
+-- | Reload result, show erros or changes.
 data ReloadResult = ReloadResult
-  { hasError :: Bool
-  , msgs     :: [String]
-  }
+  { hasError :: Bool     -- ^ If reload process has errors.
+  , msgs     :: [String] -- ^ If hasError then this show error messages, else this show change logs.
+  } deriving Show
 
 type QFunc = Source -> Either String (IO ())
 
@@ -29,9 +30,11 @@ data SourcePack = SourcePack
   , reload :: IO ReloadResult
   }
 
+-- | Monad has the ability to get a `SourcePack` instance.
 class Monad m => MonadSalak m where
   askSalak :: m SourcePack
 
+-- | Get reload action which used for reload profiles
 askReload :: MonadSalak m => m (IO ReloadResult)
 askReload = reload <$> askSalak
 

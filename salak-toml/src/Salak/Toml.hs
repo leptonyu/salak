@@ -16,6 +16,7 @@
 module Salak.Toml(
     TOML(..)
   , loadToml
+  , runSalakWithToml
   ) where
 
 import           Control.Exception   (Exception, throwIO)
@@ -29,6 +30,10 @@ import           Salak.Internal
 import qualified Salak.Trie          as TR
 import           Toml                hiding (Key, TOML, Value)
 import qualified Toml                as T
+
+
+runSalakWithToml :: (MonadCatch m, MonadIO m) => FilePath -> RunSalakT m a -> m a
+runSalakWithToml name = runSalakWith name TOML
 
 -- | TOML notation for `loadToml`
 data TOML = TOML

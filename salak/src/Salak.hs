@@ -25,41 +25,43 @@ module Salak(
   , loadAndRunSalak
   , loadAndRunSalak'
   , PropConfig(..)
-  -- ** Basic Load
+  -- * Run Functions
+  , HasSalak(..)
+  , MonadSalak(..)
+  , RunSalakT
+  , RunSalak
+  -- * Load Functions
+  -- ** Monad for Loader
+  , LoadSalakT
+  , LoadSalak
+  -- ** Basic loaders
   , loadCommandLine
   , ParseCommandLine
   , defaultParseCommandLine
   , loadEnv
   , loadMock
   , loadSalak
-  , loadSalakWithFile
-  -- ** Load Extensions
+  , loadSalakWith
+  -- ** File Loaders
   , ExtLoad
   , loadByExt
   , HasLoad(..)
   , (:|:)(..)
-  -- * Salak Monad
-  , LoadSalak
-  , LoadSalakT
-  , RunSalakT
-  , RunSalak
-  , HasSalak(..)
-  , MonadSalak(..)
-  -- ** Reload Result
+  -- ** Reload Functions
   , ReloadResult(..)
+  , askReload
   -- * Properties Parsers
-  , (.?=)
-  , (.?:)
-  , (.?|)
+  , PropOp(..)
   , FromProp(..)
   , Prop
   , readPrimitive
   , readEnum
-  , Source
   , SourcePack
-  , askReload
+  , PropException(..)
+  -- * Reexport
   , MonadCatch
   , MonadThrow
+  , MonadIO
   ) where
 
 import           Control.Monad.Catch
@@ -74,9 +76,13 @@ import           Salak.Internal.Source
 import           System.Directory
 import           System.FilePath         ((</>))
 
+
+-- | Configuration file name
+type FileName = String
+
 -- | Prop load configuration
 data PropConfig = PropConfig
-  { configName    :: Maybe String  -- ^ Config name
+  { configName    :: Maybe FileName  -- ^ Config name
   , configDirKey  :: Text          -- ^ Specify config dir
   , searchCurrent :: Bool          -- ^ Search current directory, default true
   , searchHome    :: Bool          -- ^ Search home directory, default false.
@@ -111,7 +117,7 @@ loadByExt xs f = mapM_ go (loaders xs)
   where
     go (ext, ly) = tryLoadFile ly $ f ++ "." ++ ext
 
--- | Default run salak.
+-- | Default load salak.
 -- All these configuration sources has orders, from highest priority to lowest priority:
 --
 -- > 1. loadCommandLine
@@ -122,7 +128,7 @@ loadByExt xs f = mapM_ go (loaders xs)
 -- > 6. load file from home folder if enabled
 -- > 7. file extension matching, support yaml or toml or any other loader.
 --
-loadSalak :: (MonadThrow m, MonadIO m) => PropConfig -> LoadSalakT m ()
+loadSalak :: (MonadCatch m, MonadIO m) => PropConfig -> LoadSalakT m ()
 loadSalak PropConfig{..} = do
   loadCommandLine commandLine
   loadEnv
@@ -137,32 +143,20 @@ loadSalak PropConfig{..} = do
     ifS _    _   = return Nothing
     loadConf n mf = lift mf >>= mapM_ (liftNT . loadExt . (</> n))
 
-loadSalakWithFile :: (MonadThrow m, MonadIO m, HasLoad file) => file -> FilePath -> LoadSalakT m ()
-loadSalakWithFile file name = loadSalak def { configName = Just name, loadExt = loadByExt file }
+loadSalakWith :: (MonadCatch m, MonadIO m, HasLoad file) => file -> FileName -> LoadSalakT m ()
+loadSalakWith file name = loadSalak def { configName = Just name, loadExt = loadByExt file }
 
-loadAndRunSalak' :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> (SourcePack -> m a) -> m a
-loadAndRunSalak' lstm f = load lstm >>= f
-
+-- | Standard salak functions, by load and run with `RunSalakT`.
 loadAndRunSalak :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> RunSalakT m a -> m a
 loadAndRunSalak lstm ma = loadAndRunSalak' lstm $ \sp -> runRunSalak sp ma
 
--- | Default run salak.
--- All these configuration sources has orders, from highest priority to lowest priority:
---
--- > 1. loadCommandLine
--- > 2. loadEnvironment
--- > 3. loadConfFiles
--- > 4. load file from folder `salak.conf.dir` if defined
--- > 5. load file from current folder if enabled
--- > 6. load file from home folder if enabled
--- > 7. file extension matching, support yaml or toml or any other loader.
---
-runSalak :: (MonadThrow m, MonadIO m) => PropConfig -> RunSalakT m a -> m a
+-- | Run salak, load strategy refer to `loadSalak`
+runSalak :: (MonadCatch m, MonadIO m) => PropConfig -> RunSalakT m a -> m a
 runSalak c = loadAndRunSalak (loadSalak c)
 
-
-runSalakWith :: (MonadThrow m, MonadIO m, HasLoad file) => FilePath -> file -> RunSalakT m a -> m a
-runSalakWith name file = loadAndRunSalak (loadSalakWithFile file name)
+-- | Run salak, load strategy refer to `loadSalakWith`
+runSalakWith :: (MonadCatch m, MonadIO m, HasLoad file) => FileName -> file -> RunSalakT m a -> m a
+runSalakWith name file = loadAndRunSalak (loadSalakWith file name)
 
 -- $use
 --
@@ -208,7 +202,7 @@ runSalakWith name file = loadAndRunSalak (loadSalakWithFile file name)
 -- >   , ext  :: Int
 -- >   } deriving (Eq, Show)
 -- >
--- > instance FromProp Config where
+-- > instance MonadCatch m => FromProp m Config where
 -- >   fromProp = Config
 -- >     <$> "user" ? pattern "[a-z]{5,16}"
 -- >     <*> "pwd"

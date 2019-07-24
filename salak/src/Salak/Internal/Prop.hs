@@ -62,7 +62,14 @@ instance MonadCatch m => A.Alternative (Prop m) where
       Right x                   -> return x
       Left (_ :: SomeException) -> b
 
+-- | Core type class of salak, which provide function to parse properties.
 class HasSalak m where
+  -- | Parse properties using `FromProp`. For example:
+  --
+  -- > a :: Bool              <- require "bool.key"
+  -- > b :: Maybe Int         <- require "int.optional.key"
+  -- > c :: Either String Int <- require "int.error.key"
+  -- > d :: IO Int            <- require "int.reloadable.key"
   require :: FromProp m a => Text -> m a
 
 instance (MonadThrow m, MonadSalak m) => HasSalak m where
@@ -89,17 +96,19 @@ instance MonadCatch m => MonadCatch (Prop m) where
 runProp :: Monad m => SourcePack -> Prop m a ->  m a
 runProp sp (Prop p) = runReaderT p sp
 
-instance (Monad m, FromProp m a) => FromProp m (Maybe a) where
+instance (MonadCatch m, FromProp m a) => FromProp m (Maybe a) where
   fromProp = do
-    sp@SourcePack{..} <- askSalak
-    if TR.empty == source
-      then return Nothing
-      else lift $ Just <$> runProp sp fromProp
+    v <- try fromProp
+    case v of
+      Left  e -> case fromException e of
+        Just NullException -> return Nothing
+        _                  -> throwM e
+      Right a -> return (Just a)
 
 instance (MonadCatch m, FromProp m a) => FromProp m (Either String a) where
   fromProp = do
     sp@SourcePack{..} <- askSalak
-    lift $ convertExp <$> try (runProp sp fromProp)
+    lift $ convertExp (Left $ show (Keys pref) ++ " is null") <$> try (runProp sp fromProp)
 
 instance {-# OVERLAPPABLE #-} FromProp m a => FromProp m [a] where
   fromProp = do
@@ -110,29 +119,33 @@ instance {-# OVERLAPPABLE #-} FromProp m a => FromProp m [a] where
       go s vs (k,t) = (:vs) <$> runProp s { pref = pref s ++ [k], source = t} fromProp
       g2 (a,_) (b,_) = compare b a
 
-instance {-# OVERLAPPABLE #-} (MonadThrow m, MonadIO m, FromProp (Either SomeException) a) => FromProp m (IO a) where
+instance {-# OVERLAPPABLE #-} (Show a, MonadThrow m, MonadIO m, FromProp (Either SomeException) a) => FromProp m (IO a) where
   fromProp = Prop $ do
     sp   <- ask
     either throwM (buildIO sp) $ runProp sp (fromProp :: Prop (Either SomeException) a)
 
 
-buildIO :: (MonadIO m, FromProp (Either SomeException) a) => SourcePack -> a -> m (IO a)
+buildIO :: (Show a, MonadIO m, FromProp (Either SomeException) a) => SourcePack -> a -> m (IO a)
 buildIO sp a = liftIO $ do
   aref <- newMVar a
   modifyMVar_ (qref sp) $ \f -> return $ \s -> do
-    b  <- convertExp $ runProp sp {source = search2 s (pref sp), pref = pref sp} fromProp
+    b  <- convertExp (Right a) $ runProp sp {source = search2 s (pref sp), pref = pref sp} fromProp
     io <- f s
     return (swapMVar aref b >> io)
   return (readMVar aref)
 
-convertExp :: Either SomeException a -> Either String a
-convertExp = either (Left . readExp) Right
+convertExp :: Either String a -> Either SomeException a -> Either String a
+convertExp a = either readExp Right
   where
     readExp e = case fromException e of
-      Just (PropException x) -> x
-      _                      -> show e
+      Just (PropException x) -> Left x
+      Just NullException     -> a
+      _                      -> Left $ show e
 
-newtype PropException = PropException String deriving Show
+data PropException
+  = PropException String -- ^ Parse failed
+  | NullException        -- ^ Not found
+  deriving Show
 
 instance Exception PropException
 
@@ -144,32 +157,58 @@ instance (MonadThrow m, FromProp m a) => IsString (Prop m a) where
       Right (k,t) -> runProp sp { source = t, pref = pref ++ unKeys k} fromProp
 
 notFound :: MonadThrow m => Prop m a
-notFound = err "null value"
+notFound = do
+  SourcePack{..} <- askSalak
+  throwM NullException
 
 err :: MonadThrow m => String -> Prop m a
 err e = do
   SourcePack{..} <- askSalak
   throwM $ PropException $ show (Keys pref) ++ ":" ++ e
 
--- | Optional value.
-infixl 5 .?=
-(.?=) :: A.Alternative f => f a -> a -> f a
-(.?=) a b = a A.<|> pure b
+-- | Prop operators.
+--
+-- Suppose we have following definition:
+--
+-- > data Config = Config
+-- >   { enabled :: Bool
+-- >   , level   :: IO LogLevel
+-- >   }
+class PropOp f a where
+  -- | Parse or default value
+  --
+  -- > instance MonadThrow m => FromProp m Config where
+  -- >   fromProp = Config
+  -- >     <$> "enabled" .?= True
+  -- >     <*> "level"   .?= (return LevelInfo)
+  --
+  -- IO value will work right.
+  infixl 5 .?=
+  (.?=) :: f a -> a -> f a
+  -- | Parse or auto extract from a `Default` value
+  --
+  -- > instance Default Config where
+  -- >   def = Config True (return LevelInfo)
+  -- > instance MonadThrow m => FromProp m Config where
+  -- >   fromProp = Config
+  -- >     <$> "enabled" .?: enabled
+  -- >     <$> "level"   .?: level
+  infixl 5 .?:
+  (.?:) :: Default b => f a -> (b -> a) -> f a
+  (.?:) fa b = fa .?= b def
 
--- | Default value.
-infixl 5 .?:
-(.?:) :: (A.Alternative f, Default b) => f a -> (b -> a) -> f a
-(.?:) fa b = fa .?= b def
+-- | Support normal value
+instance {-# OVERLAPPABLE #-} A.Alternative f => PropOp f a where
+  (.?=) a b = a A.<|> pure b
 
--- | Default IO value.
-infixl 5 .?|
-(.?|) :: (MonadCatch m, MonadIO m, FromProp (Either SomeException) a) => Prop m (IO a) -> a -> Prop m (IO a)
-(.?|) ma a = do
-  sp <- askSalak
-  v  <- try ma
-  case v of
-    Left  (_ :: SomeException) -> buildIO sp a
-    Right o                    -> return o
+-- | Support IO value
+instance (Show a, MonadCatch m, MonadIO m, FromProp (Either SomeException) a) => PropOp (Prop m) (IO a) where
+  (.?=) ma a = do
+    sp <- askSalak
+    v  <- try ma
+    case v of
+      Left  (_ :: SomeException) -> liftIO a >>= buildIO sp
+      Right o                    -> return o
 
 instance MonadThrow m => HasValid (Prop m) where
   invalid = err . toI18n
@@ -184,6 +223,7 @@ readPrimitive f = do
     Just (Right a) -> return a
     _              -> notFound
 
+-- | Parse enum value from `Text`
 readEnum :: MonadThrow m => (Text -> Either String a) -> Prop m a
 readEnum = readPrimitive . go
   where
@@ -273,7 +313,7 @@ instance (Monad m, FromProp m a) => FromProp m (Sum a) where
 instance (Monad m, FromProp m a) => FromProp m (Product a) where
   fromProp = Product <$> fromProp
 
-instance (Monad m, FromProp m a) => FromProp m (Option a) where
+instance (MonadCatch m, FromProp m a) => FromProp m (Option a) where
   fromProp = Option <$> fromProp
 
 instance MonadThrow m => FromProp m Bool where

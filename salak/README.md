@@ -69,7 +69,7 @@ data Config = Config
   , ext  :: Int
   } deriving (Eq, Show)
 
-instance FromProp Config where
+instance MonadCatch m => FromProp m Config where
   fromProp = Config
     <$> "user" ? pattern "[a-z]{5,16}"
     <*> "pwd"
@@ -93,5 +93,6 @@ Config {name = "daniel", dir = Nothing, ext = 1}
 ```
 
 TODO:
+- Recover placeholder
 - Add git pull support.
 - Add automatic reloading.

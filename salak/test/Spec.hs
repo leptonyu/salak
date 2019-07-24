@@ -49,6 +49,14 @@ data Hello = Hello
 
 instance (MonadThrow m, MonadIO m) => FromProp m Hello
 
+data Config = Config
+  { level :: IO Int
+  , world :: Maybe Bool
+  }
+
+instance (MonadIO m, MonadCatch m) => FromProp m Config where
+  fromProp = Config <$> "level" .?= (return 1) <*> "world"
+
 loadRandom :: MonadIO m => Text -> LoadSalakT m ()
 loadRandom key = loadList True (unpack key) go
   where
@@ -162,16 +170,22 @@ specProperty = do
   context "Reload test" $ do
     it "reload" $ do
       loadAndRunSalak (loadRandom "hello") $ do
-        Hello{..} <- require ""
-        x <- liftIO hello
+        Hello{..}  <- require ""
+        Config{..} <- require ""
+        x  <- liftIO hello
         liftIO $ print x
-        r <- askReload
+        liftIO $ print world
+        q1 <- liftIO level
+        r  <- askReload
         lift $ quickCheck $ \(_ :: Int) -> do
           ReloadResult{..} <- liftIO r
+          when hasError $ print msgs
           hasError `shouldBe` False
           msgs     `shouldBe` ["hello:Mod"]
-          y <- hello
+          y  <- hello
           x  `shouldNotBe` y
+          q2 <- level
+          q1 `shouldBe` q2
 
 
 

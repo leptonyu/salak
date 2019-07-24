@@ -14,6 +14,7 @@
 module Salak.Yaml(
     YAML(..)
   , loadYaml
+  , runSalakWithYaml
   ) where
 
 import           Control.Exception      (throwIO)
@@ -24,6 +25,9 @@ import           Salak
 import           Salak.Internal
 import qualified Salak.Trie             as T
 import           Text.Libyaml
+
+runSalakWithYaml :: (MonadCatch m, MonadIO m) => FilePath -> RunSalakT m a -> m a
+runSalakWithYaml name = runSalakWith name YAML
 
 -- | Load Yaml
 loadYaml :: FilePath -> LoadSalak ()
