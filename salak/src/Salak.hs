@@ -20,9 +20,10 @@ module Salak(
   -- $use
 
   -- * Salak Main Functions
-    loadAndRunSalak
+    runSalak
+  , runSalakWith
+  , loadAndRunSalak
   , loadAndRunSalak'
-  , runSalak
   , PropConfig(..)
   -- ** Basic Load
   , loadCommandLine
@@ -142,7 +143,6 @@ loadSalakWithFile file name = loadSalak def { configName = Just name, loadExt = 
 loadAndRunSalak' :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> (SourcePack -> m a) -> m a
 loadAndRunSalak' lstm f = load lstm >>= f
 
-
 loadAndRunSalak :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> RunSalakT m a -> m a
 loadAndRunSalak lstm ma = loadAndRunSalak' lstm $ \sp -> runRunSalak sp ma
 
@@ -159,6 +159,10 @@ loadAndRunSalak lstm ma = loadAndRunSalak' lstm $ \sp -> runRunSalak sp ma
 --
 runSalak :: (MonadThrow m, MonadIO m) => PropConfig -> RunSalakT m a -> m a
 runSalak c = loadAndRunSalak (loadSalak c)
+
+
+runSalakWith :: (MonadThrow m, MonadIO m, HasLoad file) => FilePath -> file -> RunSalakT m a -> m a
+runSalakWith name file = loadAndRunSalak (loadSalakWithFile file name)
 
 -- $use
 --
@@ -213,15 +217,15 @@ runSalak c = loadAndRunSalak (loadSalak c)
 -- > main = runSalakWith "salak" (YAML :|: TOML) $ do
 -- >   c :: Config <- require "test.config"
 -- >   lift $ print c
--- >   receive_
 --
 -- GHCi play
 --
+-- > λ> :set -XFlexibleInstances -XMultiParamTypeClasses
 -- > λ> import Salak
--- > λ> import Salak.Internal
+-- > λ> import Data.Default
 -- > λ> import Data.Text(Text)
 -- > λ> data Config = Config { name :: Text, dir  :: Maybe Text, ext  :: Int} deriving (Eq, Show)
--- > λ> instance FromProp Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1
--- > λ> runSalak def (receive $ require "") :: IO Config
--- > Config {name = "daniel", dir = Just "ls", ext = 2}
+-- > λ> instance MonadCatch m => FromProp m Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1
+-- > λ> runSalak def (require "") :: IO Config
+-- > Config {name = "daniel", dir = Nothing, ext = 1}
 --
