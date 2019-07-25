@@ -12,8 +12,10 @@ Configuration (re)loader in Haskell.
 ## salak-toml
 [![salak-toml](https://img.shields.io/hackage/v/salak-toml.svg)](https://hackage.haskell.org/package/salak-toml)
 
+## Introduction
 This library define a universal procedure to load configurations and parse properties, also supports reload configuration files.
 
+## Load Strategy
 We can load configurations from command line, environment, configuration files such as yaml or toml etc, and we may want to have our own strategies to load configurations from multi sources and overwrite properties by orders of these sources.
 
 `PropConfig` defines a common loading strategy:
@@ -27,15 +29,6 @@ We can load configurations from command line, environment, configuration files s
 
 Load earlier has higher orders, orders cannot be changed.
 
-`ReaderT SourcePack m` defines how to read properties:
-```Haskell
-require "abc.prop"
-```
-
-`ReloadableSourcePackT m` defines how to read reloadable properties:
-```Haskell
-requireD "abc.dynamic.prop"
-```
 
 For commandline and environment, 
 ```
@@ -43,8 +36,17 @@ CommandLine:  --package.a.enabled=true
 Environment: PACKAGE_A_ENABLED: false
 ```
 
-Usage:
+## Run Functions
 
+In `HasSalak` monad, we can call following functions
+```Haskell
+a :: Bool              <- require "bool.key"
+b :: Maybe Int         <- require "int.optional.key"
+c :: Either String Int <- require "int.error.key"
+d :: IO Int            <- require "int.reloadable.key"
+```
+
+## Usage
 
 Environment:
 ```
@@ -82,7 +84,7 @@ main = runSalakWith "salak" (YAML :|: TOML) $ do
 
 GHCi play
 ```Haskell
-λ> :set -XFlexibleInstances -XMultiParamTypeClasses 
+λ> :set -XFlexibleInstances -XMultiParamTypeClasses -XOverloadedStrings
 λ> import Salak
 λ> import Data.Default
 λ> import Data.Text(Text)

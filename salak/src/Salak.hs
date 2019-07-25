@@ -214,7 +214,7 @@ runSalakWith name file = loadAndRunSalak (loadSalakWith file name)
 --
 -- GHCi play
 --
--- > λ> :set -XFlexibleInstances -XMultiParamTypeClasses
+-- > λ> :set -XFlexibleInstances -XMultiParamTypeClasses -XOverloadedStrings
 -- > λ> import Salak
 -- > λ> import Data.Default
 -- > λ> import Data.Text(Text)
