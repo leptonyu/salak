@@ -13,10 +13,21 @@ Configuration (re)loader in Haskell.
 [![salak-toml](https://img.shields.io/hackage/v/salak-toml.svg)](https://hackage.haskell.org/package/salak-toml)
 
 ## Introduction
-This library define a universal procedure to load configurations and parse properties, also supports reload configuration files.
+This library defines a universal procedure to load configurations and parse properties, also supports reload configuration files.
+
+## Parse Functions
+
+`HasSalak` monad provide a unified function `require` to parse properties. Here are some examples.
+
+```Haskell
+a :: Bool              <- require "bool.key"
+b :: Maybe Int         <- require "int.optional.key"
+c :: Either String Int <- require "int.error.key"
+d :: IO Int            <- require "int.reloadable.key" -- This property can be changed by reloading configurations.
+```
 
 ## Load Strategy
-We can load configurations from command line, environment, configuration files such as yaml or toml etc, and we may want to have our own strategies to load configurations from multi sources and overwrite properties by orders of these sources.
+We can load configurations from command lines, environment, configuration files such as yaml or toml etc., and we may want to have our own strategies to load configurations from multiply sources and overwrite properties by orders of these sources.
 
 `PropConfig` defines a common loading strategy:
 > 1. loadCommandLine
@@ -27,23 +38,12 @@ We can load configurations from command line, environment, configuration files s
 > 6. load file from home folder if enabled
 > 7. file extension matching, support yaml or toml or any other loader.
 
-Load earlier has higher orders, orders cannot be changed.
+Load earlier has higher priorities. Priorities cannot be changed.
 
-
-For commandline and environment, 
+For command lines and environment, 
 ```
 CommandLine:  --package.a.enabled=true
 Environment: PACKAGE_A_ENABLED: false
-```
-
-## Run Functions
-
-In `HasSalak` monad, we can call following functions
-```Haskell
-a :: Bool              <- require "bool.key"
-b :: Maybe Int         <- require "int.optional.key"
-c :: Either String Int <- require "int.error.key"
-d :: IO Int            <- require "int.reloadable.key"
 ```
 
 ## Usage

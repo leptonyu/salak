@@ -13,7 +13,7 @@
 -- Stability:   experimental
 -- Portability: portable
 --
--- Configuration Loader for Production in Haskell.
+-- Configuration Loader and Parser.
 --
 module Salak(
   -- * How to use this library
@@ -160,10 +160,11 @@ runSalakWith name file = loadAndRunSalak (loadSalakWith file name)
 
 -- $use
 --
--- | This library define a universal procedure to load configurations and parse properties, also supports reload configuration files.
+-- | This library defines a universal procedure to load configurations and parse properties, also supports reload configuration files.
 --
 --
--- We can load configurations from command line, environment, configuration files such as yaml or toml etc, and we may want to have our own strategies to load configurations from multi sources and overwrite properties by orders of these sources.
+-- We can load configurations from command lines, environment, configuration files such as yaml or toml etc.,
+-- and we may want to have our own strategies to load configurations from multiply sources and overwrite properties by orders of these sources.
 --
 -- `PropConfig` defines a common loading strategy:
 --
@@ -175,7 +176,7 @@ runSalakWith name file = loadAndRunSalak (loadSalakWith file name)
 -- > 6. load file from home folder if enabled
 -- > 7. file extension matching, support yaml or toml or any other loader.
 --
--- Load earlier has higher priority, priorities cannot be changed.
+-- Load earlier has higher priority. Priorities cannot be changed.
 --
 --
 -- Usage:

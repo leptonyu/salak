@@ -9,7 +9,6 @@
 
 module Main where
 
-import           Control.Monad.Catch
 import           Control.Monad.Writer
 import           Data.List             (intercalate)
 import           Data.Text             (Text, pack, unpack)

@@ -147,11 +147,11 @@ instance {-# OVERLAPPABLE #-} FromProp m a => FromProp m [a] where
       go s vs (k,t) = (:vs) <$> runProp s { pref = pref s ++ [k], source = t} fromProp
       g2 (a,_) (b,_) = compare b a
 
-instance {-# OVERLAPPABLE #-} (MonadIO m, FromProp (Either SomeException) a, FromProp m a) => FromProp m (IO a) where
+instance {-# OVERLAPPABLE #-} (MonadIO m, MonadIO n, FromProp (Either SomeException) a, FromProp m a) => FromProp m (n a) where
   fromProp = do
     sp <- ask
     a  <- fromProp
-    lift $ buildIO sp a
+    lift $ liftIO <$> buildIO sp a
 
 buildIO :: (MonadIO m, FromProp (Either SomeException) a) => SourcePack -> a -> m (IO a)
 buildIO sp a = liftIO $ do
@@ -192,7 +192,7 @@ err e = do
 
 -- | Prop operators.
 --
--- Suppose we have following definition:
+-- Suppose we have the following definition:
 --
 -- > data Config = Config
 -- >   { enabled :: Bool
@@ -209,7 +209,7 @@ class PropOp f a where
   -- IO value will work right.
   infixl 5 .?=
   (.?=) :: f a -> a -> f a
-  -- | Parse or auto extract from a `Default` value
+  -- | Parse or auto extract default value from a `Default` value
   --
   -- > instance Default Config where
   -- >   def = Config True (return LevelInfo)
