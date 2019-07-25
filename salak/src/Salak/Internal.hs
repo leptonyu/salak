@@ -137,6 +137,7 @@ instance IU.MonadUnliftIO m => IU.MonadUnliftIO (RunSalakT m) where
     f  <- lift IU.askUnliftIO
     return $ IU.UnliftIO $ IU.unliftIO f . (`runReaderT` ut) . unRun
 
+-- | Automatic promote @t@ (`RunSalakT` @m@) into `MonadSalak` instance.
 instance {-# OVERLAPPABLE #-} (m' ~ t (RunSalakT m), MonadTrans t, Monad m, Monad m') => MonadSalak m' where
   askSalak = lift askSalak
 

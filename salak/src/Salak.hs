@@ -13,7 +13,7 @@
 -- Stability:   experimental
 -- Portability: portable
 --
--- Configuration Loader and Parser.
+-- Configuration (re)Loader and Parser.
 --
 module Salak(
   -- * How to use this library
@@ -25,7 +25,7 @@ module Salak(
   , loadAndRunSalak
   , loadAndRunSalak'
   , PropConfig(..)
-  -- * Run Functions
+  -- * Parsing Properties Function
   , HasSalak(..)
   , MonadSalak(..)
   , RunSalakT
@@ -160,7 +160,7 @@ runSalakWith name file = loadAndRunSalak (loadSalakWith file name)
 
 -- $use
 --
--- | This library defines a universal procedure to load configurations and parse properties, also supports reload configuration files.
+-- | This library defines a universal procedure to load configurations and parse properties, also supports reload configurations.
 --
 --
 -- We can load configurations from command lines, environment, configuration files such as yaml or toml etc.,
@@ -178,49 +178,24 @@ runSalakWith name file = loadAndRunSalak (loadSalakWith file name)
 --
 -- Load earlier has higher priority. Priorities cannot be changed.
 --
+-- After loading configurations, we can use `require` to parse properties. For example:
 --
--- Usage:
+-- > a :: Bool              <- require "bool.key"
+-- > b :: Maybe Int         <- require "int.optional.key"
+-- > c :: Either String Int <- require "int.error.key"
+-- > d :: IO Int            <- require "int.reloadable.key"
 --
---
--- Environment:
---
--- > export TEST_CONFIG_NAME=daniel
---
--- Current Directory:  salak.yaml
---
--- > test.config:
--- >   name: noop
--- >   dir: ls
---
--- Current Directory:  salak.toml
---
--- > [test.config]
--- > ext=2
---
--- > data Config = Config
--- >   { name :: Text
--- >   , dir  :: Maybe Text
--- >   , ext  :: Int
--- >   } deriving (Eq, Show)
--- >
--- > instance Monad m => FromProp m Config where
--- >   fromProp = Config
--- >     <$> "user" ? pattern "[a-z]{5,16}"
--- >     <*> "pwd"
--- >     <*> "ext" .?= 1
--- >
--- > main = runSalakWith "salak" (YAML :|: TOML) $ do
--- >   c :: Config <- require "test.config"
--- >   lift $ print c
+-- Salak supports parse `IO` values, which actually wrap a 'Control.Concurrent.MVar.MVar' variable and can be reseted by reloading configurations.
+-- Normal value will not be affected by reloading configurations.
 --
 -- GHCi play
 --
--- > λ> :set -XFlexibleInstances -XMultiParamTypeClasses -XOverloadedStrings
--- > λ> import Salak
--- > λ> import Data.Default
--- > λ> import Data.Text(Text)
--- > λ> data Config = Config { name :: Text, dir  :: Maybe Text, ext  :: Int} deriving (Eq, Show)
--- > λ> instance Monad m => FromProp m Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1
--- > λ> runSalak def (require "") :: IO Config
--- > Config {name = "daniel", dir = Nothing, ext = 1}
+-- >>> :set -XFlexibleInstances -XMultiParamTypeClasses -XOverloadedStrings
+-- >>> import Salak
+-- >>> import Data.Default
+-- >>> import Data.Text(Text)
+-- >>> data Config = Config { name :: Text, dir  :: Maybe Text, ext  :: Int} deriving (Eq, Show)
+-- >>> instance Monad m => FromProp m Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1
+-- >>> runSalak def (require "") :: IO Config
+-- Config {name = "daniel", dir = Nothing, ext = 1}
 --

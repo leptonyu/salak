@@ -67,16 +67,20 @@ instance Monad m => A.Alternative (Prop m) where
       Left (_ :: SomeException) -> b
 
 -- | Core type class of salak, which provide function to parse properties.
-class HasSalak m where
+class Monad m => HasSalak m where
   -- | Parse properties using `FromProp`. For example:
   --
   -- > a :: Bool              <- require "bool.key"
   -- > b :: Maybe Int         <- require "int.optional.key"
   -- > c :: Either String Int <- require "int.error.key"
   -- > d :: IO Int            <- require "int.reloadable.key"
+  --
+  -- `require` supports parse `IO` values, which actually wrap a 'MVar' variable and can be reseted by reloading configurations.
+  -- Normal value will not be affected by reloading configurations.
   require :: FromProp m a => Text -> m a
 
-instance (MonadThrow m, MonadSalak m) => HasSalak m where
+-- | Promote a `MonadSalak` into `HasSalak`
+instance (Monad m, MonadThrow m, MonadSalak m) => HasSalak m where
   require ks = do
     sp@SourcePack{..} <- askSalak
     case search ks source of
@@ -147,6 +151,7 @@ instance {-# OVERLAPPABLE #-} FromProp m a => FromProp m [a] where
       go s vs (k,t) = (:vs) <$> runProp s { pref = pref s ++ [k], source = t} fromProp
       g2 (a,_) (b,_) = compare b a
 
+-- | Supports for parsing `IO` value.
 instance {-# OVERLAPPABLE #-} (MonadIO m, MonadIO n, FromProp (Either SomeException) a, FromProp m a) => FromProp m (n a) where
   fromProp = do
     sp <- ask
@@ -173,6 +178,7 @@ data PropException
 
 instance Exception PropException
 
+-- | Automatic convert literal string into an instance of `Prop` @m@ @a@.
 instance FromProp m a => IsString (Prop m a) where
   fromString ks = do
     sp@SourcePack{..} <- askSalak
@@ -221,11 +227,11 @@ class PropOp f a where
   (.?:) :: Default b => f a -> (b -> a) -> f a
   (.?:) fa b = fa .?= b def
 
--- | Support normal value
+-- | Support for setting default normal value.
 instance {-# OVERLAPPABLE #-} A.Alternative f => PropOp f a where
   (.?=) a b = a A.<|> pure b
 
--- | Support IO value
+-- | Support for setting default `IO` value.
 instance (MonadIO m, FromProp (Either SomeException) a) => PropOp (Prop m) (IO a) where
   (.?=) ma a = do
     sp <- askSalak
