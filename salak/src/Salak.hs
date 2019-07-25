@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeOperators       #-}
 -- |
 -- Module:      Salak
--- Copyright:   (c) 2019 Daniel YU
+-- Copyright:   2019 Daniel YU
 -- License:     BSD3
 -- Maintainer:  leptonyu@gmail.com
 -- Stability:   experimental
@@ -30,6 +30,14 @@ module Salak(
   , MonadSalak(..)
   , RunSalakT
   , RunSalak
+  -- ** Operators
+  , PropOp(..)
+  , FromProp(..)
+  , Prop
+  , readPrimitive
+  , readEnum
+  , SourcePack
+  , PropException(..)
   -- * Load Functions
   -- ** Monad for Loader
   , LoadSalakT
@@ -50,14 +58,6 @@ module Salak(
   -- ** Reload Functions
   , ReloadResult(..)
   , askReload
-  -- * Properties Parsers
-  , PropOp(..)
-  , FromProp(..)
-  , Prop
-  , readPrimitive
-  , readEnum
-  , SourcePack
-  , PropException(..)
   -- * Reexport
   , MonadCatch
   , MonadThrow

@@ -1,6 +1,6 @@
 _common: !include "../default.yaml"
 name:                salak
-synopsis:            Configuration Loader
+synopsis:            Configuration (re)Loader and Parser.
 <<: *legal
 extra-source-files:
 - README.md

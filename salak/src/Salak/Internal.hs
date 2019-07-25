@@ -11,6 +11,16 @@
 {-# LANGUAGE TupleSections              #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE UndecidableInstances       #-}
+-- |
+-- Module:      Salak.Internal
+-- Copyright:   2019 Daniel YU
+-- License:     BSD3
+-- Maintainer:  leptonyu@gmail.com
+-- Stability:   experimental
+-- Portability: portable
+--
+-- This module is used for implementing loaders.
+--
 module Salak.Internal(
     loadAndRunSalak'
   , loadTrie

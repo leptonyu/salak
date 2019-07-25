@@ -1,5 +1,15 @@
 {-# LANGUAGE DeriveFunctor     #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+-- |
+-- Module:      Salak.Internal
+-- Copyright:   2019 Daniel YU
+-- License:     BSD3
+-- Maintainer:  leptonyu@gmail.com
+-- Stability:   experimental
+-- Portability: portable
+--
+-- A data structure for manipulating properties.
+--
 module Salak.Trie(
     Trie
   , getPrimitive
