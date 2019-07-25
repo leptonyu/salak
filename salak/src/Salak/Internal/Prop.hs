@@ -113,8 +113,7 @@ instance (MonadCatch m, FromProp m a) => FromProp m (Either String a) where
 instance {-# OVERLAPPABLE #-} FromProp m a => FromProp m [a] where
   fromProp = do
     sp@SourcePack{..} <- askSalak
-    let TR.Trie _ m = source
-    lift $ foldM (go sp) [] $ sortBy g2 $ filter (isNum.fst) $ HM.toList m
+    lift $ foldM (go sp) [] $ sortBy g2 $ filter (isNum.fst) $ HM.toList $ TR.getMap source
     where
       go s vs (k,t) = (:vs) <$> runProp s { pref = pref s ++ [k], source = t} fromProp
       g2 (a,_) (b,_) = compare b a
@@ -217,11 +216,13 @@ instance MonadThrow m => HasValid (Prop m) where
 readPrimitive :: MonadThrow m => (Value -> Either String a) -> Prop m a
 readPrimitive f = do
   SourcePack{..} <- askSalak
-  let TR.Trie v _ = source
-  case f <$> (v >>= getVal) of
+  vx <- g $ TR.getPrimitive source >>= getVal
+  case f <$> vx of
     Just (Left e)  -> err e
     Just (Right a) -> return a
     _              -> notFound
+  where
+    g = return
 
 -- | Parse enum value from `Text`
 readEnum :: MonadThrow m => (Text -> Either String a) -> Prop m a

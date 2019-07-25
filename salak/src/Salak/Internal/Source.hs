@@ -39,7 +39,7 @@ askReload :: MonadSalak m => m (IO ReloadResult)
 askReload = reload <$> askSalak
 
 diff :: Source -> Source -> T.Trie ModType
-diff = T.merge go
+diff = T.unionWith' go
   where
     go Nothing Nothing = Nothing
     go (Just (Vals a)) Nothing  = if H.null a then Nothing else Just Add
@@ -82,7 +82,7 @@ search2 :: Source -> [Key] -> Source
 search2 = foldl search1
 
 search1 :: Source -> Key -> Source
-search1 (T.Trie _ m) key = fromMaybe T.empty $ HM.lookup key m
+search1 m key = fromMaybe T.empty $ HM.lookup key $ T.getMap m
 
 fmt :: ModType -> Int -> String -> String -> String
 fmt m i s n = concat ['#' : show i, ' ' : show m, ' ' : s ,  ' ' : n]
@@ -99,7 +99,7 @@ loadSource f i ts = T.unionWith go ts <$> f i
     go (Just (e1,v1)) (Just (e2,v2)) = Just (e1++e2, modVals' v2 v1)
 
 setVal :: ToValue v => Int -> v -> TraceSource -> TraceSource
-setVal i v (T.Trie x m) = T.Trie (go x) m
+setVal i v = T.update go
   where
     go Nothing       = Just ([], modVals (Val i $ toVal v) emptyVals)
     go (Just (e,vs)) = Just (e,  modVals (Val i $ toVal v) vs)
