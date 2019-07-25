@@ -53,7 +53,7 @@ class Monad m => FromProp m a where
 
 newtype Prop m a
   = Prop { unProp :: ReaderT SourcePack (ExceptT SomeException m) a }
-  deriving (Functor, Applicative, Monad, MonadReader SourcePack)
+  deriving (Functor, Applicative, Monad, MonadReader SourcePack, MonadIO)
 
 instance MonadTrans Prop where
   lift = Prop . lift . lift
@@ -67,7 +67,14 @@ instance Monad m => A.Alternative (Prop m) where
       Left (_ :: SomeException) -> b
 
 -- | Core type class of salak, which provide function to parse properties.
-class Monad m => HasSalak m where
+class Monad m => MonadSalak m where
+  -- | Monad has the ability to get a `SourcePack` instance.
+  askSalak :: m SourcePack
+
+  -- | Get reload action which used for reload profiles
+  askReload :: MonadSalak m => m (IO ReloadResult)
+  askReload = reload <$> askSalak
+
   -- | Parse properties using `FromProp`. For example:
   --
   -- > a :: Bool              <- require "bool.key"
@@ -77,21 +84,18 @@ class Monad m => HasSalak m where
   --
   -- `require` supports parse `IO` values, which actually wrap a 'MVar' variable and can be reseted by reloading configurations.
   -- Normal value will not be affected by reloading configurations.
-  require :: FromProp m a => Text -> m a
-
--- | Promote a `MonadSalak` into `HasSalak`
-instance (Monad m, MonadThrow m, MonadSalak m) => HasSalak m where
+  require :: (MonadThrow m, FromProp m a) => Text -> m a
   require ks = do
     sp@SourcePack{..} <- askSalak
     case search ks source of
       Left  e     -> throwM $ PropException e
       Right (k,t) -> runProp1 sp { source = t, pref = pref ++ unKeys k} fromProp
 
+instance {-# OVERLAPPABLE #-} (m ~ t m', Monad m', Monad m, MonadTrans t, MonadSalak m') => MonadSalak m where
+  askSalak = lift askSalak
+
 instance Monad m => MonadSalak (Prop m) where
   askSalak = Prop ask
-
-instance MonadIO m => MonadIO (Prop m) where
-  liftIO = Prop . liftIO
 
 instance Monad m => MonadThrow (Prop m) where
   throwM = Prop . lift . throwError . toException

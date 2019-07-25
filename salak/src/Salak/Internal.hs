@@ -29,8 +29,7 @@ module Salak.Internal(
   , LoadSalak
   , RunSalakT
   , RunSalak
-  , runRunSalak
-  , HasSalak(..)
+  , runRun
   , MonadSalak(..)
   , loadMock
   , loadEnv
@@ -57,6 +56,7 @@ module Salak.Internal(
 import           Control.Concurrent.MVar
 import           Control.Monad
 import           Control.Monad.Catch
+import           Control.Monad.Except
 import           Control.Monad.IO.Class  (MonadIO, liftIO)
 import qualified Control.Monad.IO.Unlift as IU
 import           Control.Monad.Reader
@@ -84,75 +84,43 @@ data UpdateSource = UpdateSource
   }
 
 -- | Configuration Loader Monad, used for load properties from sources. Custom loaders using `loadTrie`
-newtype LoadSalakT  m a = LoadSalakT  { unLoad  :: MS.StateT UpdateSource m a } deriving (Functor, Applicative, Monad, MS.MonadTrans)
+newtype LoadSalakT  m a = LoadSalakT (MS.StateT UpdateSource m a)
+  deriving (Functor, Applicative, Monad, MonadTrans, MonadIO, MS.MonadState UpdateSource, MonadThrow, MonadCatch)
 
 -- | Simple IO Monad
 type LoadSalak = LoadSalakT IO
 
+runLoad :: Monad m => LoadSalakT m a -> UpdateSource -> m a
+runLoad (LoadSalakT ma) us = MS.evalStateT ma us
+
 liftNT :: MonadIO m => LoadSalak () -> LoadSalakT m ()
-liftNT (LoadSalakT a) = do
-  ud <- MS.get
-  MS.liftIO $ MS.evalStateT a ud
+liftNT a = MS.get >>= liftIO . runLoad a
 
 instance MonadIO m => MonadSalak (LoadSalakT m) where
   askSalak = MS.get >>= toSourcePack
 
-instance MonadThrow m => MonadThrow (LoadSalakT m) where
-  throwM = LoadSalakT . throwM
-
-instance MonadCatch m => MonadCatch (LoadSalakT m) where
-  catch m f = do
-    us <- MS.get
-    lift $ MS.evalStateT (unLoad m) us `catch` (\e -> MS.evalStateT (unLoad $ f e) us)
-
-instance Monad m => MS.MonadState UpdateSource (LoadSalakT m) where
-  state f = LoadSalakT $ MS.state f
-
-instance MonadIO m => MonadIO (LoadSalakT m) where
-  liftIO = LoadSalakT . liftIO
-
-instance IU.MonadUnliftIO m => IU.MonadUnliftIO (LoadSalakT m) where
-  askUnliftIO = LoadSalakT $ do
+instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (LoadSalakT m) where
+  askUnliftIO = do
     ut <- MS.get
-    f  <- MS.lift IU.askUnliftIO
-    return $ IU.UnliftIO $ IU.unliftIO f . (`MS.evalStateT` ut) . unLoad
+    lift $ IU.withUnliftIO $ \u -> return (IU.UnliftIO (IU.unliftIO u . flip runLoad ut))
 
--- | Standard `HasSalak` instance.
-newtype RunSalakT m a = RunSalakT { unRun :: ReaderT SourcePack m a } deriving (Functor, Applicative, Monad, MonadTrans)
+-- | Standard `MonadSalak` instance.
+newtype RunSalakT m a = RunSalakT (ReaderT SourcePack m a)
+  deriving (Functor, Applicative, Monad, MonadTrans, MonadIO, MonadReader SourcePack, MonadThrow, MonadCatch)
 
 -- | Simple IO Monad
 type RunSalak = RunSalakT IO
 
+runRun :: Monad m => RunSalakT m a -> SourcePack -> m a
+runRun (RunSalakT ma) us = runReaderT ma us
+
 instance Monad m => MonadSalak (RunSalakT m) where
   askSalak = RunSalakT ask
 
-instance Monad m => MonadReader SourcePack (RunSalakT m)  where
-  ask = RunSalakT ask
-  local f m = RunSalakT $ local f $ unRun m
-
-instance MonadThrow m => MonadThrow (RunSalakT m) where
-  throwM = RunSalakT . throwM
-
-instance MonadCatch m => MonadCatch (RunSalakT m) where
-  catch m f = do
-    us <- ask
-    lift $ runReaderT (unRun m) us `catch` (\e -> runReaderT (unRun $ f e) us)
-
-instance MonadIO m => MonadIO (RunSalakT m) where
-  liftIO = RunSalakT . liftIO
-
-instance IU.MonadUnliftIO m => IU.MonadUnliftIO (RunSalakT m) where
-  askUnliftIO = RunSalakT $ do
+instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (RunSalakT m) where
+  askUnliftIO = do
     ut <- ask
-    f  <- lift IU.askUnliftIO
-    return $ IU.UnliftIO $ IU.unliftIO f . (`runReaderT` ut) . unRun
-
--- | Automatic promote @t@ (`RunSalakT` @m@) into `MonadSalak` instance.
-instance {-# OVERLAPPABLE #-} (m' ~ t (RunSalakT m), MonadTrans t, Monad m, Monad m') => MonadSalak m' where
-  askSalak = lift askSalak
-
-runRunSalak :: SourcePack -> RunSalakT m a -> m a
-runRunSalak sp (RunSalakT m) = runReaderT m sp
+    lift $ IU.withUnliftIO $ \u -> return (IU.UnliftIO (IU.unliftIO u . flip runRun ut))
 
 -- | Basic loader
 loadTrie :: MonadIO m => Bool -> String -> (Int -> IO TraceSource) -> LoadSalakT m ()
@@ -179,16 +147,16 @@ loadList :: (MonadIO m, Foldable f, ToKeys k, ToValue v) => Bool -> String -> IO
 loadList canReload name iof = loadTrie canReload name (\i -> gen i <$> iof)
 
 -- | Standard salak functions, by load and with a `SourcePack` instance.
---  Users should use `SourcePack` to create custom `MonadSalak` instances, then you get will an instance of `HasSalak`.
+--  Users should use `SourcePack` to create custom `MonadSalak` instances, then you get will an instance of `MonadSalak`.
 loadAndRunSalak' :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> (SourcePack -> m a) -> m a
 loadAndRunSalak' lstm f = load lstm >>= f
 
-load :: MonadIO m => LoadSalakT m () -> m SourcePack
-load (LoadSalakT lm) = do
+load :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> m SourcePack
+load lm = do
   r <- liftIO $ newMVar T.empty
   q <- liftIO $ newMVar $ \s -> Right $ void $ swapMVar r s
   u <- liftIO $ newMVar $ return (T.empty, return ())
-  MS.execStateT lm (UpdateSource r 0 HM.empty q u) >>= toSourcePack
+  runLoad (lm >> MS.get) (UpdateSource r 0 HM.empty q u) >>= toSourcePack
 
 toSourcePack :: MonadIO m => UpdateSource -> m SourcePack
 toSourcePack UpdateSource{..} = liftIO (readMVar ref) >>= \s -> return $ SourcePack s [] qfunc go

@@ -69,7 +69,7 @@ instance Foldable Trie where
 instance Traversable Trie where
   traverse f (Trie v m) = Trie <$> go v <*> traverse (traverse f) m
     where
-      go (Just x) = Just <$> (f x)
+      go (Just x) = Just <$> f x
       go _        = pure Nothing
 
 -- | /O(1)/. A trie with a single element.

@@ -26,7 +26,6 @@ module Salak(
   , loadAndRunSalak'
   , PropConfig(..)
   -- * Parsing Properties Function
-  , HasSalak(..)
   , MonadSalak(..)
   , RunSalakT
   , RunSalak
@@ -57,7 +56,6 @@ module Salak(
   , (:|:)(..)
   -- ** Reload Functions
   , ReloadResult(..)
-  , askReload
   -- * Reexport
   , MonadCatch
   , MonadThrow
@@ -128,7 +126,7 @@ loadByExt xs f = mapM_ go (loaders xs)
 -- > 6. load file from home folder if enabled
 -- > 7. file extension matching, support yaml or toml or any other loader.
 --
-loadSalak :: (MonadCatch m, MonadIO m) => PropConfig -> LoadSalakT m ()
+loadSalak :: (MonadThrow m, MonadIO m) => PropConfig -> LoadSalakT m ()
 loadSalak PropConfig{..} = do
   loadCommandLine commandLine
   loadEnv
@@ -143,12 +141,12 @@ loadSalak PropConfig{..} = do
     ifS _    _   = return Nothing
     loadConf n mf = lift mf >>= mapM_ (liftNT . loadExt . (</> n))
 
-loadSalakWith :: (MonadCatch m, MonadIO m, HasLoad file) => file -> FileName -> LoadSalakT m ()
+loadSalakWith :: (MonadThrow m, MonadIO m, HasLoad file) => file -> FileName -> LoadSalakT m ()
 loadSalakWith file name = loadSalak def { configName = Just name, loadExt = loadByExt file }
 
 -- | Standard salak functions, by load and run with `RunSalakT`.
 loadAndRunSalak :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> RunSalakT m a -> m a
-loadAndRunSalak lstm ma = loadAndRunSalak' lstm $ \sp -> runRunSalak sp ma
+loadAndRunSalak lstm ma = loadAndRunSalak' lstm $ runRun ma
 
 -- | Run salak, load strategy refer to `loadSalak`
 runSalak :: (MonadCatch m, MonadIO m) => PropConfig -> RunSalakT m a -> m a

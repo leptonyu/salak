@@ -30,14 +30,6 @@ data SourcePack = SourcePack
   , reload :: IO ReloadResult
   }
 
--- | Monad has the ability to get a `SourcePack` instance.
-class Monad m => MonadSalak m where
-  askSalak :: m SourcePack
-
--- | Get reload action which used for reload profiles
-askReload :: MonadSalak m => m (IO ReloadResult)
-askReload = reload <$> askSalak
-
 diff :: Source -> Source -> T.Trie ModType
 diff = T.unionWith' go
   where
