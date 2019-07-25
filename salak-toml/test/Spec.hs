@@ -9,7 +9,6 @@
 
 module Main where
 
-import           Control.Monad.Catch
 import           Control.Monad.Reader
 import           Data.List            (intercalate)
 import           Data.Text            (Text, pack)
@@ -51,10 +50,10 @@ data Conf = Conf
 data SubConf = SubConf
   { hello :: String } deriving (Eq, Show, Generic)
 
-instance MonadCatch m => FromProp m SubConf where
+instance Monad m => FromProp m SubConf where
   fromProp = SubConf <$> "hello" .?= "yyy"
 
-instance MonadCatch m => FromProp m Conf
+instance Monad m => FromProp m Conf
 
 tomlProperty :: SpecWith ()
 tomlProperty = do

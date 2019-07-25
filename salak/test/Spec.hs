@@ -47,14 +47,14 @@ data Hello = Hello
   { hello :: IO Int
   } deriving Generic
 
-instance (MonadThrow m, MonadIO m) => FromProp m Hello
+instance MonadIO m => FromProp m Hello
 
 data Config = Config
   { level :: IO Int
   , world :: Maybe Bool
   }
 
-instance (MonadIO m, MonadCatch m) => FromProp m Config where
+instance MonadIO m => FromProp m Config where
   fromProp = Config <$> "level" .?= (return 1) <*> "world"
 
 loadRandom :: MonadIO m => Text -> LoadSalakT m ()

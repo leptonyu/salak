@@ -69,7 +69,7 @@ data Config = Config
   , ext  :: Int
   } deriving (Eq, Show)
 
-instance MonadCatch m => FromProp m Config where
+instance Monad m => FromProp m Config where
   fromProp = Config
     <$> "user" ? pattern "[a-z]{5,16}"
     <*> "pwd"
@@ -77,7 +77,7 @@ instance MonadCatch m => FromProp m Config where
 
 main = runSalakWith "salak" (YAML :|: TOML) $ do
   c :: Config <- require "test.config"
-  lift $ print c=
+  lift $ print c
 ```
 
 GHCi play
@@ -87,7 +87,7 @@ GHCi play
 λ> import Data.Default
 λ> import Data.Text(Text)
 λ> data Config = Config { name :: Text, dir  :: Maybe Text, ext  :: Int} deriving (Eq, Show)
-λ> instance MonadCatch m => FromProp m Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1
+λ> instance Monad m => FromProp m Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1
 λ> runSalak def (require "") :: IO Config
 Config {name = "daniel", dir = Nothing, ext = 1}
 ```
