@@ -36,7 +36,7 @@ module Salak(
   , readPrimitive
   , readEnum
   , SourcePack
-  , PropException(..)
+  , SalakException(..)
   -- * Load Functions
   -- ** Monad for Loader
   , LoadSalakT

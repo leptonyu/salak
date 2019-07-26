@@ -123,7 +123,7 @@ instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (RunSalakT m) wh
     lift $ IU.withUnliftIO $ \u -> return (IU.UnliftIO (IU.unliftIO u . flip runRun ut))
 
 -- | Basic loader
-loadTrie :: MonadIO m => Bool -> String -> (Int -> IO TraceSource) -> LoadSalakT m ()
+loadTrie :: (MonadThrow m, MonadIO m) => Bool -> String -> (Int -> IO TraceSource) -> LoadSalakT m ()
 loadTrie canReload name f = do
   UpdateSource{..} <- MS.get
   v              <- liftIO $ readMVar ref
@@ -135,7 +135,7 @@ loadTrie canReload name f = do
       let nut = UpdateSource ref (refNo + 1) (HM.insert refNo name refMap) qfunc update
       _ <- liftIO $ swapMVar ref t
       MS.put nut
-    else error $ show es
+    else throwM $ PropException $ unlines es
   where
     go ts ud n = return $ do
       (c,d) <- ud
@@ -143,7 +143,7 @@ loadTrie canReload name f = do
       return (c1,d)
 
 -- | Simple loader
-loadList :: (MonadIO m, Foldable f, ToKeys k, ToValue v) => Bool -> String -> IO (f (k,v)) -> LoadSalakT m ()
+loadList :: (MonadThrow m, MonadIO m, Foldable f, ToKeys k, ToValue v) => Bool -> String -> IO (f (k,v)) -> LoadSalakT m ()
 loadList canReload name iof = loadTrie canReload name (\i -> gen i <$> iof)
 
 -- | Standard salak functions, by load and with a `SourcePack` instance.
@@ -173,11 +173,11 @@ toSourcePack UpdateSource{..} = liftIO (readMVar ref) >>= \s -> return $ SourceP
         else return (ReloadResult True es)
 
 -- | Load mock variables into `Source`
-loadMock :: MonadIO m => [(Text, Text)] -> LoadSalakT m ()
+loadMock :: (MonadThrow m, MonadIO m) => [(Text, Text)] -> LoadSalakT m ()
 loadMock fa = loadList False "mock" (return fa)
 
 -- | Load environment variables into `Source`
-loadEnv :: MonadIO m => LoadSalakT m ()
+loadEnv :: (MonadThrow m, MonadIO m) => LoadSalakT m ()
 loadEnv = loadList False "environment" go
   where
     go = concatMap split2 . filter ((/= '_') . head . fst) <$> getEnvironment
@@ -197,7 +197,7 @@ defaultParseCommandLine = return . mapMaybe go
     go _ = Nothing
 
 -- | Default way to parse command line arguments
-loadCommandLine :: MonadIO m => ParseCommandLine -> LoadSalakT m ()
+loadCommandLine :: (MonadThrow m, MonadIO m) => ParseCommandLine -> LoadSalakT m ()
 loadCommandLine pcl = loadList False "commandLine" (getArgs >>= pcl)
 
 -- | Try load file, if file does not exist then do nothing.

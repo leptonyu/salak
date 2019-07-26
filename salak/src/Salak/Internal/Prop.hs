@@ -175,12 +175,12 @@ buildIO sp a = liftIO $ do
         return (swapMVar aref (fromMaybe a vb) >> io)
   return (readMVar aref)
 
-data PropException
+data SalakException
   = PropException String -- ^ Parse failed
   | NullException        -- ^ Not found
   deriving Show
 
-instance Exception PropException
+instance Exception SalakException
 
 -- | Automatic convert literal string into an instance of `Prop` @m@ @a@.
 instance FromProp m a => IsString (Prop m a) where
