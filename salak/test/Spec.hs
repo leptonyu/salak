@@ -56,7 +56,7 @@ data Config = Config
 instance MonadIO m => FromProp m Config where
   fromProp = Config <$> "level" .?= (return 1) <*> "world"
 
-loadRandom :: MonadIO m => Text -> LoadSalakT m ()
+loadRandom :: (MonadThrow m, MonadIO m) => Text -> LoadSalakT m ()
 loadRandom key = loadList True (unpack key) go
   where
     go = do
