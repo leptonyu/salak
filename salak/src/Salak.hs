@@ -1,10 +1,11 @@
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE NoOverloadedLists   #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NoOverloadedLists     #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeOperators         #-}
 -- |
 -- Module:      Salak
 -- Copyright:   2019 Daniel YU
@@ -50,7 +51,6 @@ module Salak(
   , loadMock
   , loadSalak
   , loadSalakWith
-  , FileName
   -- ** File Loaders
   , ExtLoad
   , loadByExt
@@ -69,6 +69,7 @@ import           Control.Monad.IO.Class  (MonadIO)
 import           Control.Monad.IO.Unlift
 import           Control.Monad.Reader
 import           Data.Default
+import           Data.Maybe
 import           Data.Text               (Text)
 import           Salak.Internal
 import           Salak.Internal.Prop
@@ -79,17 +80,13 @@ import           System.FilePath         ((</>))
 -- | Type synonyms of 'SourcePack'
 type Salak = SourcePack
 
-
--- | Configuration file name
-type FileName = String
-
 -- | Prop load configuration
 data PropConfig = PropConfig
-  { configName    :: FileName      -- ^ Config name
-  , configDirKey  :: Text          -- ^ Specify config dir
-  , searchCurrent :: Bool          -- ^ Search current directory, default true
+  { configKey     :: Text          -- ^ Specify config key, default is @application@.
+  , configName    :: String        -- ^ Specify config name, default is @application@.
+  , searchCurrent :: Bool          -- ^ Search current directory, default true.
   , searchHome    :: Bool          -- ^ Search home directory, default false.
-  , commandLine   :: ParseCommandLine -- ^ How to parse commandline
+  , commandLine   :: ParseCommandLine -- ^ How to parse commandline.
   , loggerF       :: LFunc
   , loadExt       :: FilePath -> LoadSalak ()
   }
@@ -97,12 +94,22 @@ data PropConfig = PropConfig
 instance Default PropConfig where
   def = PropConfig
     "application"
-    "salak.conf.dir"
+    "application"
     True
     False
     defaultParseCommandLine
     putStrLn
     (\_ -> return ())
+
+data FileConfig = FileConfig
+  { configNm  :: Maybe String
+  , configDir :: Maybe FilePath
+  }
+
+instance Monad m => FromProp m FileConfig where
+  fromProp = FileConfig
+    <$> "name" .?= Nothing
+    <*> "dir"  .?= Nothing
 
 -- | Load file by extension
 type ExtLoad = (String, FilePath -> LoadSalak ())
@@ -138,18 +145,18 @@ loadSalak PropConfig{..} = do
   setLogF loggerF
   loadCommandLine commandLine
   loadEnv
-  dir <- require configDirKey
+  FileConfig{..} <- require configKey
   forM_
-    [ return dir
+    [ return configDir
     , ifS searchCurrent getCurrentDirectory
     , ifS searchHome    getHomeDirectory
-    ] loadConf
+    ] (loadConf $ fromMaybe configName configNm)
   where
     ifS True gxd = Just <$> liftIO gxd
     ifS _    _   = return Nothing
-    loadConf mf = lift mf >>= mapM_ (liftNT . loadExt . (</> configName))
+    loadConf n mf = lift mf >>= mapM_ (liftNT . loadExt . (</> n))
 
-loadSalakWith :: (MonadThrow m, MonadIO m, HasLoad file) => file -> FileName -> LoadSalakT m ()
+loadSalakWith :: (MonadThrow m, MonadIO m, HasLoad file) => file -> String -> LoadSalakT m ()
 loadSalakWith file name = loadSalak def { configName = name, loadExt = loadByExt file }
 
 -- | Standard salak functions, by load and run with `RunSalakT`.
@@ -161,7 +168,7 @@ runSalak :: (MonadCatch m, MonadIO m) => PropConfig -> RunSalakT m a -> m a
 runSalak c = loadAndRunSalak (loadSalak c)
 
 -- | Run salak, load strategy refer to `loadSalakWith`
-runSalakWith :: (MonadCatch m, MonadIO m, HasLoad file) => FileName -> file -> RunSalakT m a -> m a
+runSalakWith :: (MonadCatch m, MonadIO m, HasLoad file) => String -> file -> RunSalakT m a -> m a
 runSalakWith name file = loadAndRunSalak (loadSalakWith file name)
 
 -- $use
@@ -177,7 +184,7 @@ runSalakWith name file = loadAndRunSalak (loadSalakWith file name)
 -- > 1. loadCommandLine
 -- > 2. loadEnvironment
 -- > 3. loadConfFiles
--- > 4. load file from folder `salak.conf.dir` if defined
+-- > 4. load file from folder `application.dir` if defined
 -- > 5. load file from current folder if enabled
 -- > 6. load file from home folder if enabled
 -- > 7. file extension matching, support yaml or toml or any other loader.

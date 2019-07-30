@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cb27d15be4da480e53e40db169660bbdcd91c0d8df25aee3ae39c37325de7f89
+-- hash: 32c8d00b309f72322b9fd47338c7b302323024d74ddc860009a9e8ac8004a046
 
 name:           salak-toml
-version:        0.3.1
+version:        0.3.2
 synopsis:       Configuration Loader for toml
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme

@@ -33,7 +33,7 @@ We can load configurations from command lines, environment, configuration files 
 > 1. loadCommandLine
 > 2. loadEnvironment
 > 3. loadConfFiles
-> 4. load file from folder `salak.conf.dir` if defined
+> 4. load file from folder `application.dir` if defined
 > 5. load file from current folder if enabled
 > 6. load file from home folder if enabled
 > 7. file extension matching, support yaml or toml or any other loader.
