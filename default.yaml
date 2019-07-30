@@ -1,9 +1,9 @@
 - &legal
   version:             0.3.2
   homepage:            https://github.com/leptonyu/salak#readme
-  license:             BSD3
+  license:             MIT
   author:              Daniel YU
   maintainer:          Daniel YU <leptonyu@gmail.com>
-  copyright:           (c) 2018 Daniel YU
+  copyright:           2019 Daniel YU
   category:            Library, Configuration
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 32c8d00b309f72322b9fd47338c7b302323024d74ddc860009a9e8ac8004a046
+-- hash: 6da11d98a82e6e2fca078cd7937352c806a8d24a8db9da1861e43c382b0d2256
 
 name:           salak-toml
 version:        0.3.2
@@ -13,8 +13,8 @@ category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme
 author:         Daniel YU
 maintainer:     Daniel YU <leptonyu@gmail.com>
-copyright:      (c) 2018 Daniel YU
-license:        BSD3
+copyright:      2019 Daniel YU
+license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
