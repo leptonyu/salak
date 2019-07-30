@@ -78,6 +78,7 @@ data UpdateSource = UpdateSource
   {  ref    :: MVar Source
   ,  refNo  :: Int
   ,  refMap :: HashMap Int String
+  ,  lfunc  :: MVar LFunc
   ,  qfunc  :: MVar QFunc
   ,  update :: MVar (IO ( TraceSource -- Updated Tries
                   , IO ()))    -- Confirm action
@@ -91,13 +92,21 @@ newtype LoadSalakT  m a = LoadSalakT (MS.StateT UpdateSource m a)
 type LoadSalak = LoadSalakT IO
 
 runLoad :: Monad m => LoadSalakT m a -> UpdateSource -> m a
-runLoad (LoadSalakT ma) us = MS.evalStateT ma us
+runLoad (LoadSalakT ma) = MS.evalStateT ma
 
 liftNT :: MonadIO m => LoadSalak () -> LoadSalakT m ()
 liftNT a = MS.get >>= liftIO . runLoad a
 
 instance MonadIO m => MonadSalak (LoadSalakT m) where
   askSalak = MS.get >>= toSourcePack
+  setLogF f = do
+    UpdateSource{..} <- MS.get
+    liftIO $ void $ swapMVar lfunc f
+  logSalak msg = do
+    UpdateSource{..} <- MS.get
+    liftIO $ do
+      f <- readMVar lfunc
+      f msg
 
 instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (LoadSalakT m) where
   askUnliftIO = do
@@ -112,7 +121,7 @@ newtype RunSalakT m a = RunSalakT (ReaderT SourcePack m a)
 type RunSalak = RunSalakT IO
 
 runRun :: Monad m => RunSalakT m a -> SourcePack -> m a
-runRun (RunSalakT ma) us = runReaderT ma us
+runRun (RunSalakT ma) = runReaderT ma
 
 instance Monad m => MonadSalak (RunSalakT m) where
   askSalak = RunSalakT ask
@@ -125,6 +134,7 @@ instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (RunSalakT m) wh
 -- | Basic loader
 loadTrie :: (MonadThrow m, MonadIO m) => Bool -> String -> (Int -> IO TraceSource) -> LoadSalakT m ()
 loadTrie canReload name f = do
+  logSalak $ "Loading " ++ (if canReload then "[reloadable]" else "") ++ name
   UpdateSource{..} <- MS.get
   v              <- liftIO $ readMVar ref
   ts             <- liftIO $ loadSource f refNo (fmap ([],) v)
@@ -132,7 +142,7 @@ loadTrie canReload name f = do
   if null es
     then do
       liftIO $ modifyMVar_ update $ \u -> go ts u refNo
-      let nut = UpdateSource ref (refNo + 1) (HM.insert refNo name refMap) qfunc update
+      let nut = UpdateSource ref (refNo + 1) (HM.insert refNo name refMap) lfunc qfunc update
       _ <- liftIO $ swapMVar ref t
       MS.put nut
     else throwM $ PropException $ unlines es
@@ -156,10 +166,11 @@ load lm = do
   r <- liftIO $ newMVar T.empty
   q <- liftIO $ newMVar $ \s -> Right $ void $ swapMVar r s
   u <- liftIO $ newMVar $ return (T.empty, return ())
-  runLoad (lm >> MS.get) (UpdateSource r 0 HM.empty q u) >>= toSourcePack
+  l <- liftIO $ newMVar $ \_ -> return ()
+  runLoad (lm >> MS.get) (UpdateSource r 0 HM.empty l q u) >>= toSourcePack
 
 toSourcePack :: MonadIO m => UpdateSource -> m SourcePack
-toSourcePack UpdateSource{..} = liftIO (readMVar ref) >>= \s -> return $ SourcePack s [] qfunc go
+toSourcePack UpdateSource{..} = liftIO (readMVar ref) >>= \s -> return $ SourcePack s [] qfunc lfunc go
   where
     go = do
       t        <- readMVar ref
@@ -204,7 +215,7 @@ loadCommandLine pcl = loadList False "commandLine" (getArgs >>= pcl)
 tryLoadFile :: MonadIO m => (FilePath -> LoadSalakT m ()) -> FilePath -> LoadSalakT m ()
 tryLoadFile f file = do
   b <- liftIO $ doesFileExist file
-  when b $ do
-    liftIO $ putStrLn $ "Load " ++ file
-    f file
+  if b
+    then f file
+    else logSalak $ "File does not exist, ignore load " ++ file
 

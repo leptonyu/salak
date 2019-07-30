@@ -36,6 +36,7 @@ module Salak(
   , readPrimitive
   , readEnum
   , SourcePack
+  , Salak
   , SalakException(..)
   -- * Load Functions
   -- ** Monad for Loader
@@ -49,6 +50,7 @@ module Salak(
   , loadMock
   , loadSalak
   , loadSalakWith
+  , FileName
   -- ** File Loaders
   , ExtLoad
   , loadByExt
@@ -74,27 +76,32 @@ import           Salak.Internal.Source
 import           System.Directory
 import           System.FilePath         ((</>))
 
+-- | Type synonyms of 'SourcePack'
+type Salak = SourcePack
+
 
 -- | Configuration file name
 type FileName = String
 
 -- | Prop load configuration
 data PropConfig = PropConfig
-  { configName    :: Maybe FileName  -- ^ Config name
+  { configName    :: FileName      -- ^ Config name
   , configDirKey  :: Text          -- ^ Specify config dir
   , searchCurrent :: Bool          -- ^ Search current directory, default true
   , searchHome    :: Bool          -- ^ Search home directory, default false.
   , commandLine   :: ParseCommandLine -- ^ How to parse commandline
+  , loggerF       :: LFunc
   , loadExt       :: FilePath -> LoadSalak ()
   }
 
 instance Default PropConfig where
   def = PropConfig
-    Nothing
+    "application"
     "salak.conf.dir"
     True
     False
     defaultParseCommandLine
+    putStrLn
     (\_ -> return ())
 
 -- | Load file by extension
@@ -128,21 +135,22 @@ loadByExt xs f = mapM_ go (loaders xs)
 --
 loadSalak :: (MonadThrow m, MonadIO m) => PropConfig -> LoadSalakT m ()
 loadSalak PropConfig{..} = do
+  setLogF loggerF
   loadCommandLine commandLine
   loadEnv
   dir <- require configDirKey
-  forM_ configName $ forM_
+  forM_
     [ return dir
     , ifS searchCurrent getCurrentDirectory
     , ifS searchHome    getHomeDirectory
-    ] . loadConf
+    ] loadConf
   where
     ifS True gxd = Just <$> liftIO gxd
     ifS _    _   = return Nothing
-    loadConf n mf = lift mf >>= mapM_ (liftNT . loadExt . (</> n))
+    loadConf mf = lift mf >>= mapM_ (liftNT . loadExt . (</> configName))
 
 loadSalakWith :: (MonadThrow m, MonadIO m, HasLoad file) => file -> FileName -> LoadSalakT m ()
-loadSalakWith file name = loadSalak def { configName = Just name, loadExt = loadByExt file }
+loadSalakWith file name = loadSalak def { configName = name, loadExt = loadByExt file }
 
 -- | Standard salak functions, by load and run with `RunSalakT`.
 loadAndRunSalak :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> RunSalakT m a -> m a

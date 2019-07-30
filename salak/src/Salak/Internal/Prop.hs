@@ -30,7 +30,7 @@ import           Data.Maybe
 import           Data.Menshen
 import           Data.Scientific
 import           Data.Semigroup
-import           Data.Text               (Text)
+import           Data.Text               (Text, unpack)
 import qualified Data.Text               as T
 import qualified Data.Text.Encoding      as TB
 import qualified Data.Text.Lazy          as TL
@@ -72,8 +72,20 @@ class Monad m => MonadSalak m where
   askSalak :: m SourcePack
 
   -- | Get reload action which used for reload profiles
-  askReload :: MonadSalak m => m (IO ReloadResult)
+  askReload :: m (IO ReloadResult)
   askReload = reload <$> askSalak
+
+  setLogF :: MonadIO m => (String -> IO ()) -> m ()
+  setLogF f = do
+    SourcePack{..} <- askSalak
+    liftIO $ void $ swapMVar lref f
+
+  logSalak :: MonadIO m => String -> m ()
+  logSalak msg = do
+    SourcePack{..} <- askSalak
+    liftIO $ do
+      f <- readMVar lref
+      f msg
 
   -- | Parse properties using `FromProp`. For example:
   --
@@ -88,8 +100,15 @@ class Monad m => MonadSalak m where
   require ks = do
     sp@SourcePack{..} <- askSalak
     case search ks source of
-      Left  e     -> throwM $ PropException e
-      Right (k,t) -> runProp1 sp { source = t, pref = pref ++ unKeys k} fromProp
+      Left  e     -> throwM $ SalakException (unpack ks) (toException $ PropException e)
+      Right (k,t) -> do
+        v <- runProp2 sp { source = t, pref = pref ++ unKeys k} fromProp
+        case v of
+          Left  e -> case fromException e of
+            Just (SalakException a b) -> throwM $ SalakException a  b
+            Just pe                   -> throwM $ SalakException (unpack ks) (toException pe)
+            _                         -> throwM $ SalakException (unpack ks) e
+          Right x -> return x
 
 instance {-# OVERLAPPABLE #-} (m ~ t m', Monad m', Monad m, MonadTrans t, MonadSalak m') => MonadSalak m where
   askSalak = lift askSalak
@@ -132,7 +151,10 @@ instance FromProp m a => FromProp m (Maybe a) where
     v <- try fromProp
     case v of
       Left  e -> case fromException e of
-        Just NullException -> return Nothing
+        Just NullException         -> return Nothing
+        Just (SalakException _ e2) -> case fromException e2 of
+          Just NullException -> return Nothing
+          _                  -> throwM e
         _                  -> throwM e
       Right a -> return (Just a)
 
@@ -141,10 +163,7 @@ instance FromProp m a => FromProp m (Either String a) where
     SourcePack{..} <- ask
     v <- try fromProp
     return $ case v of
-      Left  e -> case fromException e of
-        Just (PropException x) -> Left x
-        Just NullException     -> Left $ show (Keys pref) ++ " is null"
-        _                      -> Left $ show e
+      Left  e -> Left $ show (e :: SomeException)
       Right a -> Right a
 
 instance {-# OVERLAPPABLE #-} FromProp m a => FromProp m [a] where
@@ -178,6 +197,7 @@ buildIO sp a = liftIO $ do
 data SalakException
   = PropException String -- ^ Parse failed
   | NullException        -- ^ Not found
+  | SalakException String SomeException
   deriving Show
 
 instance Exception SalakException
@@ -187,13 +207,15 @@ instance FromProp m a => IsString (Prop m a) where
   fromString ks = do
     sp@SourcePack{..} <- askSalak
     case search ks source of
-      Left  e     -> throwM $ PropException e
+      Left  e     -> throwM $ SalakException
+        (if null pref then ks else show (Keys pref) ++ "." ++ ks)
+        (toException $ PropException e)
       Right (k,t) -> runProp sp { source = t, pref = pref ++ unKeys k} fromProp
 
 notFound :: Monad m => Prop m a
 notFound = do
   SourcePack{..} <- askSalak
-  throwM NullException
+  throwM $ SalakException (show (Keys pref)) $ toException NullException
 
 err :: Monad m => String -> Prop m a
 err e = do

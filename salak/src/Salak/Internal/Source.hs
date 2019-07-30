@@ -23,10 +23,13 @@ data ReloadResult = ReloadResult
 
 type QFunc = Source -> Either String (IO ())
 
+type LFunc = String -> IO ()
+
 data SourcePack = SourcePack
   { source :: Source
   , pref   :: [Key]
   , qref   :: MVar QFunc
+  , lref   :: MVar LFunc
   , reload :: IO ReloadResult
   }
 

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9701e5d99b720490cdc0e4838813af68bcffd2715a7513be0b3351b25eab703d
+-- hash: cb27d15be4da480e53e40db169660bbdcd91c0d8df25aee3ae39c37325de7f89
 
 name:           salak-toml
 version:        0.3.1
@@ -31,7 +31,7 @@ library
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       base >=4.10 && <5
-    , salak >=0.3
+    , salak
     , text
     , time
     , tomland >=1.0 && <1.2
@@ -54,7 +54,7 @@ test-suite spec
     , exceptions
     , hspec ==2.*
     , mtl
-    , salak >=0.3
+    , salak
     , text
     , time
     , tomland >=1.0 && <1.2
