@@ -39,6 +39,7 @@ module Salak(
   , SourcePack
   , Salak
   , SalakException(..)
+  , module Salak.Internal.Writable
   -- * Load Functions
   -- ** Monad for Loader
   , LoadSalakT
@@ -74,6 +75,7 @@ import           Data.Text               (Text)
 import           Salak.Internal
 import           Salak.Internal.Prop
 import           Salak.Internal.Source
+import           Salak.Internal.Writable
 import           System.Directory
 import           System.FilePath         ((</>))
 

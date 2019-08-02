@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3c228f242436843584b3c0ee01e936805bbd915ef8c7857cfb9260669ea456d2
+-- hash: ec1147ece4bb7045e6b3bd2e7d7dd3163c62037ba1ff4eda128c78bb84396618
 
 name:           salak-yaml
-version:        0.3.2
+version:        0.3.3
 synopsis:       Configuration Loader for yaml
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme
@@ -28,6 +28,7 @@ library
       Paths_salak_yaml
   hs-source-dirs:
       src
+  default-extensions: RecordWildCards
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       base >=4.10 && <5
@@ -46,6 +47,7 @@ test-suite spec
   hs-source-dirs:
       test
       src
+  default-extensions: RecordWildCards
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       QuickCheck <2.14

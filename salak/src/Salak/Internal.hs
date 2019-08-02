@@ -50,6 +50,7 @@ module Salak.Internal(
   , liftNT
   , SourcePack(..)
   , MonadIO
+  , module Salak.Internal.Writable
   ) where
 
 
@@ -70,6 +71,7 @@ import           Salak.Internal.Key
 import           Salak.Internal.Prop
 import           Salak.Internal.Source
 import           Salak.Internal.Val
+import           Salak.Internal.Writable
 import qualified Salak.Trie              as T
 import           System.Directory
 import           System.Environment

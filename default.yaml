@@ -1,5 +1,5 @@
 - &legal
-  version:             0.3.2
+  version:             0.3.3
   homepage:            https://github.com/leptonyu/salak#readme
   license:             MIT
   author:              Daniel YU
@@ -7,3 +7,5 @@
   copyright:           2019 Daniel YU
   category:            Library, Configuration
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
+  default-extensions:
+    - RecordWildCards

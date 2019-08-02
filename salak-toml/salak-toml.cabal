@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6da11d98a82e6e2fca078cd7937352c806a8d24a8db9da1861e43c382b0d2256
+-- hash: b6fdc75c5e50134c2ae277919e3eb1d8e48654491f644894cc6bc7e69fbd4f9a
 
 name:           salak-toml
-version:        0.3.2
+version:        0.3.3
 synopsis:       Configuration Loader for toml
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme
@@ -28,6 +28,7 @@ library
       Paths_salak_toml
   hs-source-dirs:
       src
+  default-extensions: RecordWildCards
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       base >=4.10 && <5
@@ -47,6 +48,7 @@ test-suite spec
   hs-source-dirs:
       test
       src
+  default-extensions: RecordWildCards
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       QuickCheck <2.14
