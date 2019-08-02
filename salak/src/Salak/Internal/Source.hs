@@ -17,8 +17,8 @@ type TraceSource = T.Trie ([String], Vals)
 
 -- | Reload result, show erros or changes.
 data ReloadResult = ReloadResult
-  { hasError :: Bool     -- ^ If reload process has errors.
-  , msgs     :: [String] -- ^ If hasError then this show error messages, else this show change logs.
+  { hasError :: !Bool     -- ^ If reload process has errors.
+  , msgs     :: ![String] -- ^ If hasError then this show error messages, else this show change logs.
   } deriving Show
 
 type QFunc = Source -> Either String (IO ())
@@ -26,11 +26,11 @@ type QFunc = Source -> Either String (IO ())
 type LFunc = String -> IO ()
 
 data SourcePack = SourcePack
-  { source :: Source
-  , pref   :: [Key]
-  , qref   :: MVar QFunc
-  , lref   :: MVar LFunc
-  , reload :: IO ReloadResult
+  { source :: !Source
+  , pref   :: ![Key]
+  , qref   :: !(MVar QFunc)
+  , lref   :: !(MVar LFunc)
+  , reload :: !(IO ReloadResult)
   }
 
 diff :: Source -> Source -> T.Trie ModType

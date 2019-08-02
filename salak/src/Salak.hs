@@ -84,12 +84,12 @@ type Salak = SourcePack
 
 -- | Prop load configuration
 data PropConfig = PropConfig
-  { configKey     :: Text          -- ^ Specify config key, default is @application@.
-  , configName    :: String        -- ^ Specify config name, default is @application@.
-  , searchCurrent :: Bool          -- ^ Search current directory, default true.
-  , searchHome    :: Bool          -- ^ Search home directory, default false.
-  , commandLine   :: ParseCommandLine -- ^ How to parse commandline.
-  , loggerF       :: LFunc
+  { configKey     :: !Text          -- ^ Specify config key, default is @application@.
+  , configName    :: !String        -- ^ Specify config name, default is @application@.
+  , searchCurrent :: !Bool          -- ^ Search current directory, default true.
+  , searchHome    :: !Bool          -- ^ Search home directory, default false.
+  , commandLine   :: !ParseCommandLine -- ^ How to parse commandline.
+  , loggerF       :: !LFunc
   , loadExt       :: FilePath -> LoadSalak ()
   }
 

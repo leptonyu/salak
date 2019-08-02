@@ -77,13 +77,13 @@ import           System.Directory
 import           System.Environment
 
 data UpdateSource = UpdateSource
-  {  ref    :: MVar Source
-  ,  refNo  :: Int
-  ,  refMap :: HashMap Int String
-  ,  lfunc  :: MVar LFunc
-  ,  qfunc  :: MVar QFunc
-  ,  update :: MVar (IO ( TraceSource -- Updated Tries
-                  , IO ()))    -- Confirm action
+  {  ref    :: !(MVar Source)
+  ,  refNo  :: !Int
+  ,  refMap :: !(HashMap Int String)
+  ,  lfunc  :: !(MVar LFunc)
+  ,  qfunc  :: !(MVar QFunc)
+  ,  update :: !(MVar (IO ( TraceSource -- Updated Tries
+                  , IO ())))    -- Confirm action
   }
 
 -- | Configuration Loader Monad, used for load properties from sources. Custom loaders using `loadTrie`
