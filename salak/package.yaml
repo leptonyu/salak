@@ -21,6 +21,7 @@ dependencies:
   - heaps
   - hashable
   - unordered-containers
+  - containers
   - exceptions
 
 library:

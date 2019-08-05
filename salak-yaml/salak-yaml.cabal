@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9f734c233bae39b0fcc4eeb0aa879ac2e30157193e807a38ca2999a1c96c8f95
+-- hash: 7e352c9c0137a72d3c9c38c7091047aa96a51523316fbda6cf5b1877163acaaa
 
 name:           salak-yaml
 version:        0.3.4
@@ -28,7 +28,7 @@ library
       Paths_salak_yaml
   hs-source-dirs:
       src
-  default-extensions: RecordWildCards
+  default-extensions: RecordWildCards TupleSections
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       base >=4.10 && <5
@@ -47,7 +47,7 @@ test-suite spec
   hs-source-dirs:
       test
       src
-  default-extensions: RecordWildCards
+  default-extensions: RecordWildCards TupleSections
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       QuickCheck <2.14

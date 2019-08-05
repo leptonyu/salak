@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 06ed8f8666a829dc4358a78a0cea1a3ec25ab99edcd4f0662538e43ad9c65f19
+-- hash: 10d52d43637fbb8cc018fe74fcfa8c7e33eb872012545ed897588eadbb964e75
 
 name:           salak
 version:        0.3.4
@@ -33,12 +33,13 @@ library
       Salak.Internal.Writable
   hs-source-dirs:
       src
-  default-extensions: RecordWildCards
+  default-extensions: RecordWildCards TupleSections
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       attoparsec
     , base >=4.10 && <5
     , bytestring
+    , containers
     , data-default
     , directory
     , exceptions
@@ -70,13 +71,14 @@ test-suite spec
   hs-source-dirs:
       test
       src
-  default-extensions: RecordWildCards
+  default-extensions: RecordWildCards TupleSections
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       QuickCheck <2.14
     , attoparsec
     , base >=4.10 && <5
     , bytestring
+    , containers
     , data-default
     , directory
     , exceptions

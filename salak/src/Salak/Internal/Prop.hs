@@ -23,9 +23,11 @@ import qualified Data.ByteString         as B
 import qualified Data.ByteString.Lazy    as BL
 import           Data.Default
 import           Data.Fixed
+import           Data.Hashable           (Hashable)
 import qualified Data.HashMap.Strict     as HM
 import           Data.Int
 import           Data.List               (sortBy)
+import qualified Data.Map.Strict         as M
 import           Data.Maybe
 import           Data.Menshen
 import           Data.Scientific
@@ -174,6 +176,20 @@ instance {-# OVERLAPPABLE #-} FromProp m a => FromProp m [a] where
       go s vs (k,t) = (:vs) <$> runProp s { pref = pref s ++ [k], source = t} fromProp
       g2 (a,_) (b,_) = compare b a
 
+instance {-# OVERLAPPABLE #-} (IsString s, FromProp m a) => FromProp m [(s, a)] where
+  fromProp = do
+    sp@SourcePack{..} <- askSalak
+    foldM (go sp) [] $ sortBy g2 $ filter (isStr.fst) $ HM.toList $ TR.getMap source
+    where
+      go s vs (k,t) = (:vs) . (fromString $ show $ Keys [k],) <$> runProp s { pref = pref s ++ [k], source = t} fromProp
+      g2 (a,_) (b,_) = compare b a
+
+instance (Eq s, Hashable s, IsString s, FromProp m a) => FromProp m (HM.HashMap s a) where
+  fromProp = HM.fromList <$> fromProp
+
+instance (Eq s, Ord s, IsString s, FromProp m a) => FromProp m (M.Map s a) where
+  fromProp = M.fromList <$> fromProp
+
 -- | Supports for parsing `IO` value.
 instance {-# OVERLAPPABLE #-} (MonadIO m, MonadIO n, FromProp (Either SomeException) a, FromProp m a) => FromProp m (n a) where
   fromProp = do
@@ -287,6 +303,7 @@ readEnum = readPrimitive . go
   where
     go f (VT t) = f t
     go _ x      = Left $ fst (typeOfV x) ++ " cannot convert to enum"
+
 
 class Monad m => GFromProp m f where
   gFromProp :: Prop m (f a)

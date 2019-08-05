@@ -9,3 +9,4 @@
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   default-extensions:
     - RecordWildCards
+    - TupleSections

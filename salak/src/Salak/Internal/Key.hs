@@ -6,6 +6,7 @@ module Salak.Internal.Key(
   , simpleKeys
   , ToKeys(..)
   , isNum
+  , isStr
   ) where
 
 import           Control.Applicative  ((<|>))
