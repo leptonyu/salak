@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 10d52d43637fbb8cc018fe74fcfa8c7e33eb872012545ed897588eadbb964e75
+-- hash: f1e15dea4ae6318d0838c22358d093320010c0ed9c704e27be61d4c63adf44db
 
 name:           salak
 version:        0.3.4
@@ -33,7 +33,7 @@ library
       Salak.Internal.Writable
   hs-source-dirs:
       src
-  default-extensions: RecordWildCards TupleSections
+  default-extensions: RecordWildCards TupleSections OverloadedStrings ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       attoparsec
@@ -59,6 +59,9 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Salak.Internal.KeySpec
+      Salak.Internal.PropSpec
+      Salak.Internal.SourceSpec
       Salak
       Salak.Internal
       Salak.Internal.Key
@@ -71,7 +74,7 @@ test-suite spec
   hs-source-dirs:
       test
       src
-  default-extensions: RecordWildCards TupleSections
+  default-extensions: RecordWildCards TupleSections OverloadedStrings ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       QuickCheck <2.14

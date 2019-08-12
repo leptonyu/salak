@@ -61,7 +61,7 @@ jsonProperty = do
   context "load json" $ do
     it "salak.yml" $ do
       loadAndRunSalak (loadYaml "test/salak.yml") $ do
-        SourcePack{..}  <- askSalak
+        SourcePack{..}  <- ask
         as <- trace (show source) $ require "array"
         cf <- require "me.icymint.conf"
         lift $ do

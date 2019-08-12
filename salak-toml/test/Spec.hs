@@ -60,7 +60,7 @@ tomlProperty = do
   context "load toml" $ do
     it "salak.toml" $ do
       loadAndRunSalak (loadToml "test/salak.toml") $ do
-        SourcePack{..}  <- askSalak
+        SourcePack{..}  <- ask
         cf <- require "me.icymint.conf"
         lift $ do
           name cf `shouldBe` "shelly"

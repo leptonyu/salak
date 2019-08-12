@@ -99,16 +99,9 @@ runLoad (LoadSalakT ma) = MS.evalStateT ma
 liftNT :: MonadIO m => LoadSalak () -> LoadSalakT m ()
 liftNT a = MS.get >>= liftIO . runLoad a
 
-instance MonadIO m => MonadSalak (LoadSalakT m) where
-  askSalak = MS.get >>= toSourcePack
-  setLogF f = do
-    UpdateSource{..} <- MS.get
-    liftIO $ void $ swapMVar lfunc f
-  logSalak msg = do
-    UpdateSource{..} <- MS.get
-    liftIO $ do
-      f <- readMVar lfunc
-      f msg
+instance MonadIO m => MonadReader SourcePack (LoadSalakT m) where
+  ask = MS.get >>= toSourcePack
+  local _ ma = ma
 
 instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (LoadSalakT m) where
   askUnliftIO = do
@@ -124,9 +117,6 @@ type RunSalak = RunSalakT IO
 
 runRun :: Monad m => RunSalakT m a -> SourcePack -> m a
 runRun (RunSalakT ma) = runReaderT ma
-
-instance Monad m => MonadSalak (RunSalakT m) where
-  askSalak = RunSalakT ask
 
 instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (RunSalakT m) where
   askUnliftIO = do

@@ -10,3 +10,8 @@
   default-extensions:
     - RecordWildCards
     - TupleSections
+    - OverloadedStrings
+    - ScopedTypeVariables
+    - FlexibleInstances
+    - MultiParamTypeClasses
+    - DeriveGeneric

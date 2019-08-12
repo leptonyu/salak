@@ -1,4 +1,4 @@
-resolver: nightly-2019-08-02
+resolver: nightly-2019-08-07
 packages:
 - salak
 - salak-yaml

@@ -69,22 +69,20 @@ instance Monad m => A.Alternative (Prop m) where
       Left (_ :: SomeException) -> b
 
 -- | Core type class of salak, which provide function to parse properties.
-class Monad m => MonadSalak m where
-  -- | Monad has the ability to get a `SourcePack` instance.
-  askSalak :: m SourcePack
+class MonadReader SourcePack m => MonadSalak m where
 
   -- | Get reload action which used for reload profiles
   askReload :: m (IO ReloadResult)
-  askReload = reload <$> askSalak
+  askReload = reload <$> ask
 
   setLogF :: MonadIO m => (String -> IO ()) -> m ()
   setLogF f = do
-    SourcePack{..} <- askSalak
+    SourcePack{..} <- ask
     liftIO $ void $ swapMVar lref f
 
   logSalak :: MonadIO m => String -> m ()
   logSalak msg = do
-    SourcePack{..} <- askSalak
+    SourcePack{..} <- ask
     liftIO $ do
       f <- readMVar lref
       f msg
@@ -100,7 +98,7 @@ class Monad m => MonadSalak m where
   -- Normal value will not be affected by reloading configurations.
   require :: (MonadThrow m, FromProp m a) => Text -> m a
   require ks = do
-    sp@SourcePack{..} <- askSalak
+    sp@SourcePack{..} <- ask
     case search ks source of
       Left  e     -> throwM $ SalakException (unpack ks) (toException $ PropException e)
       Right (k,t) -> do
@@ -112,11 +110,7 @@ class Monad m => MonadSalak m where
             _                         -> throwM $ SalakException (unpack ks) e
           Right x -> return x
 
-instance {-# OVERLAPPABLE #-} (m ~ t m', Monad m', Monad m, MonadTrans t, MonadSalak m') => MonadSalak m where
-  askSalak = lift askSalak
-
-instance Monad m => MonadSalak (Prop m) where
-  askSalak = Prop ask
+instance {-# OVERLAPPABLE #-} MonadReader SourcePack m => MonadSalak m
 
 instance Monad m => MonadThrow (Prop m) where
   throwM = Prop . lift . throwError . toException
@@ -170,7 +164,7 @@ instance FromProp m a => FromProp m (Either String a) where
 
 instance {-# OVERLAPPABLE #-} FromProp m a => FromProp m [a] where
   fromProp = do
-    sp@SourcePack{..} <- askSalak
+    sp@SourcePack{..} <- ask
     foldM (go sp) [] $ sortBy g2 $ filter (isNum.fst) $ HM.toList $ TR.getMap source
     where
       go s vs (k,t) = (:vs) <$> runProp s { pref = pref s ++ [k], source = t} fromProp
@@ -178,7 +172,7 @@ instance {-# OVERLAPPABLE #-} FromProp m a => FromProp m [a] where
 
 instance {-# OVERLAPPABLE #-} (IsString s, FromProp m a) => FromProp m [(s, a)] where
   fromProp = do
-    sp@SourcePack{..} <- askSalak
+    sp@SourcePack{..} <- ask
     foldM (go sp) [] $ sortBy g2 $ filter (isStr.fst) $ HM.toList $ TR.getMap source
     where
       go s vs (k,t) = (:vs) . (fromString $ show $ Keys [k],) <$> runProp s { pref = pref s ++ [k], source = t} fromProp
@@ -221,7 +215,7 @@ instance Exception SalakException
 -- | Automatic convert literal string into an instance of `Prop` @m@ @a@.
 instance FromProp m a => IsString (Prop m a) where
   fromString ks = do
-    sp@SourcePack{..} <- askSalak
+    sp@SourcePack{..} <- ask
     case search ks source of
       Left  e     -> throwM $ SalakException
         (if null pref then ks else show (Keys pref) ++ "." ++ ks)
@@ -230,12 +224,12 @@ instance FromProp m a => IsString (Prop m a) where
 
 notFound :: Monad m => Prop m a
 notFound = do
-  SourcePack{..} <- askSalak
+  SourcePack{..} <- ask
   throwM $ SalakException (show (Keys pref)) $ toException NullException
 
 err :: Monad m => String -> Prop m a
 err e = do
-  SourcePack{..} <- askSalak
+  SourcePack{..} <- ask
   throwM $ PropException $ show (Keys pref) ++ ":" ++ e
 
 -- | Prop operators.
@@ -276,7 +270,7 @@ instance {-# OVERLAPPABLE #-} A.Alternative f => PropOp f a where
 -- | Support for setting default `IO` value.
 instance (MonadIO m, FromProp (Either SomeException) a) => PropOp (Prop m) (IO a) where
   (.?=) ma a = do
-    sp <- askSalak
+    sp <- ask
     v  <- try ma
     case v of
       Left  (_ :: SomeException) -> liftIO a >>= buildIO sp
@@ -288,7 +282,7 @@ instance Monad m => HasValid (Prop m) where
 -- | Parse primitive value from `Value`
 readPrimitive :: Monad m => (Value -> Either String a) -> Prop m a
 readPrimitive f = do
-  SourcePack{..} <- askSalak
+  SourcePack{..} <- ask
   vx <- g $ TR.getPrimitive source >>= getVal
   case f <$> vx of
     Just (Left e)  -> err e
