@@ -53,6 +53,7 @@ import           Unsafe.Coerce           (unsafeCoerce)
 -- | Core type class of salak, which provide function to parse properties.
 class Monad m => MonadSalak m where
 
+  -- | Monad has the ability to get a SourcePack instance.
   askSourcePack :: m SourcePack
 
   -- | Get reload action which used for reload profiles
@@ -165,8 +166,10 @@ instance Monad m => MonadFail (Prop m) where
   fail = failKey "" . PropException
 
 
--- | Class type.
+-- | Type class used to parse properties.
 class FromProp m a where
+
+  -- | Parse properties from `Value`.
   fromProp :: Monad m => Prop m a
   default fromProp :: (Generic a, GFromProp m (Rep a), Monad m) => Prop m a
   fromProp = fmap to gFromProp

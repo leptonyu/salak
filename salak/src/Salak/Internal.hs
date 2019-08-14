@@ -102,6 +102,14 @@ liftNT a = MS.get >>= liftIO . runLoad a
 
 instance MonadIO m => MonadSalak (LoadSalakT m) where
   askSourcePack = MS.get >>= toSourcePack
+  setLogF f = do
+    UpdateSource{..} <- MS.get
+    liftIO $ void $ swapMVar lfunc f
+  logSalak msg = do
+    UpdateSource{..} <- MS.get
+    liftIO $ do
+      f <- readMVar lfunc
+      f msg
 
 instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (LoadSalakT m) where
   askUnliftIO = do
