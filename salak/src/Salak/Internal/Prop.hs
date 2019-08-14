@@ -17,6 +17,7 @@ import           Control.Concurrent.MVar
 import           Control.Monad
 import           Control.Monad.Catch
 import           Control.Monad.Except
+import           Control.Monad.Fail
 import           Control.Monad.Identity  (Identity (..))
 import           Control.Monad.Reader
 import qualified Data.ByteString         as B
@@ -26,7 +27,7 @@ import           Data.Fixed
 import           Data.Hashable           (Hashable)
 import qualified Data.HashMap.Strict     as HM
 import           Data.Int
-import           Data.List               (sortBy)
+import           Data.List               (sort)
 import qualified Data.Map.Strict         as M
 import           Data.Maybe
 import           Data.Menshen
@@ -47,26 +48,7 @@ import           Salak.Internal.Source
 import           Salak.Internal.Val
 import qualified Salak.Trie              as TR
 import           Text.Read               (readMaybe)
-
-class Monad m => FromProp m a where
-  fromProp :: Prop m a
-  default fromProp :: (Generic a, GFromProp m (Rep a)) => Prop m a
-  fromProp = fmap to gFromProp
-
-newtype Prop m a
-  = Prop { unProp :: ReaderT SourcePack (ExceptT SomeException m) a }
-  deriving (Functor, Applicative, Monad, MonadReader SourcePack, MonadIO)
-
-instance MonadTrans Prop where
-  lift = Prop . lift . lift
-
-instance Monad m => A.Alternative (Prop m) where
-  empty = notFound
-  a <|> b = do
-    v <- try a
-    case v of
-      Right x                   -> return x
-      Left (_ :: SomeException) -> b
+import           Unsafe.Coerce           (unsafeCoerce)
 
 -- | Core type class of salak, which provide function to parse properties.
 class MonadReader SourcePack m => MonadSalak m where
@@ -97,50 +79,97 @@ class MonadReader SourcePack m => MonadSalak m where
   -- `require` supports parse `IO` values, which actually wrap a 'MVar' variable and can be reseted by reloading configurations.
   -- Normal value will not be affected by reloading configurations.
   require :: (MonadThrow m, FromProp m a) => Text -> m a
-  require ks = do
-    sp@SourcePack{..} <- ask
-    case search ks source of
-      Left  e     -> throwM $ SalakException (unpack ks) (toException $ PropException e)
-      Right (k,t) -> do
-        v <- runProp2 sp { source = t, pref = pref ++ unKeys k} fromProp
-        case v of
-          Left  e -> case fromException e of
-            Just (SalakException a b) -> throwM $ SalakException a  b
-            Just pe                   -> throwM $ SalakException (unpack ks) (toException pe)
-            _                         -> throwM $ SalakException (unpack ks) e
-          Right x -> return x
+  require ks = ask >>= \s -> runProp s $ do
+    case toKeys ks of
+      Left  e -> failKey (unpack ks) (PropException e)
+      Right k -> withKeys k fromProp
 
 instance {-# OVERLAPPABLE #-} MonadReader SourcePack m => MonadSalak m
 
+-- | Property parser, used to parse property from `Value`
+newtype Prop m a
+  = Prop { unProp :: ReaderT SourcePack (ExceptT SomeException m) a }
+  deriving (Functor, Applicative, Monad, MonadReader SourcePack, MonadIO)
+
+runProp :: MonadThrow m => SourcePack -> Prop m a -> m a
+runProp sp (Prop p) = do
+  v <- runExceptT (runReaderT p sp)
+  case v of
+    Left  e -> throwM e
+    Right x -> return x
+
+withProp :: (SourcePack -> SourcePack) -> Prop m a -> Prop m a
+withProp = unsafeCoerce withReaderT
+
+withKey :: Key -> Prop m a -> Prop m a
+withKey = withKeys . singletonKey
+
+withKeys :: Keys -> Prop m a -> Prop m a
+withKeys key = withProp
+  $ \SourcePack{..} ->
+     SourcePack{pref = pref <> key, source = TR.subTries key source, ..}
+
+data SalakException
+  = PropException String -- ^ Parse failed
+  | NullException        -- ^ Not found
+  | SalakException String SomeException
+  deriving Show
+
+instance Exception SalakException
+
+
+failKey :: Monad m => String -> SalakException -> Prop m a
+failKey ks e = do
+  SourcePack{..} <- ask
+  throwM
+    $ SalakException (go (show pref) ks)
+    $ toException e
+  where
+    go "" a = a
+    go a "" = a
+    go a  b = a <> "." <> b
+
+-- | Automatic convert literal string into an instance of `Prop` @m@ @a@.
+instance (Monad m, FromProp m a) => IsString (Prop m a) where
+  fromString ks = do
+    case toKeys ks of
+      Left  e -> failKey ks (PropException e)
+      Right k -> withKeys k fromProp
+
+
+instance MonadTrans Prop where
+  lift = Prop . lift . lift
+
+instance Monad m => A.Alternative (Prop m) where
+  empty = failKey "" NullException
+
+  a <|> b = do
+    v <- try a
+    case v of
+      Right x                   -> return x
+      Left (_ :: SomeException) -> b
+
+instance Monad m => MonadError SomeException (Prop m) where
+  throwError = Prop . lift . throwError . toException
+  catchError (Prop ma) me = Prop $ do
+    c <- ask
+    lift $ catchError (runReaderT ma c) (\e -> runReaderT (unProp $ me e) c)
+
 instance Monad m => MonadThrow (Prop m) where
-  throwM = Prop . lift . throwError . toException
+  throwM = throwError . toException
 
 instance Monad m => MonadCatch (Prop m) where
-  catch (Prop a) f = do
-    sp <- ask
-    v  <- lift $ runExceptT (runReaderT a sp)
-    case v of
-      Left  e -> case fromException e of
-        Just ee -> f ee
-        _       -> throwM e
-      Right x -> return x
+  catch ma me = catchError ma (\e -> maybe (throwM e) me $ fromException e)
 
-runProp2 :: Monad m => SourcePack -> Prop m a -> m (Either SomeException a)
-runProp2 sp (Prop p) = runExceptT (runReaderT p sp)
+instance Monad m => MonadFail (Prop m) where
+  fail = failKey "" . PropException
 
-runProp1 :: MonadThrow m => SourcePack -> Prop m a -> m a
-runProp1 sp p = do
-  v <- runProp2 sp p
-  case v of
-    Left  e -> throwM e
-    Right x -> return x
 
-runProp :: Monad m => SourcePack -> Prop m a -> Prop m a
-runProp sp p = do
-  v <- lift $ runProp2 sp p
-  case v of
-    Left  e -> throwM e
-    Right x -> return x
+-- | Class type.
+class FromProp m a where
+  fromProp :: Monad m => Prop m a
+  default fromProp :: (Generic a, GFromProp m (Rep a), Monad m) => Prop m a
+  fromProp = fmap to gFromProp
 
 instance FromProp m a => FromProp m (Maybe a) where
   fromProp = do
@@ -156,7 +185,6 @@ instance FromProp m a => FromProp m (Maybe a) where
 
 instance FromProp m a => FromProp m (Either String a) where
   fromProp = do
-    SourcePack{..} <- ask
     v <- try fromProp
     return $ case v of
       Left  e -> Left $ show (e :: SomeException)
@@ -164,19 +192,15 @@ instance FromProp m a => FromProp m (Either String a) where
 
 instance {-# OVERLAPPABLE #-} FromProp m a => FromProp m [a] where
   fromProp = do
-    sp@SourcePack{..} <- ask
-    foldM (go sp) [] $ sortBy g2 $ filter (isNum.fst) $ HM.toList $ TR.getMap source
-    where
-      go s vs (k,t) = (:vs) <$> runProp s { pref = pref s ++ [k], source = t} fromProp
-      g2 (a,_) (b,_) = compare b a
+    SourcePack{..} <- ask
+    sequence $ (`withKey` fromProp) <$> sort (filter isNum $ HM.keys $ TR.getMap source)
 
 instance {-# OVERLAPPABLE #-} (IsString s, FromProp m a) => FromProp m [(s, a)] where
   fromProp = do
-    sp@SourcePack{..} <- ask
-    foldM (go sp) [] $ sortBy g2 $ filter (isStr.fst) $ HM.toList $ TR.getMap source
+    SourcePack{..} <- ask
+    sequence $ go <$> sort (filter isStr $ HM.keys $ TR.getMap source)
     where
-      go s vs (k,t) = (:vs) . (fromString $ show $ Keys [k],) <$> runProp s { pref = pref s ++ [k], source = t} fromProp
-      g2 (a,_) (b,_) = compare b a
+      go k = (fromString $ show $ singletonKey k,) <$> withKey k fromProp
 
 instance (Eq s, Hashable s, IsString s, FromProp m a) => FromProp m (HM.HashMap s a) where
   fromProp = HM.fromList <$> fromProp
@@ -195,8 +219,7 @@ buildIO :: (MonadIO m, FromProp (Either SomeException) a) => SourcePack -> a -> 
 buildIO sp a = liftIO $ do
   aref <- newMVar a
   modifyMVar_ (qref sp) $ \f -> return $ \s ->
-    let b = runProp1 sp {source = search2 s (pref sp), pref = pref sp} fromProp
-    in case b of
+    case runProp sp {source = s} $ withKeys (pref sp) fromProp of
       Left  e -> Left $ show e
       Right v -> do
         vb <- v
@@ -204,33 +227,6 @@ buildIO sp a = liftIO $ do
         return (swapMVar aref (fromMaybe a vb) >> io)
   return (readMVar aref)
 
-data SalakException
-  = PropException String -- ^ Parse failed
-  | NullException        -- ^ Not found
-  | SalakException String SomeException
-  deriving Show
-
-instance Exception SalakException
-
--- | Automatic convert literal string into an instance of `Prop` @m@ @a@.
-instance FromProp m a => IsString (Prop m a) where
-  fromString ks = do
-    sp@SourcePack{..} <- ask
-    case search ks source of
-      Left  e     -> throwM $ SalakException
-        (if null pref then ks else show (Keys pref) ++ "." ++ ks)
-        (toException $ PropException e)
-      Right (k,t) -> runProp sp { source = t, pref = pref ++ unKeys k} fromProp
-
-notFound :: Monad m => Prop m a
-notFound = do
-  SourcePack{..} <- ask
-  throwM $ SalakException (show (Keys pref)) $ toException NullException
-
-err :: Monad m => String -> Prop m a
-err e = do
-  SourcePack{..} <- ask
-  throwM $ PropException $ show (Keys pref) ++ ":" ++ e
 
 -- | Prop operators.
 --
@@ -277,7 +273,7 @@ instance (MonadIO m, FromProp (Either SomeException) a) => PropOp (Prop m) (IO a
       Right o                    -> return o
 
 instance Monad m => HasValid (Prop m) where
-  invalid = err . toI18n
+  invalid = Control.Monad.Fail.fail . toI18n
 
 -- | Parse primitive value from `Value`
 readPrimitive :: Monad m => (Value -> Either String a) -> Prop m a
@@ -285,9 +281,9 @@ readPrimitive f = do
   SourcePack{..} <- ask
   vx <- g $ TR.getPrimitive source >>= getVal
   case f <$> vx of
-    Just (Left e)  -> err e
+    Just (Left e)  -> Control.Monad.Fail.fail e
     Just (Right a) -> return a
-    _              -> notFound
+    _              -> A.empty
   where
     g = return
 
@@ -299,29 +295,27 @@ readEnum = readPrimitive . go
     go _ x      = Left $ fst (typeOfV x) ++ " cannot convert to enum"
 
 
-class Monad m => GFromProp m f where
-  gFromProp :: Prop m (f a)
+class GFromProp m f where
+  gFromProp :: Monad m => Prop m (f a)
 
-instance {-# OVERLAPPABLE #-} (Monad m, Constructor c, GFromProp m a) => GFromProp m (M1 C c a) where
+instance {-# OVERLAPPABLE #-} (Constructor c, GFromProp m a) => GFromProp m (M1 C c a) where
     gFromProp
       | conIsRecord m = fmap M1 gFromProp
       | otherwise     = fmap M1 $ gEnum $ T.pack (conName m)
       where m = undefined :: t c a x
 
-gEnum :: (Monad m, GFromProp m f) => Text -> Prop m (f a)
+gEnum :: (GFromProp m f, Monad m) => Text -> Prop m (f a)
 gEnum va = do
   o <- gFromProp
   readEnum $ \x -> if x==va then Right o else Left "enum invalid"
 
 instance {-# OVERLAPPABLE #-} (Selector s, GFromProp m a) => GFromProp m(M1 S s a) where
-  gFromProp = Prop $ do
-    let k = KT $ T.pack $ selName (undefined :: t s a p)
-    withReaderT (\s -> s { pref = pref s ++ [k], source = search1 (source s) k }) $ unProp $ M1 <$> gFromProp
+  gFromProp = withKey (KT $ T.pack $ selName (undefined :: t s a p)) $ M1 <$> gFromProp
 
 instance {-# OVERLAPPABLE #-} GFromProp m a => GFromProp m (M1 D i a) where
   gFromProp = M1 <$> gFromProp
 
-instance {-# OVERLAPPABLE #-} (FromProp m a) => GFromProp m (K1 i a) where
+instance {-# OVERLAPPABLE #-} FromProp m a => GFromProp m (K1 i a) where
     gFromProp = fmap K1 fromProp
 
 instance Monad m => GFromProp m U1 where
@@ -330,62 +324,62 @@ instance Monad m => GFromProp m U1 where
 instance {-# OVERLAPPABLE #-} (GFromProp m a, GFromProp m b) => GFromProp m (a:*:b) where
   gFromProp = (:*:) <$> gFromProp <*> gFromProp
 
-instance {-# OVERLAPPABLE #-} (Monad m, GFromProp m a, GFromProp m b) => GFromProp m (a:+:b) where
+instance {-# OVERLAPPABLE #-} (GFromProp m a, GFromProp m b) => GFromProp m (a:+:b) where
   gFromProp = fmap L1 gFromProp A.<|> fmap R1 gFromProp
 
-instance (Monad m, FromProp m a) => FromProp m (Identity a) where
+instance FromProp m a => FromProp m (Identity a) where
   fromProp = Identity <$> fromProp
 
-instance (Monad m, FromProp m a, FromProp m b) => FromProp m (a,b) where
+instance (FromProp m a, FromProp m b) => FromProp m (a,b) where
   fromProp = (,) <$> fromProp <*> fromProp
 
-instance (Monad m, FromProp m a, FromProp m b, FromProp m c) => FromProp m(a,b,c) where
+instance (FromProp m a, FromProp m b, FromProp m c) => FromProp m(a,b,c) where
   fromProp = (,,) <$> fromProp <*> fromProp <*> fromProp
 
-instance (Monad m, FromProp m a, FromProp m b, FromProp m c, FromProp m d) => FromProp m(a,b,c,d) where
+instance (FromProp m a, FromProp m b, FromProp m c, FromProp m d) => FromProp m(a,b,c,d) where
   fromProp = (,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp
 
-instance (Monad m, FromProp m a, FromProp m b, FromProp m c, FromProp m d, FromProp m e) => FromProp m(a,b,c,d,e) where
+instance (FromProp m a, FromProp m b, FromProp m c, FromProp m d, FromProp m e) => FromProp m(a,b,c,d,e) where
   fromProp = (,,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp
 
-instance (Monad m, FromProp m a, FromProp m b, FromProp m c, FromProp m d, FromProp m e, FromProp m f) => FromProp m(a,b,c,d,e,f) where
+instance (FromProp m a, FromProp m b, FromProp m c, FromProp m d, FromProp m e, FromProp m f) => FromProp m(a,b,c,d,e,f) where
   fromProp = (,,,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp
 
-instance (Monad m, FromProp m a, FromProp m b, FromProp m c, FromProp m d, FromProp m e, FromProp m f, FromProp m g) => FromProp m(a,b,c,d,e,f,g) where
+instance (FromProp m a, FromProp m b, FromProp m c, FromProp m d, FromProp m e, FromProp m f, FromProp m g) => FromProp m(a,b,c,d,e,f,g) where
   fromProp = (,,,,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp
 
-instance (Monad m, FromProp m a, FromProp m b, FromProp m c, FromProp m d, FromProp m e, FromProp m f, FromProp m g, FromProp m h) => FromProp m(a,b,c,d,e,f,g,h) where
+instance (FromProp m a, FromProp m b, FromProp m c, FromProp m d, FromProp m e, FromProp m f, FromProp m g, FromProp m h) => FromProp m(a,b,c,d,e,f,g,h) where
   fromProp = (,,,,,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp
 
-instance (Monad m, FromProp m a, FromProp m b, FromProp m c, FromProp m d, FromProp m e, FromProp m f, FromProp m g, FromProp m h, FromProp m i) => FromProp m(a,b,c,d,e,f,g,h,i) where
+instance (FromProp m a, FromProp m b, FromProp m c, FromProp m d, FromProp m e, FromProp m f, FromProp m g, FromProp m h, FromProp m i) => FromProp m(a,b,c,d,e,f,g,h,i) where
   fromProp = (,,,,,,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp
 
 
-instance (Monad m, FromProp m a) => FromProp m (Min a) where
+instance FromProp m a => FromProp m (Min a) where
   fromProp = Min <$> fromProp
 
-instance (Monad m, FromProp m a) => FromProp m (Max a) where
+instance FromProp m a => FromProp m (Max a) where
   fromProp = Max <$> fromProp
 
-instance (Monad m, FromProp m a) => FromProp m (First a) where
+instance FromProp m a => FromProp m (First a) where
   fromProp = First <$> fromProp
 
-instance (Monad m, FromProp m a) => FromProp m (Last a) where
+instance FromProp m a => FromProp m (Last a) where
   fromProp = Last <$> fromProp
 
-instance (Monad m, FromProp m a) => FromProp m (Dual a) where
+instance FromProp m a => FromProp m (Dual a) where
   fromProp = Dual <$> fromProp
 
-instance (Monad m, FromProp m a) => FromProp m (Sum a) where
+instance FromProp m a => FromProp m (Sum a) where
   fromProp = Sum <$> fromProp
 
-instance (Monad m, FromProp m a) => FromProp m (Product a) where
+instance FromProp m a => FromProp m (Product a) where
   fromProp = Product <$> fromProp
 
-instance (Monad m, FromProp m a) => FromProp m (Option a) where
+instance FromProp m a => FromProp m (Option a) where
   fromProp = Option <$> fromProp
 
-instance Monad m => FromProp m Bool where
+instance FromProp m Bool where
   fromProp = readPrimitive go
     where
       go (VB x) = Right x
@@ -397,25 +391,25 @@ instance Monad m => FromProp m Bool where
         _       -> Left "string convert bool failed"
       go x      = Left $ getType x ++ " cannot be bool"
 
-instance Monad m => FromProp m Text where
+instance FromProp m Text where
   fromProp = readPrimitive go
     where
       go (VT x) = Right x
       go x      = Right $ T.pack $ snd $ typeOfV x
 
-instance Monad m => FromProp m TL.Text where
+instance FromProp m TL.Text where
   fromProp = TL.fromStrict <$> fromProp
 
-instance Monad m => FromProp m B.ByteString where
+instance FromProp m B.ByteString where
   fromProp = TB.encodeUtf8 <$> fromProp
 
-instance Monad m => FromProp m BL.ByteString where
+instance FromProp m BL.ByteString where
   fromProp = TBL.encodeUtf8 <$> fromProp
 
-instance Monad m => FromProp m String where
+instance FromProp m String where
   fromProp = T.unpack <$> fromProp
 
-instance Monad m => FromProp m Scientific where
+instance FromProp m Scientific where
   fromProp = readPrimitive go
     where
       go (VT x) = case readMaybe $ T.unpack x of
@@ -424,49 +418,49 @@ instance Monad m => FromProp m Scientific where
       go (VI x) = Right x
       go x      = Left $ getType x ++ " cannot be number"
 
-instance Monad m => FromProp m Float where
+instance FromProp m Float where
   fromProp = toRealFloat <$> fromProp
 
-instance Monad m => FromProp m Double where
+instance FromProp m Double where
   fromProp = toRealFloat <$> fromProp
 
-instance Monad m => FromProp m Integer where
+instance FromProp m Integer where
   fromProp = toInteger <$> (fromProp :: Prop m Int)
 
-instance Monad m => FromProp m Int where
+instance FromProp m Int where
   fromProp = fromProp >>= toNum
 
-instance Monad m => FromProp m Int8 where
+instance FromProp m Int8 where
   fromProp = fromProp >>= toNum
 
-instance Monad m => FromProp m Int16 where
+instance FromProp m Int16 where
   fromProp = fromProp >>= toNum
 
-instance Monad m => FromProp m Int32 where
+instance FromProp m Int32 where
   fromProp = fromProp >>= toNum
 
-instance Monad m => FromProp m Int64 where
+instance FromProp m Int64 where
   fromProp = fromProp >>= toNum
 
-instance Monad m => FromProp m Word where
+instance FromProp m Word where
   fromProp = fromProp >>= toNum
 
-instance Monad m => FromProp m Word8 where
+instance FromProp m Word8 where
   fromProp = fromProp >>= toNum
 
-instance Monad m => FromProp m Word16 where
+instance FromProp m Word16 where
   fromProp = fromProp >>= toNum
 
-instance Monad m => FromProp m Word32 where
+instance FromProp m Word32 where
   fromProp = fromProp >>= toNum
 
-instance Monad m => FromProp m Word64 where
+instance FromProp m Word64 where
   fromProp = fromProp >>= toNum
 
-instance Monad m => FromProp m NominalDiffTime where
+instance FromProp m NominalDiffTime where
   fromProp = fromInteger <$> fromProp
 
-instance Monad m => FromProp m DiffTime where
+instance FromProp m DiffTime where
   fromProp = fromInteger <$> fromProp
 
 instance (HasResolution a, Monad m) => FromProp m (Fixed a) where
@@ -475,40 +469,40 @@ instance (HasResolution a, Monad m) => FromProp m (Fixed a) where
 toNum :: (Monad m, Integral i, Bounded i) => Scientific -> Prop m i
 toNum s = case toBoundedInteger s of
   Just v -> return v
-  _      -> err "scientific number doesn't fit in the target representation"
+  _      -> Control.Monad.Fail.fail "scientific number doesn't fit in the target representation"
 
-instance Monad m => FromProp m CBool where
+instance FromProp m CBool where
   fromProp = do
     b <- fromProp
     return $ if b then 1 else 0
 
-instance Monad m => FromProp m CShort where
+instance FromProp m CShort where
   fromProp = CShort <$> fromProp
 
-instance Monad m => FromProp m CUShort where
+instance FromProp m CUShort where
   fromProp = CUShort <$> fromProp
 
-instance Monad m => FromProp m CInt where
+instance FromProp m CInt where
   fromProp = CInt <$> fromProp
 
-instance Monad m => FromProp m CUInt where
+instance FromProp m CUInt where
   fromProp = CUInt <$> fromProp
 
-instance Monad m => FromProp m CLong where
+instance FromProp m CLong where
   fromProp = CLong <$> fromProp
 
-instance Monad m => FromProp m CULong where
+instance FromProp m CULong where
   fromProp = CULong <$> fromProp
 
-instance Monad m => FromProp m CLLong where
+instance FromProp m CLLong where
   fromProp = CLLong <$> fromProp
 
-instance Monad m => FromProp m CULLong where
+instance FromProp m CULLong where
   fromProp = CULLong <$> fromProp
 
-instance Monad m => FromProp m CFloat where
+instance FromProp m CFloat where
   fromProp = CFloat <$> fromProp
 
-instance Monad m => FromProp m CDouble where
+instance FromProp m CDouble where
   fromProp = CDouble <$> fromProp
 

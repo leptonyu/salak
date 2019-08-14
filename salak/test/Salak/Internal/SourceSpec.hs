@@ -1,3 +1,4 @@
+{-# LANGUAGE NoOverloadedLists #-}
 module Salak.Internal.SourceSpec where
 
 import           Control.Monad.Writer
@@ -38,6 +39,10 @@ spec = do
   context "source" $ do
     it "normal - 2" $ do
       let (_,b,c) = extract T.empty $ gen 0 ([("hello", "world")] :: [(Text, Text)])
+      length c `shouldBe` 0
+      length (T.toList b) `shouldBe` 1
+    it "normal - 2" $ do
+      let (_,b,c) = extract T.empty $ gen 0 ([("hello.value", "world")] :: [(Text, Text)])
       length c `shouldBe` 0
       length (T.toList b) `shouldBe` 1
   context "Reload test" $ do

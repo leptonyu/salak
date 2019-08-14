@@ -21,13 +21,15 @@ module Salak.Trie(
   , Salak.Trie.null
   , member
   , lookup
+  , subTrie
+  , subTries
   , insert
   , modify
   , modifyF
   , modify'
   , update
   , alter
-  , alterF
+  -- , alterF
   -- * Lists
   , Salak.Trie.toList
   , fromList
@@ -41,13 +43,14 @@ module Salak.Trie(
 import           Control.Applicative (pure, (<*>))
 import           Control.Monad       (Monad (..))
 import           Data.Bool
+import qualified Data.DList          as D
 import           Data.Eq
 import           Data.Foldable       (Foldable (..))
 import           Data.Function
 import           Data.Functor
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
-import           Data.List           (concat, intercalate, map, reverse, (++))
+import           Data.List           (concat, intercalate, map, (++))
 import           Data.Maybe
 import           Data.Traversable
 import           Data.Tuple          (uncurry)
@@ -97,15 +100,16 @@ null _                = False
 member :: Eq v => Keys -> Trie v -> Bool
 member k t = isJust (lookup k t)
 
+subTrie :: Key -> Trie v -> Trie v
+subTrie key = fromMaybe empty . HM.lookup key . getMap
+
+subTries :: Keys -> Trie v -> Trie v
+subTries ks v = foldl (flip subTrie) v (toKeyList ks)
+
 -- | /O(log (n+m))/. Return the primitive value to which the specified key is mapped,
 -- or Nothing if this trie contains no mapping for the key.
 lookup :: Eq v => Keys -> Trie v -> Maybe v
-lookup (Keys keys) = go keys
-  where
-    go []     (Trie v _) = v
-    go (k:ks) (Trie _ m) = case HM.lookup k m of
-      Just t -> go ks t
-      _      -> Nothing
+lookup keys = getPrimitive . subTries keys
 
 -- | /O(log n)/. Associate the specified value with the specified key in this trie.
 -- If this trie previously contained a mapping for the key, the old value is replaced.
@@ -120,7 +124,7 @@ modify k f (Trie v m) = Trie v $ HM.alter (go . f . fromMaybe empty) k m
 
 -- | /O(log (n+m))/. The expression (`modify'` ks f trie) modifies the sub trie at ks.
 modify' :: Eq v => Keys -> (Trie v -> Trie v) -> Trie v -> Trie v
-modify' (Keys ks) f = foldr modify f ks
+modify' ks f = foldr modify f (toKeyList ks)
 
 -- | /O(log m)/. The expression (`modifyF` k f trie) modifies the sub trie at k.
 modifyF :: (Monad m, Eq v) => Key -> (Trie v -> m (Trie v)) -> Trie v -> m (Trie v)
@@ -131,33 +135,29 @@ modifyF k f (Trie v m) = Trie v <$> HM.alterF go k m
 
 -- | /O(1)/. The expression (update f trie) updates the primitive value in the trie.
 update :: Eq v => (Maybe v -> Maybe v) -> Trie v -> Trie v
-update f = alter f (Keys [])
+update f = alter f mempty
 
 -- | /O(n)/. The expression (update f ks trie) updates the primitive value of sub trie at ks.
 alter :: Eq v => (Maybe v -> Maybe v) -> Keys -> Trie v -> Trie v
-alter f (Keys keys) = go keys
-  where
-    go []     (Trie v m) = Trie (f v) m
-    go (k:ks) (Trie v m) = Trie v $ HM.alter (g2 ks) k m
-    g2 ks t = let t1 = go ks (fromMaybe empty t) in if t1 == empty then Nothing else Just t1
+alter f keys = modify' keys (\(Trie a b) -> Trie (f a) b)
 
 -- | /O(n)/. The expression (update f ks trie) updates the primitive value of sub trie at ks.
-alterF :: (Functor f, Eq v) => (Maybe v -> f(Maybe v)) -> Keys -> Trie v -> f (Trie v)
-alterF f (Keys keys) = go keys
-  where
-    go []     (Trie v m) = (`Trie` m) <$> f v
-    go (k:ks) (Trie v m) = Trie v <$> HM.alterF (g2 ks) k m
-    g2 ks t = g3 <$> go ks (fromMaybe empty t)
-    g3 t = if t == empty then Nothing else Just t
+-- alterF :: (Functor f, Eq v) => (Maybe v -> f(Maybe v)) -> Keys -> Trie v -> f (Trie v)
+-- alterF f keys = modifyF
+  -- where
+  --   go D.Nil         (Trie v m) = (`Trie` m) <$> f v
+  --   go (D.Cons k ks) (Trie v m) = Trie v <$> HM.alterF (g2 ks) k m
+  --   g2 ks t = g3 <$> go ks (fromMaybe empty t)
+  --   g3 t = if t == empty then Nothing else Just t
 
 -- | /O(n*m)/. Return a list of this tries's elements. The list is produced lazily.
 toList :: Trie v -> [(Keys, v)]
-toList = go []
+toList = go D.empty
   where
-    go p (Trie (Just v) m) = (Keys $ reverse p, v) : g2 p m
+    go p (Trie (Just v) m) = (Keys p, v) : g2 p m
     go p (Trie _        m) = g2 p m
     g2 p m = concat $ g3 p <$> HM.toList m
-    g3 p (k,t) = go (k:p) t
+    g3 p (k,t) = go (D.cons k p) t
 
 -- | /O(n*m*log n)/. Construct a trie with the supplied mappings.
 -- If the list contains duplicate mappings, the later mappings take precedence.

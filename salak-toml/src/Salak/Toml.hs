@@ -41,8 +41,8 @@ data TOML = TOML
 instance HasLoad TOML where
   loaders _ = (, loadToml) <$> ["toml", "tml"]
 
-toSs :: T.Key -> [Key]
-toSs (T.Key ps) = toS <$> N.toList ps
+toSs :: T.Key -> Keys
+toSs (T.Key ps) = fromKeys $ toS <$> N.toList ps
 
 toS :: Piece -> Key
 toS = KT . unPiece
@@ -54,12 +54,12 @@ loadTOML i T.TOML{..}
   . foldTableArrays tomlTableArrays
   where
     foldToml go p t = HM.foldlWithKey' go t p
-    foldPairs       = foldToml (\s k v -> TR.modify' (Keys $ toSs k) (insertAnyValue i v) s)
+    foldPairs       = foldToml (\s k v -> TR.modify' (toSs k) (insertAnyValue i v) s)
     foldTableArrays = foldToml (\s _ v -> foldArray (N.toList v) (loadTOML i) s)
     foldTables      = foldToml (\s _ v -> go v s)
       where
-        go (Leaf   k toml)    = TR.modify' (Keys $ toSs k) (loadTOML i toml)
-        go (Branch k v tomap) = TR.modify' (Keys $ toSs k) (foldTables tomap) . maybe id (loadTOML i) v
+        go (Leaf   k toml)    = TR.modify' (toSs k) (loadTOML i toml)
+        go (Branch k v tomap) = TR.modify' (toSs k) (foldTables tomap) . maybe id (loadTOML i) v
 insertAnyValue :: Int -> AnyValue -> TraceSource -> TraceSource
 insertAnyValue i (AnyValue (Array   b))             ts = foldArray b (insertAnyValue i . AnyValue) ts
 insertAnyValue i (AnyValue (Bool    b))             ts = setVal i (VB  b) ts

@@ -51,10 +51,10 @@ data Conf = Conf
 data SubConf = SubConf
   { hello :: String } deriving (Eq, Show, Generic)
 
-instance Monad m => FromProp m SubConf where
+instance FromProp m SubConf where
   fromProp = SubConf <$> "hello" .?= "yyy"
 
-instance Monad m => FromProp m Conf
+instance FromProp m Conf
 
 jsonProperty :: SpecWith ()
 jsonProperty = do

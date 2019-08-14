@@ -3,7 +3,11 @@
 module Salak.Internal.Key(
     Key(..)
   , Keys(..)
+  , mempty
   , simpleKeys
+  , singletonKey
+  , fromKeys
+  , toKeyList
   , ToKeys(..)
   , isNum
   , isStr
@@ -11,7 +15,7 @@ module Salak.Internal.Key(
 
 import           Control.Applicative  ((<|>))
 import           Data.Attoparsec.Text
-import           Data.Coerce          (coerce)
+import qualified Data.DList           as D
 import           Data.Hashable
 import           Data.List            (intercalate)
 import           Data.Text            (Text)
@@ -28,10 +32,29 @@ instance Ord Key where
   compare (KI _) _      = LT
   compare _      _      = GT
 
-newtype Keys = Keys { unKeys :: [Key] } deriving Eq
+newtype Keys = Keys { unKeys :: D.DList Key } deriving Eq
+
+emptyKey :: Keys
+emptyKey = Keys D.empty
+
+singletonKey :: Key -> Keys
+singletonKey k = fromKeys [k]
+
+fromKeys :: [Key] -> Keys
+fromKeys = Keys . D.fromList
+
+toKeyList :: Keys -> [Key]
+toKeyList = D.toList . unKeys
+
+instance Semigroup Keys where
+  (Keys a) <> (Keys b) = Keys $ a <> b
+
+instance Monoid Keys where
+  mempty = emptyKey
+  mappend = (<>)
 
 instance Show Keys where
-  show ks = toKey (coerce ks)
+  show = toKey . D.toList . unKeys
     where
       toKey = intercalate "." . go
       go (a@(KT _):cs) = let (b,c) = break isStr cs in (show a ++ concat (show <$> b)) : go c
@@ -56,8 +79,8 @@ instance Show Key where
   show (KT x) = T.unpack x
   show (KI i) = "[" ++ show i ++ "]"
 
-simpleKeys :: Text -> [Key]
-simpleKeys as = fmap KT $ filter (not.T.null) $ T.splitOn "." as
+simpleKeys :: Text -> Keys
+simpleKeys = fromKeys . fmap KT . filter (not.T.null) . T.splitOn "."
 
 exprs :: Parser [Key]
 exprs = concat <$> ( (expr <|> return []) `sepBy` char '.')
@@ -91,7 +114,7 @@ instance ToKeys Keys where
   toKeys = Right
 
 instance ToKeys Text where
-  toKeys = fmap Keys . selectors
+  toKeys = fmap fromKeys . selectors
     where
       selectors = go . parse exprs . flip T.snoc '\n'
       go (Done i r) = if i /= "\n" then Left $ "uncomplete parse" ++ T.unpack i else Right r

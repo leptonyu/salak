@@ -7,7 +7,6 @@ import           Control.Concurrent.MVar
 import           Data.HashMap.Strict     (HashMap)
 import qualified Data.HashMap.Strict     as HM
 import qualified Data.Heap               as H
-import           Data.Maybe
 import           Salak.Internal.Key
 import           Salak.Internal.Val
 import qualified Salak.Trie              as T
@@ -27,7 +26,7 @@ type LFunc = String -> IO ()
 
 data SourcePack = SourcePack
   { source :: !Source
-  , pref   :: ![Key]
+  , pref   :: !Keys
   , qref   :: !(MVar QFunc)
   , lref   :: !(MVar LFunc)
   , reload :: !(IO ReloadResult)
@@ -61,23 +60,12 @@ gen :: (Foldable f, ToKeys k, ToValue v) => Int -> f (k,v) -> TraceSource
 gen i = foldr go T.empty
   where
     go (k,v) x = case toKeys k of
-      Left  e  -> T.alter (g3 e) (Keys []) x
+      Left  e  -> T.alter (g3 e) mempty x
       Right k' -> T.alter (g2 $ Val i $ toVal v) k' x
     g2 v (Just (a,Vals c)) = Just (a, Vals $ H.insert v c)
     g2 v _                 = Just ([], Vals $ H.singleton v)
     g3 e (Just (a,c)) = Just (e:a,c)
     g3 e _            = Just ([e], Vals H.empty)
-
-search :: (ToKeys k) => k -> Source -> Either String (Keys, Source)
-search k t = fmap (go . unKeys) (toKeys k)
-  where
-    go ks = (Keys ks, foldl search1 t ks)
-
-search2 :: Source -> [Key] -> Source
-search2 = foldl search1
-
-search1 :: Source -> Key -> Source
-search1 m key = fromMaybe T.empty $ HM.lookup key $ T.getMap m
 
 fmt :: ModType -> Int -> String -> String -> String
 fmt m i s n = concat ['#' : show i, ' ' : show m, ' ' : s ,  ' ' : n]

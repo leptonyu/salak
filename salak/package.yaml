@@ -23,6 +23,7 @@ dependencies:
   - unordered-containers
   - containers
   - exceptions
+  - dlist
 
 library:
   source-dirs: src

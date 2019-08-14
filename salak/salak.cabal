@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a4ff6221c4f5d7fcb8bb5060c0d9ad3c27dd70fb05f5a778931017374017c9e6
+-- hash: 05f7938062806ff38a0aaddc86bba99f2bb9ff50855a8d76504bf6e1bda12aab
 
 name:           salak
 version:        0.3.4
@@ -42,6 +42,7 @@ library
     , containers
     , data-default
     , directory
+    , dlist
     , exceptions
     , filepath
     , hashable
@@ -84,6 +85,7 @@ test-suite spec
     , containers
     , data-default
     , directory
+    , dlist
     , exceptions
     , filepath
     , hashable

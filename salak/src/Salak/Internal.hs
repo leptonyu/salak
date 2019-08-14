@@ -42,6 +42,7 @@ module Salak.Internal(
   , Keys(..)
   , Key(..)
   , simpleKeys
+  , fromKeys
   , ToKeys(..)
   , setVal
   , Val(..)
@@ -162,7 +163,7 @@ load lm = do
   runLoad (lm >> MS.get) (UpdateSource r 0 HM.empty l q u) >>= toSourcePack
 
 toSourcePack :: MonadIO m => UpdateSource -> m SourcePack
-toSourcePack UpdateSource{..} = liftIO (readMVar ref) >>= \s -> return $ SourcePack s [] qfunc lfunc go
+toSourcePack UpdateSource{..} = liftIO (readMVar ref) >>= \s -> return $ SourcePack s mempty qfunc lfunc go
   where
     go = do
       t        <- readMVar ref
