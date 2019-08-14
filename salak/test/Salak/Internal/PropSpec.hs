@@ -1,9 +1,8 @@
 module Salak.Internal.PropSpec where
 
 import           Control.Concurrent.MVar
-import           Control.Monad.Reader
 import           Data.Int
-import           Salak.Internal.Prop
+import           Salak.Internal
 import           Salak.Internal.Source
 import           Salak.Internal.Val
 import qualified Salak.Trie              as T
@@ -27,8 +26,8 @@ spec = do
   context "VT" $ do
     it "text" $ do
       sp <- newSourcePack (VT "128")
-      let run :: forall m a. ReaderT SourcePack m a -> m a
-          run = (`runReaderT` sp)
+      let run :: forall m a. Monad m => RunSalakT m a -> m a
+          run = (`runRun` sp)
       vInt   :: Int   <- run $ require ""
       vInt32 :: Int32 <- run $ require ""
       -- vInt8  :: Int8  <- run $ require ""

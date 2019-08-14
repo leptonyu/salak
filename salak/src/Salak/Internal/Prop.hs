@@ -51,20 +51,22 @@ import           Text.Read               (readMaybe)
 import           Unsafe.Coerce           (unsafeCoerce)
 
 -- | Core type class of salak, which provide function to parse properties.
-class MonadReader SourcePack m => MonadSalak m where
+class Monad m => MonadSalak m where
+
+  askSourcePack :: m SourcePack
 
   -- | Get reload action which used for reload profiles
   askReload :: m (IO ReloadResult)
-  askReload = reload <$> ask
+  askReload = reload <$> askSourcePack
 
   setLogF :: MonadIO m => (String -> IO ()) -> m ()
   setLogF f = do
-    SourcePack{..} <- ask
+    SourcePack{..} <- askSourcePack
     liftIO $ void $ swapMVar lref f
 
   logSalak :: MonadIO m => String -> m ()
   logSalak msg = do
-    SourcePack{..} <- ask
+    SourcePack{..} <- askSourcePack
     liftIO $ do
       f <- readMVar lref
       f msg
@@ -79,12 +81,10 @@ class MonadReader SourcePack m => MonadSalak m where
   -- `require` supports parse `IO` values, which actually wrap a 'MVar' variable and can be reseted by reloading configurations.
   -- Normal value will not be affected by reloading configurations.
   require :: (MonadThrow m, FromProp m a) => Text -> m a
-  require ks = ask >>= \s -> runProp s $ do
+  require ks = askSourcePack >>= \s -> runProp s $ do
     case toKeys ks of
       Left  e -> failKey (unpack ks) (PropException e)
       Right k -> withKeys k fromProp
-
-instance {-# OVERLAPPABLE #-} MonadReader SourcePack m => MonadSalak m
 
 -- | Property parser, used to parse property from `Value`
 newtype Prop m a
