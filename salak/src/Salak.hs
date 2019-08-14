@@ -108,7 +108,7 @@ data FileConfig = FileConfig
   , configDir :: Maybe FilePath
   }
 
-instance Monad m => FromProp m FileConfig where
+instance FromProp m FileConfig where
   fromProp = FileConfig
     <$> "name" .?= Nothing
     <*> "dir"  .?= Nothing
@@ -210,7 +210,7 @@ runSalakWith name file = loadAndRunSalak (loadSalakWith file name)
 -- >>> import Data.Default
 -- >>> import Data.Text(Text)
 -- >>> data Config = Config { name :: Text, dir  :: Maybe Text, ext  :: Int} deriving (Eq, Show)
--- >>> instance Monad m => FromProp m Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1
+-- >>> instance FromProp m Config where fromProp = Config <$> "user" <*> "dir" <*> "ext" .?= 1
 -- >>> runSalak def (require "") :: IO Config
 -- Config {name = "daniel", dir = Nothing, ext = 1}
 --

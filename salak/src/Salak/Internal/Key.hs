@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Salak.Internal.Key(
@@ -20,6 +21,9 @@ import           Data.Hashable
 import           Data.List            (intercalate)
 import           Data.Text            (Text)
 import qualified Data.Text            as T
+#if __GLASGOW_HASKELL__ < 804
+import           Data.Semigroup
+#endif
 
 data Key
   = KT !Text
