@@ -6,7 +6,7 @@ module Salak.Internal.Source where
 import           Control.Concurrent.MVar
 import           Data.HashMap.Strict     (HashMap)
 import qualified Data.HashMap.Strict     as HM
-import qualified Data.Heap               as H
+import qualified Data.Set                as S
 import           Salak.Internal.Key
 import           Salak.Internal.Val
 import qualified Salak.Trie              as T
@@ -26,6 +26,8 @@ type LFunc = String -> IO ()
 
 data SourcePack = SourcePack
   { source :: !Source
+  , origin :: !Source
+  , kref   :: !(S.Set Keys)
   , pref   :: !Keys
   , qref   :: !(MVar QFunc)
   , lref   :: !(MVar LFunc)
@@ -36,15 +38,15 @@ diff :: Source -> Source -> T.Trie ModType
 diff = T.unionWith' go
   where
     go Nothing Nothing = Nothing
-    go (Just (Vals a)) Nothing  = if H.null a then Nothing else Just Add
-    go Nothing (Just (Vals a))  = if H.null a then Nothing else Just Del
-    go (Just (Vals a)) (Just (Vals b))
-      | H.null a && H.null b = Nothing
-      | H.null a             = Just Del
-      | H.null b             = Just Add
-      | otherwise            =
-        let Val i x = H.minimum a
-            Val j y = H.minimum b
+    go (Just a) Nothing  = if nullVals a then Nothing else Just Add
+    go Nothing (Just a)  = if nullVals a then Nothing else Just Del
+    go (Just a) (Just b)
+      | nullVals a && nullVals b = Nothing
+      | nullVals a               = Just Del
+      | nullVals b               = Just Add
+      | otherwise                =
+        let Val i x = minimumVals a
+            Val j y = minimumVals b
         in if i==j && x==y then Nothing else Just Mod
 
 extract :: Source -> TraceSource -> (Source, T.Trie ModType, [String])
@@ -62,10 +64,14 @@ gen i = foldr go T.empty
     go (k,v) x = case toKeys k of
       Left  e  -> T.alter (g3 e) mempty x
       Right k' -> T.alter (g2 $ Val i $ toVal v) k' x
-    g2 v (Just (a,Vals c)) = Just (a, Vals $ H.insert v c)
-    g2 v _                 = Just ([], Vals $ H.singleton v)
+    g2 v (Just (a,c)) = case modVals v c of
+      Left  e -> Just (e:a, c)
+      Right d -> Just (a,   d)
+    g2 v _            = case singletonVals v of
+      Left  e -> Just ([e], emptyVals)
+      Right d -> Just ([], d)
     g3 e (Just (a,c)) = Just (e:a,c)
-    g3 e _            = Just ([e], Vals H.empty)
+    g3 e _            = Just ([e], emptyVals)
 
 fmt :: ModType -> Int -> String -> String -> String
 fmt m i s n = concat ['#' : show i, ' ' : show m, ' ' : s ,  ' ' : n]
@@ -79,10 +85,16 @@ loadSource f i ts = T.unionWith go ts <$> f i
     go Nothing Nothing               = Nothing
     go (Just v) Nothing              = Just v
     go Nothing (Just v)              = Just v
-    go (Just (e1,v1)) (Just (e2,v2)) = Just (e1++e2, modVals' v2 v1)
+    go (Just (e1,v1)) (Just (e2,v2)) = case modVals' v2 v1 of
+      Left  e -> Just (e:e1++e2, v2)
+      Right v -> Just (e1++e2,v)
 
 setVal :: ToValue v => Int -> v -> TraceSource -> TraceSource
 setVal i v = T.update go
   where
-    go Nothing       = Just ([], modVals (Val i $ toVal v) emptyVals)
-    go (Just (e,vs)) = Just (e,  modVals (Val i $ toVal v) vs)
+    go Nothing       = case modVals (Val i $ toVal v) emptyVals of
+      Left  e -> Just ([e], emptyVals)
+      Right x -> Just ([], x)
+    go (Just (e,vs)) = case modVals (Val i $ toVal v) vs of
+      Left  e1 -> Just (e1:e, vs)
+      Right x  -> Just (e, x)

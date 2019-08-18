@@ -66,6 +66,7 @@ import qualified Control.Monad.State     as MS
 import           Data.HashMap.Strict     (HashMap)
 import qualified Data.HashMap.Strict     as HM
 import           Data.Maybe
+import qualified Data.Set                as S
 import           Data.Text               (Text, pack)
 import qualified Data.Text               as TT
 import           Salak.Internal.Key
@@ -174,7 +175,7 @@ load lm = do
   runLoad (lm >> MS.get) (UpdateSource r 0 HM.empty l q u) >>= toSourcePack
 
 toSourcePack :: MonadIO m => UpdateSource -> m SourcePack
-toSourcePack UpdateSource{..} = liftIO (readMVar ref) >>= \s -> return $ SourcePack s mempty qfunc lfunc go
+toSourcePack UpdateSource{..} = liftIO (readMVar ref) >>= \s -> return $ SourcePack s s S.empty mempty qfunc lfunc go
   where
     go = do
       t        <- readMVar ref

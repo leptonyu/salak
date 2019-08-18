@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 70c081a3b7d0faf09289a7c7f36803aeea4c6e8cb318af35ef2a3c723f10f9b4
+-- hash: 87c3390c9861073a18dcb6517e23364af4218c0e49bb1e94b6ada5547abb2d66
 
 name:           salak-toml
-version:        0.3.3.2
+version:        0.3.4
 synopsis:       Configuration Loader for toml
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme
@@ -32,7 +32,7 @@ library
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       base >=4.10 && <5
-    , salak >=0.3.3.2
+    , salak
     , text
     , time
     , tomland >=1.0 && <1.2
@@ -56,7 +56,7 @@ test-suite spec
     , exceptions
     , hspec ==2.*
     , mtl
-    , salak >=0.3.3.2
+    , salak
     , text
     , time
     , tomland >=1.0 && <1.2

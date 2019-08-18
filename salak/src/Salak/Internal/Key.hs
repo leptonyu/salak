@@ -12,6 +12,7 @@ module Salak.Internal.Key(
   , ToKeys(..)
   , isNum
   , isStr
+  , exprs
   ) where
 
 import           Control.Applicative  ((<|>))
@@ -19,6 +20,7 @@ import           Data.Attoparsec.Text
 import qualified Data.DList           as D
 import           Data.Hashable
 import           Data.List            (intercalate)
+import           Data.String
 import           Data.Text            (Text)
 import qualified Data.Text            as T
 #if __GLASGOW_HASKELL__ < 804
@@ -36,7 +38,7 @@ instance Ord Key where
   compare (KI _) _      = LT
   compare _      _      = GT
 
-newtype Keys = Keys { unKeys :: D.DList Key } deriving Eq
+newtype Keys = Keys { unKeys :: D.DList Key } deriving (Eq, Ord)
 
 emptyKey :: Keys
 emptyKey = Keys D.empty
@@ -113,6 +115,11 @@ expr = (:) <$> sName <*> many' sNum
 
 class ToKeys a where
   toKeys :: a -> Either String Keys
+
+instance IsString Keys where
+  fromString key = case toKeys key of
+    Left  _ -> singletonKey (KT $ T.pack key)
+    Right k -> k
 
 instance ToKeys Keys where
   toKeys = Right

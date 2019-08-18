@@ -33,6 +33,7 @@ import           Data.Maybe
 import           Data.Menshen
 import           Data.Scientific
 import           Data.Semigroup
+import qualified Data.Set                as S
 import           Data.Text               (Text, unpack)
 import qualified Data.Text               as T
 import qualified Data.Text.Encoding      as TB
@@ -49,6 +50,7 @@ import           Salak.Internal.Val
 import qualified Salak.Trie              as TR
 import           Text.Read               (readMaybe)
 import           Unsafe.Coerce           (unsafeCoerce)
+
 
 -- | Core type class of salak, which provide function to parse properties.
 class Monad m => MonadSalak m where
@@ -212,11 +214,11 @@ instance (Eq s, Ord s, IsString s, FromProp m a) => FromProp m (M.Map s a) where
   fromProp = M.fromList <$> fromProp
 
 -- | Supports for parsing `IO` value.
-instance {-# OVERLAPPABLE #-} (MonadIO m, MonadIO n, FromProp (Either SomeException) a, FromProp m a) => FromProp m (n a) where
+instance {-# OVERLAPPABLE #-} (MonadIO m, FromProp (Either SomeException) a, FromProp m a) => FromProp m (IO a) where
   fromProp = do
     sp <- ask
     a  <- fromProp
-    lift $ liftIO <$> buildIO sp a
+    buildIO sp a
 
 buildIO :: (MonadIO m, FromProp (Either SomeException) a) => SourcePack -> a -> m (IO a)
 buildIO sp a = liftIO $ do
@@ -282,13 +284,29 @@ instance Monad m => HasValid (Prop m) where
 readPrimitive :: Monad m => (Value -> Either String a) -> Prop m a
 readPrimitive f = do
   SourcePack{..} <- ask
-  vx <- g $ TR.getPrimitive source >>= getVal
-  case f <$> vx of
-    Just (Left e)  -> Control.Monad.Fail.fail e
-    Just (Right a) -> return a
-    _              -> A.empty
-  where
-    g = return
+  let go (VRT t   : as) = if null as then return t else (t <>) <$> go as
+      go (VRR k d : as) = if S.member k kref
+        then Control.Monad.Fail.fail $ "reference cycle of key " <> show k
+        else do
+          t <- withProp (\_ -> SourcePack
+                { pref = k
+                , source = TR.subTries k origin
+                , kref = S.insert k kref
+                , .. }) fromProp
+          w <- case t of
+            Just x -> return x
+            _      -> if null d then A.empty else go d
+          if null as then return w else (w <>) <$> go as
+      go [] = A.empty
+      g2 (VR r) = VT <$> go r
+      g2 v      = return v
+  case TR.getPrimitive source >>= getVal of
+    Just v      -> do
+      vy <- g2 v
+      case f vy of
+        Left  e -> Control.Monad.Fail.fail e
+        Right a -> return a
+    _           -> A.empty
 
 -- | Parse enum value from `Text`
 readEnum :: Monad m => (Text -> Either String a) -> Prop m a

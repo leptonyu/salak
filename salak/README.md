@@ -96,6 +96,5 @@ Config {name = "daniel", dir = Nothing, ext = 1}
 ```
 
 TODO:
-- Recover placeholder
 - Add git pull support.
 - Add automatic reloading.
