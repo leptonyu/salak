@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NoOverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -17,6 +18,9 @@ import qualified Data.Text            as T
 import           Data.Text.Encoding   (decodeUtf8)
 import           Data.Time
 import           Salak.Internal.Key
+#if __GLASGOW_HASKELL__ < 804
+import           Data.Semigroup((<>))
+#endif
 
 
 data Val v = Val !Int !v deriving (Eq, Show)
