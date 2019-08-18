@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 05f7938062806ff38a0aaddc86bba99f2bb9ff50855a8d76504bf6e1bda12aab
+-- hash: df10efc7b06dad1690d8706cc6c5d8d2afc97dfba9d99cb9f75950b748c43b69
 
 name:           salak
 version:        0.3.4
@@ -63,6 +63,7 @@ test-suite spec
       Salak.Internal.KeySpec
       Salak.Internal.PropSpec
       Salak.Internal.SourceSpec
+      Salak.Internal.TrieSpec
       Salak
       Salak.Internal
       Salak.Internal.Key

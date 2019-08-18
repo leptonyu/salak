@@ -25,7 +25,7 @@ module Salak.Trie(
   , subTries
   , insert
   , modify
-  , modifyF
+  -- , modifyF
   , modify'
   , update
   , alter
@@ -41,7 +41,6 @@ module Salak.Trie(
   ) where
 
 import           Control.Applicative (pure, (<*>))
-import           Control.Monad       (Monad (..))
 import           Data.Bool
 import qualified Data.DList          as D
 import           Data.Eq
@@ -126,13 +125,6 @@ modify k f (Trie v m) = Trie v $ HM.alter (go . f . fromMaybe empty) k m
 modify' :: Eq v => Keys -> (Trie v -> Trie v) -> Trie v -> Trie v
 modify' ks f = foldr modify f (toKeyList ks)
 
--- | /O(log m)/. The expression (`modifyF` k f trie) modifies the sub trie at k.
-modifyF :: (Monad m, Eq v) => Key -> (Trie v -> m (Trie v)) -> Trie v -> m (Trie v)
-modifyF k f (Trie v m) = Trie v <$> HM.alterF go k m
-  where
-    go (Just w) = (\x -> if x == empty then Nothing else Just x) <$> f w
-    go _        = return Nothing
-
 -- | /O(1)/. The expression (update f trie) updates the primitive value in the trie.
 update :: Eq v => (Maybe v -> Maybe v) -> Trie v -> Trie v
 update f = alter f mempty
@@ -141,15 +133,6 @@ update f = alter f mempty
 alter :: Eq v => (Maybe v -> Maybe v) -> Keys -> Trie v -> Trie v
 alter f keys = modify' keys (\(Trie a b) -> Trie (f a) b)
 
--- | /O(n)/. The expression (update f ks trie) updates the primitive value of sub trie at ks.
--- alterF :: (Functor f, Eq v) => (Maybe v -> f(Maybe v)) -> Keys -> Trie v -> f (Trie v)
--- alterF f keys = modifyF
-  -- where
-  --   go D.Nil         (Trie v m) = (`Trie` m) <$> f v
-  --   go (D.Cons k ks) (Trie v m) = Trie v <$> HM.alterF (g2 ks) k m
-  --   g2 ks t = g3 <$> go ks (fromMaybe empty t)
-  --   g3 t = if t == empty then Nothing else Just t
-
 -- | /O(n*m)/. Return a list of this tries's elements. The list is produced lazily.
 toList :: Trie v -> [(Keys, v)]
 toList = go D.empty
@@ -157,7 +140,7 @@ toList = go D.empty
     go p (Trie (Just v) m) = (Keys p, v) : g2 p m
     go p (Trie _        m) = g2 p m
     g2 p m = concat $ g3 p <$> HM.toList m
-    g3 p (k,t) = go (D.cons k p) t
+    g3 p (k,t) = go (D.snoc p k) t
 
 -- | /O(n*m*log n)/. Construct a trie with the supplied mappings.
 -- If the list contains duplicate mappings, the later mappings take precedence.

@@ -60,9 +60,8 @@ instance Monoid Keys where
   mappend = (<>)
 
 instance Show Keys where
-  show = toKey . D.toList . unKeys
+  show = intercalate "." . go . toKeyList
     where
-      toKey = intercalate "." . go
       go (a@(KT _):cs) = let (b,c) = break isStr cs in (show a ++ concat (show <$> b)) : go c
       go (a:cs)          = show a : go cs
       go []              = []

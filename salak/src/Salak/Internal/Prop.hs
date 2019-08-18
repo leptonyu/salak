@@ -167,7 +167,6 @@ instance Monad m => MonadCatch (Prop m) where
 instance Monad m => MonadFail (Prop m) where
   fail = failKey "" . PropException
 
-
 -- | Type class used to parse properties.
 class FromProp m a where
 
