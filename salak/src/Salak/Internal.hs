@@ -89,8 +89,11 @@ data UpdateSource = UpdateSource
   }
 
 -- | Configuration Loader Monad, used for load properties from sources. Custom loaders using `loadTrie`
-newtype LoadSalakT  m a = LoadSalakT (MS.StateT UpdateSource m a)
-  deriving (Functor, Applicative, Monad, MonadTrans, MonadIO, MS.MonadState UpdateSource, MonadThrow, MonadCatch)
+newtype LoadSalakT m a = LoadSalakT (MS.StateT UpdateSource m a)
+  deriving (Functor, Applicative, Monad, MonadTrans, MS.MonadState UpdateSource, MonadThrow, MonadCatch)
+
+instance MonadIO m => MonadIO (LoadSalakT m) where
+  liftIO = LoadSalakT . lift . liftIO 
 
 -- | Simple IO Monad
 type LoadSalak = LoadSalakT IO
@@ -127,7 +130,6 @@ type RunSalak = RunSalakT IO
 runRun :: Monad m => RunSalakT m a -> SourcePack -> m a
 runRun (RunSalakT ma) = runReaderT ma
 
-
 instance MonadIO m => MonadSalak (RunSalakT m) where
   askSourcePack = ask
 
@@ -141,19 +143,20 @@ loadTrie :: (MonadThrow m, MonadIO m) => Bool -> String -> (Int -> IO TraceSourc
 loadTrie canReload name f = do
   logSalak $ "Loading " ++ (if canReload then "[reloadable]" else "") ++ name
   UpdateSource{..} <- MS.get
-  v              <- liftIO $ readMVar ref
-  ts             <- liftIO $ loadSource f refNo (fmap ([],) v)
-  let (t,_,es) = extract v ts
-  if null es
-    then do
-      liftIO $ modifyMVar_ update $ \u -> go ts u refNo
-      let nut = UpdateSource ref (refNo + 1) (HM.insert refNo name refMap) lfunc qfunc update
-      _ <- liftIO $ swapMVar ref t
-      MS.put nut
-    else throwM $ PropException $ unlines es
+  nut  <- liftIO $ do
+    v  <- readMVar ref
+    ts <- loadSource f refNo (fmap ([],) v)
+    let (t,_,es) = extract v ts
+    if null es
+      then do
+        modifyMVar_ update $ go ts refNo
+        _ <- swapMVar ref t
+        return $ UpdateSource ref (refNo + 1) (HM.insert refNo name refMap) lfunc qfunc update
+      else throwM $ PropException $ unlines es
+  MS.put nut
   where
     {-# INLINE go #-}
-    go ts ud n = return $ do
+    go ts n ud = return $ do
       (c,d) <- ud
       c1    <- loadSource (if canReload then f else (\_ -> return ts)) n c
       return (c1,d)
@@ -169,11 +172,13 @@ loadAndRunSalak' lstm f = load lstm >>= f
 
 load :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> m SourcePack
 load lm = do
-  r <- liftIO $ newMVar T.empty
-  q <- liftIO $ newMVar $ \s -> Right $ void $ swapMVar r s
-  u <- liftIO $ newMVar $ return (T.empty, return ())
-  l <- liftIO $ newMVar $ \_ -> return ()
-  runLoad (lm >> MS.get) (UpdateSource r 0 HM.empty l q u) >>= toSourcePack
+  us <- liftIO $ do
+    r <- newMVar T.empty
+    q <- newMVar $ \s -> Right $ void $ swapMVar r s
+    u <- newMVar $ return (T.empty, return ())
+    l <- newMVar $ \_ -> return ()
+    return $ UpdateSource r 0 HM.empty l q u
+  runLoad (lm >> MS.get) us >>= toSourcePack
 
 toSourcePack :: MonadIO m => UpdateSource -> m SourcePack
 toSourcePack UpdateSource{..} = liftIO (readMVar ref) >>= \s -> return $ SourcePack s s S.empty mempty qfunc lfunc go
@@ -200,7 +205,7 @@ loadEnv = loadList False "environment" go
   where
     {-# INLINE go #-}
     go = concatMap split2 . filter ((/= '_') . head . fst) <$> getEnvironment
-    split2 (k,v) = [(TT.pack k,v),(convert k,v)]
+    split2 (k,v) = [(convert k,v)]
     convert = TT.toLower . TT.pack . map (\c -> if c == '_' then '.' else c)
 
 -- | Convert arguments to properties

@@ -94,12 +94,12 @@ mkValue (VT v) = if T.null v
 mkValue v      = Right v
 
 exprChar :: Parser Char
-exprChar = noneOf ['$', '{','}','\\'] <|> go
+exprChar = noneOf ['$', '{','}','\\'] <|> go <|> char '\\'
   where
     {-# INLINE go #-}
     go = do
       _ <- char '\\'
-      oneOf ['$', '{','}','\\']
+      oneOf ['$', '{','}']
 
 vref :: Parser [VRef]
 vref = some (go <|> (VRT . T.pack <$> some exprChar))

@@ -107,10 +107,7 @@ keyExpr = concat <$> (option [] expr `sepBy` char '.')
 
     {-# INLINE sName #-}
     sName :: Parser Key
-    sName = KT . T.pack <$> do
-        a <- alphaNumChar
-        b <- many (alphaNumChar <|> char '-' <|> char '_')
-        return (a:b)
+    sName = KT . T.pack <$> some (alphaNumChar <|> char '-' <|> char '_')
 
     {-# INLINE sNum #-}
     sNum :: Parser Key

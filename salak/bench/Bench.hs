@@ -10,12 +10,17 @@ main = defaultMain
     [ bench "loadMock" $ whnfIO $ loadAndRunSalak (loadMock vals) action
     , bench "loadCMD"  $ whnfIO $ loadAndRunSalak (loadCommandLine def) action
     , bench "loadEnv"  $ whnfIO $ loadAndRunSalak loadEnv action
-    -- , bench "loadDef"  $ whnfIO $ runSalak def {loggerF = \_ -> return ()} action
+    ]
+  , bgroup "run"
+    [ bench "int" $ whnfIO $ (run $ require "int" :: IO Int)
     ]
   ]
 
 
 action = return ()
+
+run = loadAndRunSalak (loadMock vals)
+
 
 vals =
   [ ("int",  "128")
