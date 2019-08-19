@@ -28,7 +28,7 @@ import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import           Text.Megaparsec.Char.Lexer
 #if __GLASGOW_HASKELL__ < 804
-import           Data.Semigroup
+import           Data.Semigroup             hiding (option)
 #endif
 
 type Parser = Parsec Void Text
@@ -114,15 +114,11 @@ keyExpr = concat <$> (option [] expr `sepBy` char '.')
 
     {-# INLINE sNum #-}
     sNum :: Parser Key
-    sNum = KI <$> paren decimal
-      where
-        {-# INLINE paren #-}
-        paren :: Parser Int -> Parser Int
-        paren e = do
-          _  <- char '['
-          ex <- e
-          _  <- char ']'
-          return ex
+    sNum = do
+      _  <- char '['
+      ex <- decimal
+      _  <- char ']'
+      return $ KI ex
 
 class ToKeys a where
   toKeys :: a -> Either String Keys
