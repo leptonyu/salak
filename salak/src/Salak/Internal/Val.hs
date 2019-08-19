@@ -5,8 +5,7 @@
 
 module Salak.Internal.Val where
 
-import           Control.Applicative
-import           Data.Attoparsec.Text
+import           Control.Applicative  ((<|>))
 import           Data.ByteString      (ByteString)
 import           Data.Heap            (Heap)
 import qualified Data.Heap            as H
@@ -18,8 +17,10 @@ import qualified Data.Text            as T
 import           Data.Text.Encoding   (decodeUtf8)
 import           Data.Time
 import           Salak.Internal.Key
+import           Text.Megaparsec
+import           Text.Megaparsec.Char
 #if __GLASGOW_HASKELL__ < 804
-import           Data.Semigroup((<>))
+import           Data.Semigroup       ((<>))
 #endif
 
 
@@ -45,8 +46,8 @@ instance Show VRef where
   show (VRT t)  = T.unpack t
   show (VRR k m) = "${" <> show k <> (if null m then go m else ":" <> go m) <> "}"
     where
-      go []     = ""
-      go (x:as) = show x <> go as
+      {-# INLINE go #-}
+      go = foldr ((<>) . show) ""
 
 data Value
   = VT  !Text
@@ -59,6 +60,11 @@ data Value
   | VU  !UTCTime
   | VR  ![VRef]
   deriving Eq
+
+nullValue :: Value -> Bool
+nullValue (VT x)  = T.null x
+nullValue (VR []) = True
+nullValue _       = False
 
 instance Show Value where
   show v = let (a,b) = typeOfV v in b ++ "::" ++ a
@@ -78,44 +84,31 @@ getType :: Value -> String
 getType = fst . typeOfV
 
 mkValue :: Value -> Either String Value
-mkValue (VT v) = case parseOnly (vref <* endOfInput) v of
-  Left  e       -> Left e
-  Right x       -> Right $ case go x of
-    [VRT _] -> VT v
-    vs      -> VR vs
-  where
-    go (VRT a:VRT b:as) = go (VRT (a <> b):as)
-    go (VRT a:b:as)     = VRT a:b:go as
-    go (a:as)           = a : go as
-    go []               = []
+mkValue (VT v) = if T.null v
+  then Right (VT v)
+  else case parse vref "" v of
+    Left  e   -> Left (show e)
+    Right y   -> Right $ case y of
+      [VRT x] -> VT x
+      vs      -> VR vs
 mkValue v      = Right v
 
--- mkValue' :: Value -> Value
--- mkValue' v = case mkValue v of
---   Left  _ -> v
---   Right x -> x
-
 exprChar :: Parser Char
-exprChar = satisfy (notInClass "\\${}") <|> go
+exprChar = noneOf ['$', '{','}','\\'] <|> go
   where
+    {-# INLINE go #-}
     go = do
-      a <- char '\\'
-      v <- peekChar
-      case v of
-        Just '\\' -> char '\\'
-        Just '$'  -> char '$'
-        Just '{'  -> char '{'
-        Just '}'  -> char '}'
-        Just x    -> fail $ "error char sequence \\" <> [x]
-        _         -> return a
+      _ <- char '\\'
+      oneOf ['$', '{','}','\\']
 
 vref :: Parser [VRef]
-vref = many1' (go <|> (VRT . T.pack <$> many1' exprChar))
+vref = some (go <|> (VRT . T.pack <$> some exprChar))
   where
+    {-# INLINE go #-}
     go = do
       _ <- string "${"
-      k <- exprs
-      v <- option [] $ (char ':' >> option [VRT ""] vref )
+      k <- keyExpr
+      v <- option [] $ char ':' >> option [VRT ""] vref
       _ <- char '}'
       return (VRR (fromKeys k) v)
 

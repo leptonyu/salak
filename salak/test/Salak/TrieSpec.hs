@@ -1,4 +1,4 @@
-module Salak.Internal.TrieSpec where
+module Salak.TrieSpec where
 
 import qualified Data.HashMap.Strict as HM
 import           Salak.Internal.Key

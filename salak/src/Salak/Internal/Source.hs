@@ -12,7 +12,8 @@ import           Salak.Internal.Val
 import qualified Salak.Trie              as T
 
 type Source = T.Trie Vals
-type TraceSource = T.Trie ([String], Vals)
+type TraceVals = ([String], Vals)
+type TraceSource = T.Trie TraceVals
 
 -- | Reload result, show erros or changes.
 data ReloadResult = ReloadResult
@@ -37,6 +38,7 @@ data SourcePack = SourcePack
 diff :: Source -> Source -> T.Trie ModType
 diff = T.unionWith' go
   where
+    {-# INLINE go #-}
     go Nothing Nothing = Nothing
     go (Just a) Nothing  = if nullVals a then Nothing else Just Add
     go Nothing (Just a)  = if nullVals a then Nothing else Just Del
@@ -61,17 +63,10 @@ extract o t =
 gen :: (Foldable f, ToKeys k, ToValue v) => Int -> f (k,v) -> TraceSource
 gen i = foldr go T.empty
   where
+    {-# INLINE go #-}
     go (k,v) x = case toKeys k of
-      Left  e  -> T.alter (g3 e) mempty x
-      Right k' -> T.alter (g2 $ Val i $ toVal v) k' x
-    g2 v (Just (a,c)) = case modVals v c of
-      Left  e -> Just (e:a, c)
-      Right d -> Just (a,   d)
-    g2 v _            = case singletonVals v of
-      Left  e -> Just ([e], emptyVals)
-      Right d -> Just ([], d)
-    g3 e (Just (a,c)) = Just (e:a,c)
-    g3 e _            = Just ([e], emptyVals)
+      Left  e  -> T.alter (setErr0 e) mempty x
+      Right k' -> T.alter (setVal0 $ Val i $ toVal v) k' x
 
 fmt :: ModType -> Int -> String -> String -> String
 fmt m i s n = concat ['#' : show i, ' ' : show m, ' ' : s ,  ' ' : n]
@@ -82,6 +77,7 @@ fmtMod i name cs = fmap (\(k,v)-> fmt v i k name) (HM.toList cs)
 loadSource :: (Int -> IO TraceSource) -> Int -> TraceSource -> IO TraceSource
 loadSource f i ts = T.unionWith go ts <$> f i
   where
+    {-# INLINE go #-}
     go Nothing Nothing               = Nothing
     go (Just v) Nothing              = Just v
     go Nothing (Just v)              = Just v
@@ -89,12 +85,28 @@ loadSource f i ts = T.unionWith go ts <$> f i
       Left  e -> Just (e:e1++e2, v2)
       Right v -> Just (e1++e2,v)
 
+{-# INLINE traceError #-}
+traceError :: Maybe TraceVals -> [String]
+traceError Nothing      = []
+traceError (Just (e,_)) = e
+
+{-# INLINE traceVals #-}
+traceVals :: Maybe TraceVals -> Vals
+traceVals Nothing      = emptyVals
+traceVals (Just (_,v)) = v
+
+{-# INLINE setErr0 #-}
+setErr0 :: String -> Maybe TraceVals -> Maybe TraceVals
+setErr0 e (Just (a,c)) = Just (e:a,c)
+setErr0 e _            = Just ([e], emptyVals)
+
+{-# INLINE setVal0 #-}
+setVal0 :: Val Value -> Maybe TraceVals -> Maybe TraceVals
+setVal0 v tv =
+  let tv2 = traceVals tv
+  in case modVals v tv2 of
+      Left  e -> Just (e : traceError tv, tv2)
+      Right x -> Just (traceError tv, x)
+
 setVal :: ToValue v => Int -> v -> TraceSource -> TraceSource
-setVal i v = T.update go
-  where
-    go Nothing       = case modVals (Val i $ toVal v) emptyVals of
-      Left  e -> Just ([e], emptyVals)
-      Right x -> Just ([], x)
-    go (Just (e,vs)) = case modVals (Val i $ toVal v) vs of
-      Left  e1 -> Just (e1:e, vs)
-      Right x  -> Just (e, x)
+setVal i v = T.update (setVal0 $ Val i $ toVal v)

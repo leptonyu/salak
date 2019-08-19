@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 87c3390c9861073a18dcb6517e23364af4218c0e49bb1e94b6ada5547abb2d66
+-- hash: dbe8256a1bc331a33e0801b619eea4e0b288dc4844ed5935e8fd00cc3aa80ab2
 
 name:           salak-toml
-version:        0.3.4
+version:        0.3.4.1
 synopsis:       Configuration Loader for toml
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme
@@ -28,7 +28,7 @@ library
       Paths_salak_toml
   hs-source-dirs:
       src
-  default-extensions: RecordWildCards TupleSections OverloadedStrings ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric
+  default-extensions: RecordWildCards TupleSections OverloadedStrings ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       base >=4.10 && <5
@@ -48,7 +48,7 @@ test-suite spec
   hs-source-dirs:
       test
       src
-  default-extensions: RecordWildCards TupleSections OverloadedStrings ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric
+  default-extensions: RecordWildCards TupleSections OverloadedStrings ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       QuickCheck <2.14

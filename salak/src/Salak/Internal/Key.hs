@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP               #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NoOverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Salak.Internal.Key(
     Key(..)
@@ -12,20 +13,25 @@ module Salak.Internal.Key(
   , ToKeys(..)
   , isNum
   , isStr
-  , exprs
+  , keyExpr
+  , Parser
   ) where
 
-import           Control.Applicative  ((<|>))
-import           Data.Attoparsec.Text
-import qualified Data.DList           as D
+import qualified Data.DList                 as D
 import           Data.Hashable
-import           Data.List            (intercalate)
+import           Data.List                  (intercalate)
 import           Data.String
-import           Data.Text            (Text)
-import qualified Data.Text            as T
+import           Data.Text                  (Text)
+import qualified Data.Text                  as T
+import           Data.Void
+import           Text.Megaparsec
+import           Text.Megaparsec.Char
+import           Text.Megaparsec.Char.Lexer
 #if __GLASGOW_HASKELL__ < 804
 import           Data.Semigroup
 #endif
+
+type Parser = Parsec Void Text
 
 data Key
   = KT !Text
@@ -62,6 +68,7 @@ instance Monoid Keys where
 instance Show Keys where
   show = intercalate "." . go . toKeyList
     where
+      {-# INLINE go #-}
       go (a@(KT _):cs) = let (b,c) = break isStr cs in (show a ++ concat (show <$> b)) : go c
       go (a:cs)          = show a : go cs
       go []              = []
@@ -87,30 +94,35 @@ instance Show Key where
 simpleKeys :: Text -> Keys
 simpleKeys = fromKeys . fmap KT . filter (not.T.null) . T.splitOn "."
 
-exprs :: Parser [Key]
-exprs = concat <$> ( (expr <|> return []) `sepBy` char '.')
-
-sName :: Parser Key
-sName = KT . T.pack <$> do
-    a <- choice [letter, digit]
-    b <- many' (choice [letter, digit, char '-',  char '_'])
-    return (a:b)
-
-sNum :: Parser Key
-sNum = KI <$> paren decimal
+keyExpr :: Parser [Key]
+keyExpr = concat <$> (option [] expr `sepBy` char '.')
   where
-    paren e = do
-      _  <- char '['
-      ex <- e
-      _  <- char ']'
-      return ex
+    -- xx
+    -- xx.xx
+    -- xx.xx[0]
+    -- xx.xx[1].xx
+    {-# INLINE expr #-}
+    expr :: Parser [Key]
+    expr = (:) <$> sName <*> many sNum
 
--- xx
--- xx.xx
--- xx.xx[0]
--- xx.xx[1].xx
-expr :: Parser [Key]
-expr = (:) <$> sName <*> many' sNum
+    {-# INLINE sName #-}
+    sName :: Parser Key
+    sName = KT . T.pack <$> do
+        a <- alphaNumChar
+        b <- many (alphaNumChar <|> char '-' <|> char '_')
+        return (a:b)
+
+    {-# INLINE sNum #-}
+    sNum :: Parser Key
+    sNum = KI <$> paren decimal
+      where
+        {-# INLINE paren #-}
+        paren :: Parser Int -> Parser Int
+        paren e = do
+          _  <- char '['
+          ex <- e
+          _  <- char ']'
+          return ex
 
 class ToKeys a where
   toKeys :: a -> Either String Keys
@@ -124,11 +136,10 @@ instance ToKeys Keys where
   toKeys = Right
 
 instance ToKeys Text where
-  toKeys = fmap fromKeys . selectors
-    where
-      selectors = go . parse exprs . flip T.snoc '\n'
-      go (Done i r) = if i /= "\n" then Left $ "uncomplete parse" ++ T.unpack i else Right r
-      go a          = Left (show a)
+  -- toKeys = Right . simpleKeys
+  toKeys k = case fmap fromKeys (parse keyExpr "" k) of
+    Left  e -> Left (show e)
+    Right x -> Right x
 
 instance ToKeys String where
   toKeys = toKeys . T.pack

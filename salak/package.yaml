@@ -12,7 +12,7 @@ dependencies:
   - scientific
   - time
   - mtl
-  - attoparsec
+  - megaparsec
   - data-default
   - filepath
   - directory
@@ -37,6 +37,16 @@ library:
     - Salak.Internal.Source
     - Salak.Internal.Prop
     - Salak.Internal.Writable
+
+
+benchmarks:
+  bench:
+    main: Bench.hs
+    source-dirs:
+      - src
+      - bench
+    dependencies:
+      - criterion
 
 tests:
   spec:

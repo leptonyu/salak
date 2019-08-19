@@ -37,7 +37,7 @@ loadRandom key = loadList True (unpack key) go
 spec :: SpecWith ()
 spec = do
   context "source" $ do
-    it "normal - 2" $ do
+    it "normal - 1" $ do
       let (_,b,c) = extract T.empty $ gen 0 ([("hello", "world")] :: [(Text, Text)])
       length c `shouldBe` 0
       length (T.toList b) `shouldBe` 1

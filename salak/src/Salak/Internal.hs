@@ -152,6 +152,7 @@ loadTrie canReload name f = do
       MS.put nut
     else throwM $ PropException $ unlines es
   where
+    {-# INLINE go #-}
     go ts ud n = return $ do
       (c,d) <- ud
       c1    <- loadSource (if canReload then f else (\_ -> return ts)) n c
@@ -177,6 +178,7 @@ load lm = do
 toSourcePack :: MonadIO m => UpdateSource -> m SourcePack
 toSourcePack UpdateSource{..} = liftIO (readMVar ref) >>= \s -> return $ SourcePack s s S.empty mempty qfunc lfunc go
   where
+    {-# INLINE go #-}
     go = do
       t        <- readMVar ref
       (ts, ac) <- join $ readMVar update
@@ -196,6 +198,7 @@ loadMock fa = loadList False "mock" (return fa)
 loadEnv :: (MonadThrow m, MonadIO m) => LoadSalakT m ()
 loadEnv = loadList False "environment" go
   where
+    {-# INLINE go #-}
     go = concatMap split2 . filter ((/= '_') . head . fst) <$> getEnvironment
     split2 (k,v) = [(TT.pack k,v),(convert k,v)]
     convert = TT.toLower . TT.pack . map (\c -> if c == '_' then '.' else c)
@@ -207,6 +210,7 @@ type ParseCommandLine = [String] -> IO [(Text, Text)]
 defaultParseCommandLine :: ParseCommandLine
 defaultParseCommandLine = return . mapMaybe go
   where
+    {-# INLINE go #-}
     go ('-':'-':as) = case break (=='=') as of
       (a,'=':b) -> Just (pack a, pack b)
       _         -> Nothing

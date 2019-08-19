@@ -129,6 +129,7 @@ instance (HasLoad a, HasLoad b) => HasLoad (a :|: b) where
 loadByExt :: HasLoad a => a -> FilePath -> LoadSalak ()
 loadByExt xs f = mapM_ go (loaders xs)
   where
+    {-# INLINE go #-}
     go (ext, ly) = tryLoadFile ly $ f ++ "." ++ ext
 
 -- | Default load salak.
@@ -154,8 +155,10 @@ loadSalak PropConfig{..} = do
     , ifS searchHome    getHomeDirectory
     ] (loadConf $ fromMaybe configName configNm)
   where
+    {-# INLINE ifS #-}
     ifS True gxd = Just <$> liftIO gxd
     ifS _    _   = return Nothing
+    {-# INLINE loadConf #-}
     loadConf n mf = lift mf >>= mapM_ (liftNT . loadExt . (</> n))
 
 loadSalakWith :: (MonadThrow m, MonadIO m, HasLoad file) => file -> String -> LoadSalakT m ()

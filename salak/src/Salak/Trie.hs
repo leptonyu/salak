@@ -65,12 +65,14 @@ instance Show v => Show (Trie v) where
 instance Foldable Trie where
   foldr f b (Trie v m) = foldr (flip (foldr f)) (go v) m
     where
+      {-# INLINE go #-}
       go (Just x) = f x b
       go _        = b
 
 instance Traversable Trie where
   traverse f (Trie v m) = Trie <$> go v <*> traverse (traverse f) m
     where
+      {-# INLINE go #-}
       go (Just x) = Just <$> f x
       go _        = pure Nothing
 
@@ -103,7 +105,7 @@ subTrie :: Key -> Trie v -> Trie v
 subTrie key = fromMaybe empty . HM.lookup key . getMap
 
 subTries :: Keys -> Trie v -> Trie v
-subTries ks v = foldl (flip subTrie) v (toKeyList ks)
+subTries ks v = foldl' (flip subTrie) v (toKeyList ks)
 
 -- | /O(log (n+m))/. Return the primitive value to which the specified key is mapped,
 -- or Nothing if this trie contains no mapping for the key.
@@ -119,6 +121,7 @@ insert ks v = alter (\_ -> Just v) ks
 modify :: Eq v => Key -> (Trie v -> Trie v) -> Trie v -> Trie v
 modify k f (Trie v m) = Trie v $ HM.alter (go . f . fromMaybe empty) k m
   where
+    {-# INLINE go #-}
     go x = if x == empty then Nothing else Just x
 
 -- | /O(log (n+m))/. The expression (`modify'` ks f trie) modifies the sub trie at ks.
@@ -137,9 +140,12 @@ alter f keys = modify' keys (\(Trie a b) -> Trie (f a) b)
 toList :: Trie v -> [(Keys, v)]
 toList = go D.empty
   where
+    {-# INLINE go #-}
     go p (Trie (Just v) m) = (Keys p, v) : g2 p m
     go p (Trie _        m) = g2 p m
+    {-# INLINE g2 #-}
     g2 p m = concat $ g3 p <$> HM.toList m
+    {-# INLINE g3 #-}
     g3 p (k,t) = go (D.snoc p k) t
 
 -- | /O(n*m*log n)/. Construct a trie with the supplied mappings.
@@ -151,9 +157,12 @@ fromList = foldr (uncurry insert) empty
 filter :: Eq v => (v -> Bool) -> Trie v -> Trie v
 filter f (Trie v m) = if ok v then Trie v go else Trie Nothing go
   where
+    {-# INLINE ok #-}
     ok (Just x) = f x
     ok _        = False
+    {-# INLINE go #-}
     go = HM.mapMaybe (g2 . filter f) m
+    {-# INLINE g2 #-}
     g2 x = if x == empty then Nothing else Just x
 
 -- | /O(n+m)/. The union of two tries.
@@ -166,6 +175,7 @@ unionWith f (Trie v1 m1) (Trie v2 m2) = Trie (f v1 v2) $ HM.unionWith (unionWith
 unionWith' :: (Maybe v -> Maybe v -> Maybe v3) -> Trie v -> Trie v -> Trie v3
 unionWith' f (Trie v1 m1) (Trie v2 m2) = Trie (f v1 v2) $ foldr go HM.empty $ HM.keys $ HM.union m1 m2
   where
+    {-# INLINE go #-}
     go k =
       let x1 = fromMaybe empty $ HM.lookup k m1
           x2 = fromMaybe empty $ HM.lookup k m2

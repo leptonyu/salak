@@ -12,6 +12,7 @@
 {-# LANGUAGE UndecidableInstances       #-}
 module Salak.Internal.Prop where
 
+import           Control.Applicative     ((<|>))
 import qualified Control.Applicative     as A
 import           Control.Concurrent.MVar
 import           Control.Monad
@@ -84,7 +85,7 @@ class Monad m => MonadSalak m where
   -- `require` supports parse `IO` values, which actually wrap a 'MVar' variable and can be reseted by reloading configurations.
   -- Normal value will not be affected by reloading configurations.
   require :: (MonadThrow m, FromProp m a) => Text -> m a
-  require ks = askSourcePack >>= \s -> runProp s $ do
+  require ks = askSourcePack >>= \s -> runProp s $
     case toKeys ks of
       Left  e -> failKey (unpack ks) (PropException e)
       Right k -> withKeys k fromProp
@@ -104,9 +105,11 @@ runProp sp (Prop p) = do
 withProp :: (SourcePack -> SourcePack) -> Prop m a -> Prop m a
 withProp = unsafeCoerce withReaderT
 
+{-# INLINE withKey #-}
 withKey :: Key -> Prop m a -> Prop m a
 withKey = withKeys . singletonKey
 
+{-# INLINE withKeys #-}
 withKeys :: Keys -> Prop m a -> Prop m a
 withKeys key = withProp
   $ \SourcePack{..} ->
@@ -121,6 +124,7 @@ data SalakException
 instance Exception SalakException
 
 
+{-# INLINE failKey #-}
 failKey :: Monad m => String -> SalakException -> Prop m a
 failKey ks e = do
   SourcePack{..} <- ask
@@ -128,16 +132,16 @@ failKey ks e = do
     $ SalakException (go (show pref) ks)
     $ toException e
   where
+    {-# INLINE go #-}
     go "" a = a
     go a "" = a
     go a  b = a <> "." <> b
 
 -- | Automatic convert literal string into an instance of `Prop` @m@ @a@.
 instance (Monad m, FromProp m a) => IsString (Prop m a) where
-  fromString ks = do
-    case toKeys ks of
-      Left  e -> failKey ks (PropException e)
-      Right k -> withKeys k fromProp
+  fromString ks = case toKeys ks of
+    Left  e -> failKey ks (PropException e)
+    Right k -> withKeys k fromProp
 
 
 instance MonadTrans Prop where
@@ -219,6 +223,7 @@ instance {-# OVERLAPPABLE #-} (MonadIO m, FromProp (Either SomeException) a, Fro
     a  <- fromProp
     buildIO sp a
 
+{-# INLINE buildIO #-}
 buildIO :: (MonadIO m, FromProp (Either SomeException) a) => SourcePack -> a -> m (IO a)
 buildIO sp a = liftIO $ do
   aref <- newMVar a
@@ -279,11 +284,12 @@ instance (MonadIO m, FromProp (Either SomeException) a) => PropOp (Prop m) (IO a
 instance Monad m => HasValid (Prop m) where
   invalid = Control.Monad.Fail.fail . toI18n
 
--- | Parse primitive value from `Value`
-readPrimitive :: Monad m => (Value -> Either String a) -> Prop m a
-readPrimitive f = do
+{-# INLINE readPrimitive' #-}
+readPrimitive' :: Monad m => (Value -> Either String a) -> Prop m (Maybe a)
+readPrimitive' f = do
   SourcePack{..} <- ask
-  let go (VRT t   : as) = if null as then return t else (t <>) <$> go as
+  let {-# INLINE go #-}
+      go (VRT t   : as) = if null as then return t else (t <>) <$> go as
       go (VRR k d : as) = if S.member k kref
         then Control.Monad.Fail.fail $ "reference cycle of key " <> show k
         else do
@@ -297,20 +303,29 @@ readPrimitive f = do
             _      -> if null d then A.empty else go d
           if null as then return w else (w <>) <$> go as
       go [] = A.empty
+      {-# INLINE g2 #-}
       g2 (VR r) = VT <$> go r
       g2 v      = return v
   case TR.getPrimitive source >>= getVal of
-    Just v      -> do
+    Just v -> do
       vy <- g2 v
-      case f vy of
-        Left  e -> Control.Monad.Fail.fail e
-        Right a -> return a
-    _           -> A.empty
+      if nullValue vy
+        then return Nothing
+        else case f vy of
+          Left  e -> Control.Monad.Fail.fail e
+          Right a -> return (Just a)
+    _      -> A.empty
+
+-- | Parse primitive value from `Value`
+{-# INLINE readPrimitive #-}
+readPrimitive :: Monad m => (Value -> Either String a) -> Prop m a
+readPrimitive f = readPrimitive' f >>= maybe A.empty return
 
 -- | Parse enum value from `Text`
 readEnum :: Monad m => (Text -> Either String a) -> Prop m a
 readEnum = readPrimitive . go
   where
+    {-# INLINE go #-}
     go f (VT t) = f t
     go _ x      = Left $ fst (typeOfV x) ++ " cannot convert to enum"
 
@@ -402,6 +417,7 @@ instance FromProp m a => FromProp m (Option a) where
 instance FromProp m Bool where
   fromProp = readPrimitive go
     where
+      {-# INLINE go #-}
       go (VB x) = Right x
       go (VT x) = case T.toLower x of
         "true"  -> Right True
@@ -412,8 +428,9 @@ instance FromProp m Bool where
       go x      = Left $ getType x ++ " cannot be bool"
 
 instance FromProp m Text where
-  fromProp = readPrimitive go
+  fromProp = fromMaybe "" <$> readPrimitive' go
     where
+      {-# INLINE go #-}
       go (VT x) = Right x
       go x      = Right $ T.pack $ snd $ typeOfV x
 
@@ -432,6 +449,7 @@ instance FromProp m String where
 instance FromProp m Scientific where
   fromProp = readPrimitive go
     where
+      {-# INLINE go #-}
       go (VT x) = case readMaybe $ T.unpack x of
         Just v -> Right v
         _      -> Left  "string convert number failed"
@@ -486,6 +504,7 @@ instance FromProp m DiffTime where
 instance (HasResolution a, Monad m) => FromProp m (Fixed a) where
   fromProp = fromInteger <$> fromProp
 
+{-# INLINE toNum #-}
 toNum :: (Monad m, Integral i, Bounded i) => Scientific -> Prop m i
 toNum s = case toBoundedInteger s of
   Just v -> return v

@@ -1,5 +1,5 @@
 - &legal
-  version:             0.3.4
+  version:             0.3.4.1
   homepage:            https://github.com/leptonyu/salak#readme
   license:             MIT
   author:              Daniel YU
@@ -15,3 +15,5 @@
     - FlexibleInstances
     - MultiParamTypeClasses
     - DeriveGeneric
+    - FlexibleContexts
+    - RankNTypes

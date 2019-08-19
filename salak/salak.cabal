@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: df10efc7b06dad1690d8706cc6c5d8d2afc97dfba9d99cb9f75950b748c43b69
+-- hash: 0191d4d9ffd412cf339578ea5e3e58c70c19b2447bd20a90d86a753840f0a874
 
 name:           salak
-version:        0.3.4
+version:        0.3.4.1
 synopsis:       Configuration (re)Loader and Parser.
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme
@@ -33,11 +33,10 @@ library
       Salak.Internal.Writable
   hs-source-dirs:
       src
-  default-extensions: RecordWildCards TupleSections OverloadedStrings ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric
+  default-extensions: RecordWildCards TupleSections OverloadedStrings ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
-      attoparsec
-    , base >=4.10 && <5
+      base >=4.10 && <5
     , bytestring
     , containers
     , data-default
@@ -47,6 +46,7 @@ library
     , filepath
     , hashable
     , heaps
+    , megaparsec
     , menshen
     , mtl
     , scientific
@@ -63,7 +63,7 @@ test-suite spec
       Salak.Internal.KeySpec
       Salak.Internal.PropSpec
       Salak.Internal.SourceSpec
-      Salak.Internal.TrieSpec
+      Salak.TrieSpec
       Salak
       Salak.Internal
       Salak.Internal.Key
@@ -76,11 +76,10 @@ test-suite spec
   hs-source-dirs:
       test
       src
-  default-extensions: RecordWildCards TupleSections OverloadedStrings ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric
+  default-extensions: RecordWildCards TupleSections OverloadedStrings ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       QuickCheck <2.14
-    , attoparsec
     , base >=4.10 && <5
     , bytestring
     , containers
@@ -92,6 +91,7 @@ test-suite spec
     , hashable
     , heaps
     , hspec ==2.*
+    , megaparsec
     , menshen
     , mtl
     , random
@@ -102,3 +102,43 @@ test-suite spec
     , unordered-containers
   default-language: Haskell2010
   build-tool-depends: hspec-discover:hspec-discover
+
+benchmark bench
+  type: exitcode-stdio-1.0
+  main-is: Bench.hs
+  other-modules:
+      Salak
+      Salak.Internal
+      Salak.Internal.Key
+      Salak.Internal.Prop
+      Salak.Internal.Source
+      Salak.Internal.Val
+      Salak.Internal.Writable
+      Salak.Trie
+      Paths_salak
+  hs-source-dirs:
+      src
+      bench
+  default-extensions: RecordWildCards TupleSections OverloadedStrings ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
+  build-depends:
+      base >=4.10 && <5
+    , bytestring
+    , containers
+    , criterion
+    , data-default
+    , directory
+    , dlist
+    , exceptions
+    , filepath
+    , hashable
+    , heaps
+    , megaparsec
+    , menshen
+    , mtl
+    , scientific
+    , text
+    , time
+    , unliftio-core
+    , unordered-containers
+  default-language: Haskell2010
