@@ -1,6 +1,5 @@
 {-# LANGUAGE CPP               #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NoOverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Salak.Internal.Val where
@@ -94,12 +93,10 @@ mkValue (VT v) = if T.null v
 mkValue v      = Right v
 
 exprChar :: Parser Char
-exprChar = noneOf ['$', '{','}','\\'] <|> go <|> char '\\'
+exprChar = noneOf go <|> (char '\\' >> oneOf go)
   where
-    {-# INLINE go #-}
-    go = do
-      _ <- char '\\'
-      oneOf ['$', '{','}']
+    go :: [Token Text]
+    go = "${}\\"
 
 vref :: Parser [VRef]
 vref = some (go <|> (VRT . T.pack <$> some exprChar))

@@ -93,7 +93,7 @@ newtype LoadSalakT m a = LoadSalakT (MS.StateT UpdateSource m a)
   deriving (Functor, Applicative, Monad, MonadTrans, MS.MonadState UpdateSource, MonadThrow, MonadCatch)
 
 instance MonadIO m => MonadIO (LoadSalakT m) where
-  liftIO = LoadSalakT . lift . liftIO 
+  liftIO = LoadSalakT . lift . liftIO
 
 -- | Simple IO Monad
 type LoadSalak = LoadSalakT IO
@@ -204,8 +204,14 @@ loadEnv :: (MonadThrow m, MonadIO m) => LoadSalakT m ()
 loadEnv = loadList False "environment" go
   where
     {-# INLINE go #-}
-    go = concatMap split2 . filter ((/= '_') . head . fst) <$> getEnvironment
-    split2 (k,v) = [(convert k,v)]
+    go = fmap split2 . filter ((/= '_') . head . fst) <$> getEnvironment
+    {-# INLINE split2 #-}
+    split2 (k,v) = (convert k, mkValue' $ TT.pack v)
+    {-# INLINE mkValue' #-}
+    mkValue' v = case mkValue (VT v) of
+      Left  _ -> VR [VRT v]
+      Right x -> x
+    {-# INLINE convert #-}
     convert = TT.toLower . TT.pack . map (\c -> if c == '_' then '.' else c)
 
 -- | Convert arguments to properties
