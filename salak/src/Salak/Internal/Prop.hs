@@ -88,11 +88,8 @@ class Monad m => MonadSalak m where
   require ks = do
     s@SourcePack{..} <- askSourcePack
     runProp s $ case toKeys ks of
-      Left  e -> failKey ks (PropException e)
-      Right k -> do
-        let msg = showKey $ pref <> singletonKey (KT ks)
-        liftIO $ readMVar lref >>= ($ msg)
-        withKeys k fromProp
+      Left  e -> failKey ks e
+      Right k -> withKeys k fromProp
 
 instance Monad m => MonadSalak (ReaderT SourcePack m) where
   {-# INLINE askSourcePack #-}
@@ -126,26 +123,24 @@ withKeys key = withProp
      SourcePack{pref = pref <> key, source = TR.subTries key source, ..}
 
 data SalakException
-  = PropException String -- ^ Parse failed
-  | NullException        -- ^ Not found
-  | SalakException String SomeException
+  = SalakException Keys String -- ^ Parse failed
+  | NullException Keys        -- ^ Not found
   deriving Show
 
 instance Exception SalakException
 
 {-# INLINE failKey #-}
-failKey :: Monad m => Text -> SalakException -> Prop m a
+failKey :: Monad m => Text -> String -> Prop m a
 failKey ks e = do
   SourcePack{..} <- ask
   throwM
-    $ SalakException (show $ pref <> singletonKey (KT ks))
-    $ toException e
+    $ SalakException (pref <> singletonKey (KT ks)) e
 
 -- | Automatic convert literal string into an instance of `Prop` @m@ @a@.
-instance (Monad m, FromProp m a) => IsString (Prop m a) where
+instance (MonadIO m, FromProp m a) => IsString (Prop m a) where
   {-# INLINE fromString #-}
   fromString ks = case toKeys ks of
-    Left  e -> failKey (fromString ks) (PropException e)
+    Left  e -> failKey (fromString ks) e
     Right k -> withKeys k fromProp
 
 
@@ -155,7 +150,9 @@ instance MonadTrans Prop where
 
 instance Monad m => A.Alternative (Prop m) where
   {-# INLINE empty #-}
-  empty = failKey "" NullException
+  empty = do
+    SourcePack{..} <- ask
+    throwM $ NullException pref
 
   {-# INLINE (<|>) #-}
   a <|> b = do
@@ -182,14 +179,14 @@ instance Monad m => MonadCatch (Prop m) where
 
 instance Monad m => MonadFail (Prop m) where
   {-# INLINE fail #-}
-  fail = failKey "" . PropException
+  fail = failKey ""
 
 -- | Type class used to parse properties.
 class FromProp m a where
 
   -- | Parse properties from `Value`.
-  fromProp :: Monad m => Prop m a
-  default fromProp :: (Generic a, GFromProp m (Rep a), Monad m) => Prop m a
+  fromProp :: MonadIO m => Prop m a
+  default fromProp :: (Generic a, GFromProp m (Rep a), MonadIO m) => Prop m a
   {-# INLINE fromProp #-}
   fromProp = fmap to gFromProp
 
@@ -199,11 +196,8 @@ instance FromProp m a => FromProp m (Maybe a) where
     v <- try fromProp
     case v of
       Left  e -> case fromException e of
-        Just NullException         -> return Nothing
-        Just (SalakException _ e2) -> case fromException e2 of
-          Just NullException -> return Nothing
-          _                  -> throwM e
-        _                  -> throwM e
+        Just (NullException _) -> return Nothing
+        _                      -> throwM e
       Right a -> return (Just a)
 
 instance FromProp m a => FromProp m (Either String a) where
@@ -237,7 +231,7 @@ instance (Eq s, Ord s, IsString s, FromProp m a) => FromProp m (M.Map s a) where
   fromProp = M.fromList <$> fromProp
 
 -- | Supports for parsing `IO` value.
-instance {-# OVERLAPPABLE #-} (MonadIO m, FromProp (Either SomeException) a, FromProp m a) => FromProp m (IO a) where
+instance {-# OVERLAPPABLE #-} (MonadIO m, FromProp IO a, FromProp m a) => FromProp m (IO a) where
   {-# INLINE fromProp #-}
   fromProp = do
     sp <- ask
@@ -245,16 +239,13 @@ instance {-# OVERLAPPABLE #-} (MonadIO m, FromProp (Either SomeException) a, Fro
     buildIO sp a
 
 {-# INLINE buildIO #-}
-buildIO :: (MonadIO m, FromProp (Either SomeException) a) => SourcePack -> a -> m (IO a)
+buildIO :: (MonadIO m, FromProp IO a) => SourcePack -> a -> m (IO a)
 buildIO sp a = liftIO $ do
   aref <- newMVar a
-  modifyMVar_ (qref sp) $ \f -> return $ \s ->
-    case runProp sp {source = s} $ withKeys (pref sp) fromProp of
-      Left  e -> Left $ show e
-      Right v -> do
-        vb <- v
-        io <- f s
-        return (swapMVar aref (fromMaybe a vb) >> io)
+  modifyMVar_ (qref sp) $ \f -> return $ \s -> do
+    v <- runProp sp {source = s} $ withKeys (pref sp) fromProp
+    io <- f s
+    return $ swapMVar aref (fromMaybe a v) >> io
   return (readMVar aref)
 
 
@@ -296,7 +287,7 @@ instance {-# OVERLAPPABLE #-} A.Alternative f => PropOp f a where
   (.?=) a b = a A.<|> pure b
 
 -- | Support for setting default `IO` value.
-instance (MonadIO m, FromProp (Either SomeException) a) => PropOp (Prop m) (IO a) where
+instance (MonadIO m, FromProp IO a) => PropOp (Prop m) (IO a) where
   {-# INLINE (.?=) #-}
   (.?=) ma a = do
     sp <- ask
@@ -310,9 +301,10 @@ instance Monad m => HasValid (Prop m) where
   invalid = Control.Monad.Fail.fail . toI18n
 
 {-# INLINE readPrimitive' #-}
-readPrimitive' :: Monad m => (Value -> Either String a) -> Prop m (Maybe a)
+readPrimitive' :: MonadIO m => (Value -> Either String a) -> Prop m (Maybe a)
 readPrimitive' f = do
   SourcePack{..} <- ask
+  liftIO $ readMVar lref >>= \lf -> lf (showKey pref)
   let {-# INLINE go #-}
       go [VRT t]        = return t
       go (VRT t   : as) = (t <>) <$> go as
@@ -342,12 +334,12 @@ readPrimitive' f = do
 
 -- | Parse primitive value from `Value`
 {-# INLINE readPrimitive #-}
-readPrimitive :: Monad m => (Value -> Either String a) -> Prop m a
+readPrimitive :: MonadIO m => (Value -> Either String a) -> Prop m a
 readPrimitive f = readPrimitive' f >>= maybe A.empty return
 
 -- | Parse enum value from `Text`
 {-# INLINE readEnum #-}
-readEnum :: Monad m => (Text -> Either String a) -> Prop m a
+readEnum :: MonadIO m => (Text -> Either String a) -> Prop m a
 readEnum = readPrimitive . go
   where
     {-# INLINE go #-}
@@ -356,7 +348,7 @@ readEnum = readPrimitive . go
 
 
 class GFromProp m f where
-  gFromProp :: Monad m => Prop m (f a)
+  gFromProp :: MonadIO m => Prop m (f a)
 
 instance {-# OVERLAPPABLE #-} (Constructor c, GFromProp m a) => GFromProp m (M1 C c a) where
   {-# INLINE gFromProp #-}
@@ -366,7 +358,7 @@ instance {-# OVERLAPPABLE #-} (Constructor c, GFromProp m a) => GFromProp m (M1 
     where m = undefined :: t c a x
 
 {-# INLINE gEnum #-}
-gEnum :: (GFromProp m f, Monad m) => Text -> Prop m (f a)
+gEnum :: (GFromProp m f, MonadIO m) => Text -> Prop m (f a)
 gEnum va = do
   o <- gFromProp
   readEnum $ \x -> if x==va then Right o else Left "enum invalid"

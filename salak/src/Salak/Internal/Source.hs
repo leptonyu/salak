@@ -22,7 +22,7 @@ data ReloadResult = ReloadResult
   , msgs     :: ![String] -- ^ If hasError then this show error messages, else this show change logs.
   } deriving Show
 
-type QFunc = Source -> Either String (IO ())
+type QFunc = Source -> IO (IO ())
 
 type LFunc = Text -> IO ()
 

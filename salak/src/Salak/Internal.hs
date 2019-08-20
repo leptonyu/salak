@@ -149,7 +149,7 @@ loadTrie !canReload !name f = do
         modifyMVar_ update $ go ts refNo
         _ <- swapMVar ref t
         return $ UpdateSource{ refNo = refNo + 1, refMap = HM.insert refNo name refMap, .. }
-      else throwM $ PropException $ unlines es
+      else fail $ unlines es
   where
     {-# INLINE go #-}
     go ts n ud = return $ do
@@ -174,7 +174,7 @@ load :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> m SourcePack
 load lm = do
   us <- liftIO $ do
     r <- newMVar T.empty
-    q <- newMVar $ Right . void . swapMVar r
+    q <- newMVar $ return . void . swapMVar r
     u <- newMVar $ return (T.empty, return ())
     l <- newMVar $ \_ -> return ()
     return $ UpdateSource r 0 HM.empty l q u
@@ -192,9 +192,9 @@ toSourcePack UpdateSource{..} = liftIO $ do
       let (t1,cs,es) = extract t ts
       f <- readMVar qfunc
       if null es
-        then case f t1 of
-          Left  e -> return (ReloadResult True $ lines e)
-          Right a -> ac >> a >> return (ReloadResult False $ lines $ show cs)
+        then flip catch (\e -> return . ReloadResult True . lines . show $ (e :: SomeException)) $ do
+          a <- f t1
+          ac >> a >> return (ReloadResult False $ lines $ show cs)
         else return (ReloadResult True es)
 
 -- | Load mock variables into `Source`
