@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 97f2ea490e594edcd215564168a1303a219beb5dd7b74237a3c16ab3ee9c677b
+-- hash: baea2fe6a650a230af843d77b0730697ac20304f342c3ab218317b2b0ab0258d
 
 name:           salak-yaml
 version:        0.3.4.1
@@ -19,7 +19,7 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
-    test/salak.yml
+    salak.yml
 
 library
   exposed-modules:

@@ -4,7 +4,7 @@ synopsis:            Configuration Loader for toml
 <<: *legal
 extra-source-files:
 - README.md
-- test/salak.toml
+- salak.toml
 
 dependencies:
   - base >= 4.10 && < 5

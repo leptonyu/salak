@@ -4,7 +4,7 @@ synopsis:            Configuration Loader for yaml
 <<: *legal
 extra-source-files:
 - README.md
-- test/salak.yml
+- salak.yml
 
 dependencies:
   - base >= 4.10 && < 5
