@@ -83,10 +83,14 @@ class Monad m => MonadSalak m where
   -- `require` supports parse `IO` values, which actually wrap a 'MVar' variable and can be reseted by reloading configurations.
   -- Normal value will not be affected by reloading configurations.
   require :: (MonadThrow m, FromProp m a) => Text -> m a
-  require ks = askSourcePack >>= \s -> runProp s $
-    case toKeys ks of
+  require ks = do
+    s <- askSourcePack
+    runProp s $ case toKeys ks of
       Left  e -> failKey (unpack ks) (PropException e)
       Right k -> withKeys k fromProp
+
+instance Monad m => MonadSalak (ReaderT SourcePack m) where
+  askSourcePack = ask
 
 -- | Property parser, used to parse property from `Value`
 newtype Prop m a

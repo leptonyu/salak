@@ -164,10 +164,6 @@ loadSalak PropConfig{..} = do
 loadSalakWith :: (MonadThrow m, MonadIO m, HasLoad file) => file -> String -> LoadSalakT m ()
 loadSalakWith file name = loadSalak def { configName = name, loadExt = loadByExt file }
 
--- | Standard salak functions, by load and run with `RunSalakT`.
-loadAndRunSalak :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> RunSalakT m a -> m a
-loadAndRunSalak lstm ma = loadAndRunSalak' lstm $ runRun ma
-
 -- | Run salak, load strategy refer to `loadSalak`
 runSalak :: (MonadCatch m, MonadIO m) => PropConfig -> RunSalakT m a -> m a
 runSalak c = loadAndRunSalak (loadSalak c)

@@ -86,7 +86,7 @@ mkValue :: Value -> Either String Value
 mkValue (VT v) = if T.null v
   then Right (VT v)
   else case parse vref "" v of
-    Left  e   -> Left (show e)
+    Left  e   -> Left (errorBundlePretty e)
     Right y   -> Right $ case y of
       [VRT x] -> VT x
       vs      -> VR vs

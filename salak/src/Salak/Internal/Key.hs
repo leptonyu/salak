@@ -131,7 +131,7 @@ instance ToKeys Keys where
 instance ToKeys Text where
   -- toKeys = Right . simpleKeys
   toKeys k = case fmap fromKeys (parse keyExpr "" k) of
-    Left  e -> Left (show e)
+    Left  e -> Left (errorBundlePretty e)
     Right x -> Right x
 
 instance ToKeys String where

@@ -23,13 +23,13 @@
 --
 module Salak.Internal(
     loadAndRunSalak'
+  , loadAndRunSalak
   , loadTrie
   , loadList
   , LoadSalakT
   , LoadSalak
   , RunSalakT
   , RunSalak
-  , runRun
   , MonadSalak(..)
   , loadMock
   , loadEnv
@@ -95,9 +95,11 @@ newtype LoadSalakT m a = LoadSalakT (MS.StateT UpdateSource m a)
 -- | Simple IO Monad
 type LoadSalak = LoadSalakT IO
 
+{-# INLINE runLoad #-}
 runLoad :: Monad m => LoadSalakT m a -> UpdateSource -> m a
 runLoad (LoadSalakT ma) = MS.evalStateT ma
 
+{-# INLINE liftNT #-}
 liftNT :: MonadIO m => LoadSalak () -> LoadSalakT m ()
 liftNT a = MS.get >>= liftIO . runLoad a
 
@@ -116,14 +118,11 @@ instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (LoadSalakT m) w
     lift $ IU.withUnliftIO $ \u -> return (IU.UnliftIO (IU.unliftIO u . flip runLoad ut))
 
 -- | Standard `MonadSalak` instance.
-newtype RunSalakT m a = RunSalakT (ReaderT SourcePack m a)
+newtype RunSalakT m a = RunSalakT { runSalakT :: ReaderT SourcePack m a }
   deriving (Functor, Applicative, Monad, MonadTrans, MonadIO, MonadReader SourcePack, MonadThrow, MonadCatch)
 
 -- | Simple IO Monad
 type RunSalak = RunSalakT IO
-
-runRun :: Monad m => RunSalakT m a -> SourcePack -> m a
-runRun (RunSalakT ma) = runReaderT ma
 
 instance MonadIO m => MonadSalak (RunSalakT m) where
   askSourcePack = ask
@@ -131,7 +130,7 @@ instance MonadIO m => MonadSalak (RunSalakT m) where
 instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (RunSalakT m) where
   askUnliftIO = do
     ut <- ask
-    lift $ IU.withUnliftIO $ \u -> return (IU.UnliftIO (IU.unliftIO u . flip runRun ut))
+    lift $ IU.withUnliftIO $ \u -> return (IU.UnliftIO (IU.unliftIO u . flip runReaderT ut . runSalakT))
 
 -- | Basic loader
 loadTrie :: (MonadThrow m, MonadIO m) => Bool -> String -> (Int -> IO TraceSource) -> LoadSalakT m ()
@@ -164,6 +163,10 @@ loadList canReload name iof = loadTrie canReload name (\i -> gen i <$> iof)
 loadAndRunSalak' :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> (SourcePack -> m a) -> m a
 loadAndRunSalak' lstm f = load lstm >>= f
 
+-- | Standard salak functions, by load and run with `RunSalakT`.
+loadAndRunSalak :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> RunSalakT m a -> m a
+loadAndRunSalak lstm = loadAndRunSalak' lstm . runReaderT . runSalakT
+
 load :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> m SourcePack
 load lm = do
   us <- liftIO $ do
@@ -177,7 +180,7 @@ load lm = do
 toSourcePack :: MonadIO m => UpdateSource -> m SourcePack
 toSourcePack UpdateSource{..} = liftIO $ do
   s <- readMVar ref
-  return 
+  return
     $ SourcePack s s S.empty mempty qfunc lfunc
     $ do
       t        <- readMVar ref

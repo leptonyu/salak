@@ -1,35 +1,16 @@
 module Salak.Internal.PropSpec where
 
-import           Control.Concurrent.MVar
 import           Control.Monad.Writer
 import           Data.Either
 import           Data.Int
 import           Data.Scientific
-import qualified Data.Set                as S
-import           Data.Text               (Text)
+import           Data.Text            (Text)
 import           Data.Word
 import           Salak
 import           Salak.Internal
 import           Salak.Internal.Prop
 import           Salak.Internal.Val
-import qualified Salak.Trie              as T
 import           Test.Hspec
-
-newSource :: Value -> Source
-newSource v = case modVals (Val 0 v) emptyVals of
-  Left  _ -> T.empty
-  Right x -> T.singleton x
-
-newSourcePack :: Value -> IO SourcePack
-newSourcePack v = do
-  let source = newSource v
-      origin = source
-      kref   = S.empty
-      pref   = mempty
-      reload = return $ ReloadResult False []
-  qref <- newMVar $ \_ -> Right (return ())
-  lref <- newMVar $ \_ -> return ()
-  return SourcePack{..}
 
 spec :: SpecWith ()
 spec = do
