@@ -59,14 +59,14 @@ loadTOML i T.TOML{..}
     {-# INLINE foldToml #-}
     foldToml = flip . HM.foldlWithKey'
     {-# INLINE foldPairs #-}
-    foldPairs       = foldToml (\s k v -> TR.modify' (toSs k) (insertAnyValue v) s)
+    foldPairs       = foldToml (\s k v -> TR.modify' (insertAnyValue v) (toSs k) s)
     {-# INLINE foldTableArrays #-}
     foldTableArrays = foldToml (\s _ v -> foldArray (loadTOML i) (N.toList v) s)
     {-# INLINE foldTables #-}
     foldTables      = foldToml (\s _ v -> go v s)
     {-# INLINE go #-}
-    go (Leaf   k   toml)  = TR.modify' (toSs k) (loadTOML i toml)
-    go (Branch k v tomap) = TR.modify' (toSs k) (foldTables tomap) . maybe id (loadTOML i) v
+    go (Leaf   k   toml)  = TR.modify' (loadTOML i toml)  (toSs k)
+    go (Branch k v tomap) = TR.modify' (foldTables tomap) (toSs k) . maybe id (loadTOML i) v
     {-# INLINE insertAnyValue #-}
     insertAnyValue :: AnyValue -> TraceSource -> TraceSource
     insertAnyValue (AnyValue (Array   b))             = foldArray (insertAnyValue . AnyValue) b
@@ -77,7 +77,7 @@ loadTOML i T.TOML{..}
     insertAnyValue (AnyValue (Local   b))             = setVal i (VLT b)
     insertAnyValue (AnyValue (Day     b))             = setVal i (VD  b)
     insertAnyValue (AnyValue (Hours   b))             = setVal i (VH  b)
-    insertAnyValue (AnyValue (Zoned (ZonedTime a b))) = setVal i (VZT b a)
+    insertAnyValue (AnyValue (Zoned   b))             = setVal i (VU  $ zonedTimeToUTC b)
     {-# INLINE foldArray #-}
     foldArray :: (a -> TraceSource -> TraceSource) -> [a] -> TraceSource -> TraceSource
     foldArray f = flip (foldl' (\t (j,a) -> TR.modify (KI j) (f a) t)) . zip [0..]

@@ -1,4 +1,4 @@
-module Salak.Internal.PropSpec where
+module Salak.Internal.PropSpec(spec) where
 
 import           Control.Monad.Writer
 import           Data.Either

@@ -4,3 +4,5 @@ packages:
 - salak-yaml
 - salak-toml
 pvp-bounds: both
+# ghc-options:
+#   "$locals": -ddump-to-file -ddump-hi

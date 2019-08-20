@@ -100,7 +100,7 @@ instance Default PropConfig where
     True
     False
     defaultParseCommandLine
-    putStrLn
+    (\_ -> return ())
     (\_ -> return ())
 
 data FileConfig = FileConfig
@@ -109,6 +109,7 @@ data FileConfig = FileConfig
   }
 
 instance FromProp m FileConfig where
+  {-# INLINE fromProp #-}
   fromProp = FileConfig
     <$> "name" .?= Nothing
     <*> "dir"  .?= Nothing

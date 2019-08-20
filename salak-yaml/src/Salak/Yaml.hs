@@ -70,7 +70,7 @@ loadYAML i = start
         Just (MarkedEvent EventMappingEnd _ _) -> return ts
         Just (MarkedEvent (EventScalar a _ _ _) _ _) -> do
                 val <- start T.empty
-                goM $ T.modify' (simpleKeys $ decodeUtf8 a) (const val) ts
+                goM $ T.modify' (const val) (simpleKeys $ decodeUtf8 a) ts
         Just e -> ge (yamlStartMark e) ("suppose scalar and mapping end, but is " ++ show (yamlEvent e))
 
     {-# INLINE ge #-}

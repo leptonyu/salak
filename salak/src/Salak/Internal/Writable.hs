@@ -20,12 +20,14 @@ data Writable a = Writable
   }
 
 -- | Convert a `IO` value to `Writable` value.
+{-# INLINE toWritable #-}
 toWritable :: IO a -> IO (Writable a)
 toWritable valRef = do
   setRef <- newMVar Nothing
   return Writable{..}
 
 -- | Get value.
+{-# INLINE getWritable #-}
 getWritable :: Writable a -> IO a
 getWritable Writable{..} = do
   v <- readMVar setRef
@@ -34,5 +36,6 @@ getWritable Writable{..} = do
     _      -> valRef
 
 -- | Set or remove override value.
+{-# INLINE setWritable #-}
 setWritable :: Maybe a -> Writable a -> IO ()
 setWritable s Writable{..} = void $ swapMVar setRef s

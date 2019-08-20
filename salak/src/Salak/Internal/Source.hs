@@ -68,9 +68,11 @@ gen i = foldr go T.empty
       Left  e  -> T.alter (setErr0 e) mempty x
       Right k' -> T.alter (setVal0 $ Val i $ toVal v) k' x
 
+{-# INLINE fmt #-}
 fmt :: ModType -> Int -> String -> String -> String
 fmt m i s n = concat ['#' : show i, ' ' : show m, ' ' : s ,  ' ' : n]
 
+{-# INLINE fmtMod #-}
 fmtMod :: Int -> String -> HashMap String ModType -> [String]
 fmtMod i name cs = fmap (\(k,v)-> fmt v i k name) (HM.toList cs)
 
@@ -108,5 +110,6 @@ setVal0 v tv =
       Left  e -> Just (e : traceError tv, tv2)
       Right x -> Just (traceError tv, x)
 
+{-# INLINE setVal #-}
 setVal :: ToValue v => Int -> v -> TraceSource -> TraceSource
 setVal i v = T.update (setVal0 $ Val i $ toVal v)

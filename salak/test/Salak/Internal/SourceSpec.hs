@@ -1,5 +1,4 @@
-{-# LANGUAGE NoOverloadedLists #-}
-module Salak.Internal.SourceSpec where
+module Salak.Internal.SourceSpec(spec) where
 
 import           Control.Monad.Writer
 import           Data.Text             (Text, unpack)
@@ -30,6 +29,7 @@ instance MonadIO m => FromProp m Hello
 loadRandom :: (MonadThrow m, MonadIO m) => Text -> LoadSalakT m ()
 loadRandom key = loadList True (unpack key) go
   where
+    go :: IO [(Text, Int)]
     go = do
       a :: Int <- randomIO
       return [(key, a)]

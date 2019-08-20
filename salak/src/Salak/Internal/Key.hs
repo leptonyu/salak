@@ -39,6 +39,7 @@ data Key
   deriving Eq
 
 instance Ord Key where
+  {-# INLINE compare #-}
   compare (KT a) (KT b) = compare a b
   compare (KI a) (KI b) = compare a b
   compare (KI _) _      = LT
@@ -46,26 +47,34 @@ instance Ord Key where
 
 newtype Keys = Keys { unKeys :: D.DList Key } deriving (Eq, Ord)
 
+{-# INLINE emptyKey #-}
 emptyKey :: Keys
 emptyKey = Keys D.empty
 
+{-# INLINE singletonKey #-}
 singletonKey :: Key -> Keys
 singletonKey k = fromKeys [k]
 
+{-# INLINE fromKeys #-}
 fromKeys :: [Key] -> Keys
 fromKeys = Keys . D.fromList
 
+{-# INLINE toKeyList #-}
 toKeyList :: Keys -> [Key]
 toKeyList = D.toList . unKeys
 
 instance Semigroup Keys where
+  {-# INLINE (<>) #-}
   (Keys a) <> (Keys b) = Keys $ a <> b
 
 instance Monoid Keys where
+  {-# INLINE mempty #-}
   mempty = emptyKey
+  {-# INLINE mappend #-}
   mappend = (<>)
 
 instance Show Keys where
+  {-# INLINE show #-}
   show = intercalate "." . go . toKeyList
     where
       {-# INLINE go #-}
@@ -82,12 +91,15 @@ isNum (KI _) = True
 isNum _      = False
 
 instance Hashable Key where
+  {-# INLINE hash #-}
   hash (KT a) = hash a
   hash (KI a) = hash a
+  {-# INLINE hashWithSalt #-}
   hashWithSalt i (KT a) = hashWithSalt i a
   hashWithSalt i (KI a) = hashWithSalt i a
 
 instance Show Key where
+  {-# INLINE show #-}
   show (KT x) = T.unpack x
   show (KI i) = "[" ++ show i ++ "]"
 
@@ -121,18 +133,22 @@ class ToKeys a where
   toKeys :: a -> Either String Keys
 
 instance IsString Keys where
+  {-# INLINE fromString #-}
   fromString key = case toKeys key of
     Left  _ -> singletonKey (KT $ T.pack key)
     Right k -> k
 
 instance ToKeys Keys where
+  {-# INLINE toKeys #-}
   toKeys = Right
 
 instance ToKeys Text where
   -- toKeys = Right . simpleKeys
+  {-# INLINE toKeys #-}
   toKeys k = case fmap fromKeys (parse keyExpr "" k) of
     Left  e -> Left (errorBundlePretty e)
     Right x -> Right x
 
 instance ToKeys String where
+  {-# INLINE toKeys #-}
   toKeys = toKeys . T.pack

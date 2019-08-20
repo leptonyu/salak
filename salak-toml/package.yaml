@@ -28,6 +28,8 @@ benchmarks:
       - bench
       - src
     ghc-options: -main-is SalakTomlBench.main -rtsopts -threaded -with-rtsopts=-K1K
+    other-modules:
+      - Salak.Toml
     dependencies:
       - criterion
 

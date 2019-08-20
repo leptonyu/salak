@@ -1,4 +1,4 @@
-module SalakBench where
+module SalakBench(main) where
 
 import           Control.Monad.Reader
 import           Criterion.Main

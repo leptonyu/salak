@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns               #-}
 {-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
@@ -135,7 +136,7 @@ instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (RunSalakT m) wh
 
 -- | Basic loader
 loadTrie :: (MonadThrow m, MonadIO m) => Bool -> String -> (Int -> IO TraceSource) -> LoadSalakT m ()
-loadTrie canReload name f = do
+loadTrie !canReload !name f = do
   logSalak $ "Loading " ++ (if canReload then "[reloadable]" else "") ++ name
   UpdateSource{..} <- MS.get
   (MS.put=<<) $ liftIO $ do
@@ -178,6 +179,7 @@ load lm = do
     return $ UpdateSource r 0 HM.empty l q u
   runLoad (lm >> MS.get) us >>= toSourcePack
 
+{-# INLINE toSourcePack #-}
 toSourcePack :: MonadIO m => UpdateSource -> m SourcePack
 toSourcePack UpdateSource{..} = liftIO $ do
   s <- readMVar ref
@@ -231,6 +233,7 @@ loadCommandLine :: (MonadThrow m, MonadIO m) => ParseCommandLine -> LoadSalakT m
 loadCommandLine pcl = loadList False "commandLine" (getArgs >>= pcl)
 
 -- | Try load file, if file does not exist then do nothing.
+{-# INLINE tryLoadFile #-}
 tryLoadFile :: MonadIO m => (FilePath -> LoadSalakT m ()) -> FilePath -> LoadSalakT m ()
 tryLoadFile f file = do
   b <- liftIO $ doesFileExist file

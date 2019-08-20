@@ -63,11 +63,13 @@ class Monad m => MonadSalak m where
   askReload :: m (IO ReloadResult)
   askReload = reload <$> askSourcePack
 
+  {-# INLINE setLogF #-}
   setLogF :: MonadIO m => (String -> IO ()) -> m ()
   setLogF f = do
     SourcePack{..} <- askSourcePack
     liftIO $ void $ swapMVar lref f
 
+  {-# INLINE logSalak #-}
   logSalak :: MonadIO m => String -> m ()
   logSalak msg = do
     SourcePack{..} <- askSourcePack
@@ -90,6 +92,7 @@ class Monad m => MonadSalak m where
       Right k -> withKeys k fromProp
 
 instance Monad m => MonadSalak (ReaderT SourcePack m) where
+  {-# INLINE askSourcePack #-}
   askSourcePack = ask
 
 -- | Property parser, used to parse property from `Value`
@@ -97,6 +100,7 @@ newtype Prop m a
   = Prop { unProp :: ReaderT SourcePack (ExceptT SomeException m) a }
   deriving (Functor, Applicative, Monad, MonadReader SourcePack, MonadIO)
 
+{-# INLINE runProp #-}
 runProp :: MonadThrow m => SourcePack -> Prop m a -> m a
 runProp sp (Prop p) = do
   v <- runExceptT (runReaderT p sp)
@@ -104,6 +108,7 @@ runProp sp (Prop p) = do
     Left  e -> throwM e
     Right x -> return x
 
+{-# INLINE withProp #-}
 withProp :: (SourcePack -> SourcePack) -> Prop m a -> Prop m a
 withProp = unsafeCoerce withReaderT
 
@@ -125,7 +130,6 @@ data SalakException
 
 instance Exception SalakException
 
-
 {-# INLINE failKey #-}
 failKey :: Monad m => String -> SalakException -> Prop m a
 failKey ks e = do
@@ -141,17 +145,21 @@ failKey ks e = do
 
 -- | Automatic convert literal string into an instance of `Prop` @m@ @a@.
 instance (Monad m, FromProp m a) => IsString (Prop m a) where
+  {-# INLINE fromString #-}
   fromString ks = case toKeys ks of
     Left  e -> failKey ks (PropException e)
     Right k -> withKeys k fromProp
 
 
 instance MonadTrans Prop where
+  {-# INLINE lift #-}
   lift = Prop . lift . lift
 
 instance Monad m => A.Alternative (Prop m) where
+  {-# INLINE empty #-}
   empty = failKey "" NullException
 
+  {-# INLINE (<|>) #-}
   a <|> b = do
     v <- try a
     case v of
@@ -159,18 +167,23 @@ instance Monad m => A.Alternative (Prop m) where
       Left (_ :: SomeException) -> b
 
 instance Monad m => MonadError SomeException (Prop m) where
+  {-# INLINE throwError #-}
   throwError = Prop . lift . throwError . toException
+  {-# INLINE catchError #-}
   catchError (Prop ma) me = Prop $ do
     c <- ask
     lift $ catchError (runReaderT ma c) (\e -> runReaderT (unProp $ me e) c)
 
 instance Monad m => MonadThrow (Prop m) where
+  {-# INLINE throwM #-}
   throwM = throwError . toException
 
 instance Monad m => MonadCatch (Prop m) where
+  {-# INLINE catch #-}
   catch ma me = catchError ma (\e -> maybe (throwM e) me $ fromException e)
 
 instance Monad m => MonadFail (Prop m) where
+  {-# INLINE fail #-}
   fail = failKey "" . PropException
 
 -- | Type class used to parse properties.
@@ -179,9 +192,11 @@ class FromProp m a where
   -- | Parse properties from `Value`.
   fromProp :: Monad m => Prop m a
   default fromProp :: (Generic a, GFromProp m (Rep a), Monad m) => Prop m a
+  {-# INLINE fromProp #-}
   fromProp = fmap to gFromProp
 
 instance FromProp m a => FromProp m (Maybe a) where
+  {-# INLINE fromProp #-}
   fromProp = do
     v <- try fromProp
     case v of
@@ -194,6 +209,7 @@ instance FromProp m a => FromProp m (Maybe a) where
       Right a -> return (Just a)
 
 instance FromProp m a => FromProp m (Either String a) where
+  {-# INLINE fromProp #-}
   fromProp = do
     v <- try fromProp
     return $ case v of
@@ -201,25 +217,30 @@ instance FromProp m a => FromProp m (Either String a) where
       Right a -> Right a
 
 instance {-# OVERLAPPABLE #-} FromProp m a => FromProp m [a] where
+  {-# INLINE fromProp #-}
   fromProp = do
     SourcePack{..} <- ask
-    sequence $ (`withKey` fromProp) <$> sort (filter isNum $ HM.keys $ TR.getMap source)
+    sequence $ (`withKey` fromProp) <$> sort (filter isNum $ HM.keys $ TR.tmap source)
 
 instance {-# OVERLAPPABLE #-} (IsString s, FromProp m a) => FromProp m [(s, a)] where
+  {-# INLINE fromProp #-}
   fromProp = do
     SourcePack{..} <- ask
-    sequence $ go <$> sort (filter isStr $ HM.keys $ TR.getMap source)
+    sequence $ go <$> sort (filter isStr $ HM.keys $ TR.tmap source)
     where
       go k = (fromString $ show $ singletonKey k,) <$> withKey k fromProp
 
 instance (Eq s, Hashable s, IsString s, FromProp m a) => FromProp m (HM.HashMap s a) where
+  {-# INLINE fromProp #-}
   fromProp = HM.fromList <$> fromProp
 
 instance (Eq s, Ord s, IsString s, FromProp m a) => FromProp m (M.Map s a) where
+  {-# INLINE fromProp #-}
   fromProp = M.fromList <$> fromProp
 
 -- | Supports for parsing `IO` value.
 instance {-# OVERLAPPABLE #-} (MonadIO m, FromProp (Either SomeException) a, FromProp m a) => FromProp m (IO a) where
+  {-# INLINE fromProp #-}
   fromProp = do
     sp <- ask
     a  <- fromProp
@@ -266,16 +287,19 @@ class PropOp f a where
   -- >   fromProp = Config
   -- >     <$> "enabled" .?: enabled
   -- >     <$> "level"   .?: level
+  {-# INLINE (.?:) #-}
   infixl 5 .?:
   (.?:) :: Default b => f a -> (b -> a) -> f a
   (.?:) fa b = fa .?= b def
 
 -- | Support for setting default normal value.
 instance {-# OVERLAPPABLE #-} A.Alternative f => PropOp f a where
+  {-# INLINE (.?=) #-}
   (.?=) a b = a A.<|> pure b
 
 -- | Support for setting default `IO` value.
 instance (MonadIO m, FromProp (Either SomeException) a) => PropOp (Prop m) (IO a) where
+  {-# INLINE (.?=) #-}
   (.?=) ma a = do
     sp <- ask
     v  <- try ma
@@ -284,6 +308,7 @@ instance (MonadIO m, FromProp (Either SomeException) a) => PropOp (Prop m) (IO a
       Right o                    -> return o
 
 instance Monad m => HasValid (Prop m) where
+  {-# INLINE invalid #-}
   invalid = Control.Monad.Fail.fail . toI18n
 
 {-# INLINE readPrimitive' #-}
@@ -291,7 +316,8 @@ readPrimitive' :: Monad m => (Value -> Either String a) -> Prop m (Maybe a)
 readPrimitive' f = do
   SourcePack{..} <- ask
   let {-# INLINE go #-}
-      go (VRT t   : as) = if null as then return t else (t <>) <$> go as
+      go [VRT t]        = return t
+      go (VRT t   : as) = (t <>) <$> go as
       go (VRR k d : as) = if S.member k kref
         then Control.Monad.Fail.fail $ "reference cycle of key " <> show k
         else do
@@ -303,20 +329,18 @@ readPrimitive' f = do
           w <- case t of
             Just x -> return x
             _      -> if null d then A.empty else go d
-          if null as then return w else (w <>) <$> go as
+          go (VRT w : as)
       go [] = A.empty
       {-# INLINE g2 #-}
       g2 (VR r) = VT <$> go r
       g2 v      = return v
-  case TR.getPrimitive source >>= getVal of
-    Just v -> do
-      vy <- g2 v
-      if nullValue vy
-        then return Nothing
-        else case f vy of
-          Left  e -> Control.Monad.Fail.fail e
-          Right a -> return (Just a)
-    _      -> A.empty
+      {-# INLINE g3 #-}
+      g3 vy
+        | nullValue vy = return Nothing
+        | otherwise    = case f vy of
+            Left  e -> Control.Monad.Fail.fail e
+            Right a -> return (Just a)
+  maybe A.empty (g2 >=> g3) $ TR.tvar source >>= getVal
 
 -- | Parse primitive value from `Value`
 {-# INLINE readPrimitive #-}
@@ -324,6 +348,7 @@ readPrimitive :: Monad m => (Value -> Either String a) -> Prop m a
 readPrimitive f = readPrimitive' f >>= maybe A.empty return
 
 -- | Parse enum value from `Text`
+{-# INLINE readEnum #-}
 readEnum :: Monad m => (Text -> Either String a) -> Prop m a
 readEnum = readPrimitive . go
   where
@@ -336,87 +361,113 @@ class GFromProp m f where
   gFromProp :: Monad m => Prop m (f a)
 
 instance {-# OVERLAPPABLE #-} (Constructor c, GFromProp m a) => GFromProp m (M1 C c a) where
-    gFromProp
-      | conIsRecord m = fmap M1 gFromProp
-      | otherwise     = fmap M1 $ gEnum $ T.pack (conName m)
-      where m = undefined :: t c a x
+  {-# INLINE gFromProp #-}
+  gFromProp
+    | conIsRecord m = fmap M1 gFromProp
+    | otherwise     = fmap M1 $ gEnum $ T.pack (conName m)
+    where m = undefined :: t c a x
 
+{-# INLINE gEnum #-}
 gEnum :: (GFromProp m f, Monad m) => Text -> Prop m (f a)
 gEnum va = do
   o <- gFromProp
   readEnum $ \x -> if x==va then Right o else Left "enum invalid"
 
 instance {-# OVERLAPPABLE #-} (Selector s, GFromProp m a) => GFromProp m(M1 S s a) where
+  {-# INLINE gFromProp #-}
   gFromProp = withKey (KT $ T.pack $ selName (undefined :: t s a p)) $ M1 <$> gFromProp
 
 instance {-# OVERLAPPABLE #-} GFromProp m a => GFromProp m (M1 D i a) where
+  {-# INLINE gFromProp #-}
   gFromProp = M1 <$> gFromProp
 
 instance {-# OVERLAPPABLE #-} FromProp m a => GFromProp m (K1 i a) where
-    gFromProp = fmap K1 fromProp
+  {-# INLINE gFromProp #-}
+  gFromProp = fmap K1 fromProp
 
 instance Monad m => GFromProp m U1 where
+  {-# INLINE gFromProp #-}
   gFromProp = pure U1
 
 instance {-# OVERLAPPABLE #-} (GFromProp m a, GFromProp m b) => GFromProp m (a:*:b) where
+  {-# INLINE gFromProp #-}
   gFromProp = (:*:) <$> gFromProp <*> gFromProp
 
 instance {-# OVERLAPPABLE #-} (GFromProp m a, GFromProp m b) => GFromProp m (a:+:b) where
+  {-# INLINE gFromProp #-}
   gFromProp = fmap L1 gFromProp A.<|> fmap R1 gFromProp
 
 instance FromProp m a => FromProp m (Identity a) where
+  {-# INLINE fromProp #-}
   fromProp = Identity <$> fromProp
 
 instance (FromProp m a, FromProp m b) => FromProp m (a,b) where
+  {-# INLINE fromProp #-}
   fromProp = (,) <$> fromProp <*> fromProp
 
 instance (FromProp m a, FromProp m b, FromProp m c) => FromProp m(a,b,c) where
+  {-# INLINE fromProp #-}
   fromProp = (,,) <$> fromProp <*> fromProp <*> fromProp
 
 instance (FromProp m a, FromProp m b, FromProp m c, FromProp m d) => FromProp m(a,b,c,d) where
+  {-# INLINE fromProp #-}
   fromProp = (,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp
 
 instance (FromProp m a, FromProp m b, FromProp m c, FromProp m d, FromProp m e) => FromProp m(a,b,c,d,e) where
+  {-# INLINE fromProp #-}
   fromProp = (,,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp
 
 instance (FromProp m a, FromProp m b, FromProp m c, FromProp m d, FromProp m e, FromProp m f) => FromProp m(a,b,c,d,e,f) where
+  {-# INLINE fromProp #-}
   fromProp = (,,,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp
 
 instance (FromProp m a, FromProp m b, FromProp m c, FromProp m d, FromProp m e, FromProp m f, FromProp m g) => FromProp m(a,b,c,d,e,f,g) where
+  {-# INLINE fromProp #-}
   fromProp = (,,,,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp
 
 instance (FromProp m a, FromProp m b, FromProp m c, FromProp m d, FromProp m e, FromProp m f, FromProp m g, FromProp m h) => FromProp m(a,b,c,d,e,f,g,h) where
+  {-# INLINE fromProp #-}
   fromProp = (,,,,,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp
 
 instance (FromProp m a, FromProp m b, FromProp m c, FromProp m d, FromProp m e, FromProp m f, FromProp m g, FromProp m h, FromProp m i) => FromProp m(a,b,c,d,e,f,g,h,i) where
+  {-# INLINE fromProp #-}
   fromProp = (,,,,,,,,) <$> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp <*> fromProp
 
 
 instance FromProp m a => FromProp m (Min a) where
+  {-# INLINE fromProp #-}
   fromProp = Min <$> fromProp
 
 instance FromProp m a => FromProp m (Max a) where
+  {-# INLINE fromProp #-}
   fromProp = Max <$> fromProp
 
 instance FromProp m a => FromProp m (First a) where
+  {-# INLINE fromProp #-}
   fromProp = First <$> fromProp
 
 instance FromProp m a => FromProp m (Last a) where
+  {-# INLINE fromProp #-}
   fromProp = Last <$> fromProp
 
 instance FromProp m a => FromProp m (Dual a) where
+  {-# INLINE fromProp #-}
   fromProp = Dual <$> fromProp
 
 instance FromProp m a => FromProp m (Sum a) where
+  {-# INLINE fromProp #-}
   fromProp = Sum <$> fromProp
 
 instance FromProp m a => FromProp m (Product a) where
+  {-# INLINE fromProp #-}
   fromProp = Product <$> fromProp
 
 instance FromProp m a => FromProp m (Option a) where
+  {-# INLINE fromProp #-}
   fromProp = Option <$> fromProp
 
 instance FromProp m Bool where
+  {-# INLINE fromProp #-}
   fromProp = readPrimitive go
     where
       {-# INLINE go #-}
@@ -430,6 +481,7 @@ instance FromProp m Bool where
       go x      = Left $ getType x ++ " cannot be bool"
 
 instance FromProp m Text where
+  {-# INLINE fromProp #-}
   fromProp = fromMaybe "" <$> readPrimitive' go
     where
       {-# INLINE go #-}
@@ -437,18 +489,23 @@ instance FromProp m Text where
       go x      = Right $ T.pack $ snd $ typeOfV x
 
 instance FromProp m TL.Text where
+  {-# INLINE fromProp #-}
   fromProp = TL.fromStrict <$> fromProp
 
 instance FromProp m B.ByteString where
+  {-# INLINE fromProp #-}
   fromProp = TB.encodeUtf8 <$> fromProp
 
 instance FromProp m BL.ByteString where
+  {-# INLINE fromProp #-}
   fromProp = TBL.encodeUtf8 <$> fromProp
 
 instance FromProp m String where
+  {-# INLINE fromProp #-}
   fromProp = T.unpack <$> fromProp
 
 instance FromProp m Scientific where
+  {-# INLINE fromProp #-}
   fromProp = readPrimitive go
     where
       {-# INLINE go #-}
@@ -459,51 +516,67 @@ instance FromProp m Scientific where
       go x      = Left $ getType x ++ " cannot be number"
 
 instance FromProp m Float where
+  {-# INLINE fromProp #-}
   fromProp = toRealFloat <$> fromProp
 
 instance FromProp m Double where
+  {-# INLINE fromProp #-}
   fromProp = toRealFloat <$> fromProp
 
 instance FromProp m Integer where
+  {-# INLINE fromProp #-}
   fromProp = toInteger <$> (fromProp :: Prop m Int)
 
 instance FromProp m Int where
+  {-# INLINE fromProp #-}
   fromProp = fromProp >>= toNum
 
 instance FromProp m Int8 where
+  {-# INLINE fromProp #-}
   fromProp = fromProp >>= toNum
 
 instance FromProp m Int16 where
+  {-# INLINE fromProp #-}
   fromProp = fromProp >>= toNum
 
 instance FromProp m Int32 where
+  {-# INLINE fromProp #-}
   fromProp = fromProp >>= toNum
 
 instance FromProp m Int64 where
+  {-# INLINE fromProp #-}
   fromProp = fromProp >>= toNum
 
 instance FromProp m Word where
+  {-# INLINE fromProp #-}
   fromProp = fromProp >>= toNum
 
 instance FromProp m Word8 where
+  {-# INLINE fromProp #-}
   fromProp = fromProp >>= toNum
 
 instance FromProp m Word16 where
+  {-# INLINE fromProp #-}
   fromProp = fromProp >>= toNum
 
 instance FromProp m Word32 where
+  {-# INLINE fromProp #-}
   fromProp = fromProp >>= toNum
 
 instance FromProp m Word64 where
+  {-# INLINE fromProp #-}
   fromProp = fromProp >>= toNum
 
 instance FromProp m NominalDiffTime where
+  {-# INLINE fromProp #-}
   fromProp = fromInteger <$> fromProp
 
 instance FromProp m DiffTime where
+  {-# INLINE fromProp #-}
   fromProp = fromInteger <$> fromProp
 
 instance (HasResolution a, Monad m) => FromProp m (Fixed a) where
+  {-# INLINE fromProp #-}
   fromProp = fromInteger <$> fromProp
 
 {-# INLINE toNum #-}
@@ -513,37 +586,48 @@ toNum s = case toBoundedInteger s of
   _      -> Control.Monad.Fail.fail "scientific number doesn't fit in the target representation"
 
 instance FromProp m CBool where
+  {-# INLINE fromProp #-}
   fromProp = do
     b <- fromProp
     return $ if b then 1 else 0
 
 instance FromProp m CShort where
+  {-# INLINE fromProp #-}
   fromProp = CShort <$> fromProp
 
 instance FromProp m CUShort where
+  {-# INLINE fromProp #-}
   fromProp = CUShort <$> fromProp
 
 instance FromProp m CInt where
+  {-# INLINE fromProp #-}
   fromProp = CInt <$> fromProp
 
 instance FromProp m CUInt where
+  {-# INLINE fromProp #-}
   fromProp = CUInt <$> fromProp
 
 instance FromProp m CLong where
+  {-# INLINE fromProp #-}
   fromProp = CLong <$> fromProp
 
 instance FromProp m CULong where
+  {-# INLINE fromProp #-}
   fromProp = CULong <$> fromProp
 
 instance FromProp m CLLong where
+  {-# INLINE fromProp #-}
   fromProp = CLLong <$> fromProp
 
 instance FromProp m CULLong where
+  {-# INLINE fromProp #-}
   fromProp = CULLong <$> fromProp
 
 instance FromProp m CFloat where
+  {-# INLINE fromProp #-}
   fromProp = CFloat <$> fromProp
 
 instance FromProp m CDouble where
+  {-# INLINE fromProp #-}
   fromProp = CDouble <$> fromProp
 

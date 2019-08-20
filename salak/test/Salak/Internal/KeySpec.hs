@@ -1,4 +1,4 @@
-module Salak.Internal.KeySpec where
+module Salak.Internal.KeySpec(spec) where
 
 import           Data.List          (intercalate)
 import           Data.Text          (Text, pack, unpack)

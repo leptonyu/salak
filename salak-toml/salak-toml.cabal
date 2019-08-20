@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 28429719d8f1ab2b6031237f22d3e4fc61cdee24ce939c279730fbe1d8ecc53a
+-- hash: 311d3d24fa6ff79552bc1db8158511cf59d40f57d73935eee90b0bdf706f4dbd
 
 name:           salak-toml
 version:        0.3.4.1
@@ -68,7 +68,6 @@ benchmark salak-toml-bench
   main-is: SalakTomlBench.hs
   other-modules:
       Salak.Toml
-      Paths_salak_toml
   hs-source-dirs:
       bench
       src

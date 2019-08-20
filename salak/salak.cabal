@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 55a71cfd2dca2c91cef12bd2167120d49b02edddd71b80da3e073c04c5876405
+-- hash: 459a7163edaf73fc4469f9426f32514e7ea20c13351351c8075464a9f6b8abae
 
 name:           salak
 version:        0.3.4.1
@@ -107,18 +107,9 @@ benchmark salak-bench
   type: exitcode-stdio-1.0
   main-is: SalakBench.hs
   other-modules:
-      Salak
-      Salak.Internal
-      Salak.Internal.Key
-      Salak.Internal.Prop
-      Salak.Internal.Source
-      Salak.Internal.Val
-      Salak.Internal.Writable
-      Salak.Trie
       Paths_salak
   hs-source-dirs:
       bench
-      src
   default-extensions: RecordWildCards TupleSections OverloadedStrings NoOverloadedLists ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -main-is SalakBench.main -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
@@ -136,6 +127,7 @@ benchmark salak-bench
     , megaparsec
     , menshen
     , mtl
+    , salak
     , scientific
     , text
     , time

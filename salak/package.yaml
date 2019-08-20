@@ -7,23 +7,23 @@ extra-source-files:
 
 dependencies:
   - base >= 4.10 && < 5
-  - text
   - bytestring
-  - scientific
-  - time
-  - mtl
-  - megaparsec
-  - data-default
-  - filepath
-  - directory
-  - menshen
-  - unliftio-core
-  - heaps
-  - hashable
-  - unordered-containers
   - containers
-  - exceptions
+  - data-default
+  - directory
   - dlist
+  - exceptions
+  - filepath
+  - hashable
+  - heaps
+  - megaparsec
+  - menshen
+  - mtl
+  - scientific
+  - text
+  - time
+  - unliftio-core
+  - unordered-containers
 
 library:
   source-dirs: src
@@ -43,10 +43,10 @@ benchmarks:
     main: SalakBench.hs
     source-dirs:
       - bench
-      - src
     ghc-options: -main-is SalakBench.main -rtsopts -threaded -with-rtsopts=-K1K
     dependencies:
       - criterion
+      - salak
 
 tests:
   salak-spec:
