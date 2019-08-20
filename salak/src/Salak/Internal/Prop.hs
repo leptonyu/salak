@@ -35,7 +35,7 @@ import           Data.Menshen
 import           Data.Scientific
 import           Data.Semigroup
 import qualified Data.Set                as S
-import           Data.Text               (Text, unpack)
+import           Data.Text               (Text)
 import qualified Data.Text               as T
 import qualified Data.Text.Encoding      as TB
 import qualified Data.Text.Lazy          as TL
@@ -64,13 +64,13 @@ class Monad m => MonadSalak m where
   askReload = reload <$> askSourcePack
 
   {-# INLINE setLogF #-}
-  setLogF :: MonadIO m => (String -> IO ()) -> m ()
+  setLogF :: MonadIO m => (Text -> IO ()) -> m ()
   setLogF f = do
     SourcePack{..} <- askSourcePack
     liftIO $ void $ swapMVar lref f
 
   {-# INLINE logSalak #-}
-  logSalak :: MonadIO m => String -> m ()
+  logSalak :: MonadIO m => Text -> m ()
   logSalak msg = do
     SourcePack{..} <- askSourcePack
     liftIO $ readMVar lref >>= ($ msg)
@@ -84,12 +84,15 @@ class Monad m => MonadSalak m where
   --
   -- `require` supports parse `IO` values, which actually wrap a 'MVar' variable and can be reseted by reloading configurations.
   -- Normal value will not be affected by reloading configurations.
-  require :: (MonadThrow m, FromProp m a) => Text -> m a
+  require :: (MonadThrow m, MonadIO m, FromProp m a) => Text -> m a
   require ks = do
-    s <- askSourcePack
+    s@SourcePack{..} <- askSourcePack
     runProp s $ case toKeys ks of
-      Left  e -> failKey (unpack ks) (PropException e)
-      Right k -> withKeys k fromProp
+      Left  e -> failKey ks (PropException e)
+      Right k -> do
+        let msg = showKey $ pref <> singletonKey (KT ks)
+        liftIO $ readMVar lref >>= ($ msg)
+        withKeys k fromProp
 
 instance Monad m => MonadSalak (ReaderT SourcePack m) where
   {-# INLINE askSourcePack #-}
@@ -131,23 +134,18 @@ data SalakException
 instance Exception SalakException
 
 {-# INLINE failKey #-}
-failKey :: Monad m => String -> SalakException -> Prop m a
+failKey :: Monad m => Text -> SalakException -> Prop m a
 failKey ks e = do
   SourcePack{..} <- ask
   throwM
-    $ SalakException (go (show pref) ks)
+    $ SalakException (show $ pref <> singletonKey (KT ks))
     $ toException e
-  where
-    {-# INLINE go #-}
-    go "" a = a
-    go a "" = a
-    go a  b = a <> "." <> b
 
 -- | Automatic convert literal string into an instance of `Prop` @m@ @a@.
 instance (Monad m, FromProp m a) => IsString (Prop m a) where
   {-# INLINE fromString #-}
   fromString ks = case toKeys ks of
-    Left  e -> failKey ks (PropException e)
+    Left  e -> failKey (fromString ks) (PropException e)
     Right k -> withKeys k fromProp
 
 

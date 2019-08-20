@@ -7,6 +7,7 @@ import           Control.Concurrent.MVar
 import           Data.HashMap.Strict     (HashMap)
 import qualified Data.HashMap.Strict     as HM
 import qualified Data.Set                as S
+import           Data.Text               (Text)
 import           Salak.Internal.Key
 import           Salak.Internal.Val
 import qualified Salak.Trie              as T
@@ -23,7 +24,7 @@ data ReloadResult = ReloadResult
 
 type QFunc = Source -> Either String (IO ())
 
-type LFunc = String -> IO ()
+type LFunc = Text -> IO ()
 
 data SourcePack = SourcePack
   { source :: !Source
@@ -57,7 +58,9 @@ extract o t =
   , diff t1 o
   , concatMap (\(k,v)-> fmap (k++) v) list)
   where
+    {-# INLINE t1 #-}
     t1   = fmap snd t
+    {-# INLINE list #-}
     list = fmap (\(k,v)->(show k,v)) $ T.toList $ fmap fst t
 
 gen :: (Foldable f, ToKeys k, ToValue v) => Int -> f (k,v) -> TraceSource

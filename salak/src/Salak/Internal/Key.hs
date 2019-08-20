@@ -10,6 +10,7 @@ module Salak.Internal.Key(
   , singletonKey
   , fromKeys
   , toKeyList
+  , showKey
   , ToKeys(..)
   , isNum
   , isStr
@@ -19,7 +20,6 @@ module Salak.Internal.Key(
 
 import qualified Data.DList                 as D
 import           Data.Hashable
-import           Data.List                  (intercalate)
 import           Data.String
 import           Data.Text                  (Text)
 import qualified Data.Text                  as T
@@ -75,12 +75,24 @@ instance Monoid Keys where
 
 instance Show Keys where
   {-# INLINE show #-}
-  show = intercalate "." . go . toKeyList
-    where
-      {-# INLINE go #-}
-      go (a@(KT _):cs) = let (b,c) = break isStr cs in (show a ++ concat (show <$> b)) : go c
-      go (a:cs)          = show a : go cs
-      go []              = []
+  show = T.unpack . showKey
+
+{-# INLINE showKey #-}
+showKey :: Keys -> Text
+showKey = T.intercalate "." . go . toKeyList
+  where
+    {-# INLINE go #-}
+    go (KT a : as) = let (b,cs) = break isStr as in a <> g2 b : go cs
+    go (a:as)      = let (b,cs) = break isStr as in g2 (a:b)  : go cs
+    go []          = []
+    {-# INLINE g2 #-}
+    g2 = T.concat . fmap g3
+    {-# INLINE g3 #-}
+    g3 (KI a) = "[" <> fromString (show a) <> "]"
+    g3 (KT a) = a
+
+    -- go (KI a) = "[" <> fromString (show a) <> "]"
+
 
 isStr :: Key -> Bool
 isStr (KT _) = True

@@ -69,6 +69,7 @@ import           Data.HashMap.Strict     (HashMap)
 import qualified Data.HashMap.Strict     as HM
 import           Data.Maybe
 import qualified Data.Set                as S
+import           Data.String
 import           Data.Text               (Text, pack)
 import qualified Data.Text               as TT
 import           Salak.Internal.Key
@@ -137,7 +138,7 @@ instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (RunSalakT m) wh
 -- | Basic loader
 loadTrie :: (MonadThrow m, MonadIO m) => Bool -> String -> (Int -> IO TraceSource) -> LoadSalakT m ()
 loadTrie !canReload !name f = do
-  logSalak $ "Loading " ++ (if canReload then "[reloadable]" else "") ++ name
+  logSalak $ "Loading " <> (if canReload then "[reloadable]" else "") <> fromString name
   UpdateSource{..} <- MS.get
   (MS.put=<<) $ liftIO $ do
     v  <- readMVar ref
@@ -147,7 +148,7 @@ loadTrie !canReload !name f = do
       then do
         modifyMVar_ update $ go ts refNo
         _ <- swapMVar ref t
-        return $ UpdateSource ref (refNo + 1) (HM.insert refNo name refMap) lfunc qfunc update
+        return $ UpdateSource{ refNo = refNo + 1, refMap = HM.insert refNo name refMap, .. }
       else throwM $ PropException $ unlines es
   where
     {-# INLINE go #-}
@@ -173,7 +174,7 @@ load :: (MonadThrow m, MonadIO m) => LoadSalakT m () -> m SourcePack
 load lm = do
   us <- liftIO $ do
     r <- newMVar T.empty
-    q <- newMVar $ \s -> Right $ void $ swapMVar r s
+    q <- newMVar $ Right . void . swapMVar r
     u <- newMVar $ return (T.empty, return ())
     l <- newMVar $ \_ -> return ()
     return $ UpdateSource r 0 HM.empty l q u
@@ -239,5 +240,5 @@ tryLoadFile f file = do
   b <- liftIO $ doesFileExist file
   if b
     then f file
-    else logSalak $ "File does not exist, ignore load " ++ file
+    else logSalak $ "File does not exist, ignore load " <> fromString file
 
