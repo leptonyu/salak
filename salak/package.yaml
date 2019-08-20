@@ -38,22 +38,23 @@ library:
     - Salak.Internal.Prop
     - Salak.Internal.Writable
 
-
 benchmarks:
-  bench:
+  salak-bench:
     main: SalakBench.hs
     source-dirs:
-      - src
       - bench
+      - src
+    ghc-options: -main-is SalakBench.main -rtsopts -threaded -with-rtsopts=-K1K
     dependencies:
       - criterion
 
 tests:
-  spec:
+  salak-spec:
     main: SalakSpec.hs
     source-dirs:
       - test
       - src
+    ghc-options: -main-is SalakSpec.main -rtsopts -threaded -with-rtsopts=-K1K
     dependencies:
       - hspec == 2.*
       - QuickCheck < 2.14

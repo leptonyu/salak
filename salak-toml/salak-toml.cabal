@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dbe8256a1bc331a33e0801b619eea4e0b288dc4844ed5935e8fd00cc3aa80ab2
+-- hash: 7f2a1dfeaeb9f8b7e638a76234ae9d5284c10330eb07531ba9f20e77325ca1c3
 
 name:           salak-toml
 version:        0.3.4.1
@@ -28,7 +28,7 @@ library
       Paths_salak_toml
   hs-source-dirs:
       src
-  default-extensions: RecordWildCards TupleSections OverloadedStrings ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
+  default-extensions: RecordWildCards TupleSections OverloadedStrings NoOverloadedLists ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       base >=4.10 && <5
@@ -39,23 +39,44 @@ library
     , unordered-containers
   default-language: Haskell2010
 
-test-suite spec
+test-suite salak-toml-spec
   type: exitcode-stdio-1.0
-  main-is: Spec.hs
+  main-is: SalakTomlSpec.hs
   other-modules:
       Salak.Toml
       Paths_salak_toml
   hs-source-dirs:
       test
       src
-  default-extensions: RecordWildCards TupleSections OverloadedStrings ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
-  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
+  default-extensions: RecordWildCards TupleSections OverloadedStrings NoOverloadedLists ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -main-is SalakTomlSpec.main
   build-depends:
       QuickCheck <2.14
     , base >=4.10 && <5
     , exceptions
     , hspec ==2.*
     , mtl
+    , salak
+    , text
+    , time
+    , tomland >=1.0 && <1.2
+    , unordered-containers
+  default-language: Haskell2010
+
+benchmark salak-toml-bench
+  type: exitcode-stdio-1.0
+  main-is: SalakTomlBench.hs
+  other-modules:
+      Salak.Toml
+      Paths_salak_toml
+  hs-source-dirs:
+      bench
+      src
+  default-extensions: RecordWildCards TupleSections OverloadedStrings NoOverloadedLists ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -main-is SalakTomlBench.main -rtsopts -threaded -with-rtsopts=-K1K
+  build-depends:
+      base >=4.10 && <5
+    , criterion
     , salak
     , text
     , time

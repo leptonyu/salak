@@ -18,12 +18,23 @@ library:
   exposed-modules:
     - Salak.Yaml
 
+benchmarks:
+  salak-yaml-bench:
+    main: SalakYamlBench.hs
+    source-dirs:
+      - bench
+      - src
+    ghc-options: -main-is SalakYamlBench.main -rtsopts -threaded -with-rtsopts=-K1K
+    dependencies:
+      - criterion
+
 tests:
-  spec:
-    main: Spec.hs
+  salak-yaml-spec:
+    main: SalakYamlSpec.hs
     source-dirs:
       - test
       - src
+    ghc-options: -main-is SalakYamlSpec.main
     dependencies:
       - hspec == 2.*
       - QuickCheck < 2.14

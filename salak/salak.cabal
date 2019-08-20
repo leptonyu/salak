@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6f044ee0fc72f77356fc9d72ef8c5ec198698df2fabcec8d9c2cfcb2bb86a094
+-- hash: 55a71cfd2dca2c91cef12bd2167120d49b02edddd71b80da3e073c04c5876405
 
 name:           salak
 version:        0.3.4.1
@@ -33,7 +33,7 @@ library
       Salak.Internal.Writable
   hs-source-dirs:
       src
-  default-extensions: RecordWildCards TupleSections OverloadedStrings ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
+  default-extensions: RecordWildCards TupleSections OverloadedStrings NoOverloadedLists ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       base >=4.10 && <5
@@ -56,7 +56,7 @@ library
     , unordered-containers
   default-language: Haskell2010
 
-test-suite spec
+test-suite salak-spec
   type: exitcode-stdio-1.0
   main-is: SalakSpec.hs
   other-modules:
@@ -76,8 +76,8 @@ test-suite spec
   hs-source-dirs:
       test
       src
-  default-extensions: RecordWildCards TupleSections OverloadedStrings ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
-  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
+  default-extensions: RecordWildCards TupleSections OverloadedStrings NoOverloadedLists ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -main-is SalakSpec.main -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
       QuickCheck <2.14
     , base >=4.10 && <5
@@ -103,7 +103,7 @@ test-suite spec
   default-language: Haskell2010
   build-tool-depends: hspec-discover:hspec-discover
 
-benchmark bench
+benchmark salak-bench
   type: exitcode-stdio-1.0
   main-is: SalakBench.hs
   other-modules:
@@ -117,10 +117,10 @@ benchmark bench
       Salak.Trie
       Paths_salak
   hs-source-dirs:
-      src
       bench
-  default-extensions: RecordWildCards TupleSections OverloadedStrings ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
-  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
+      src
+  default-extensions: RecordWildCards TupleSections OverloadedStrings NoOverloadedLists ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -main-is SalakBench.main -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
       base >=4.10 && <5
     , bytestring

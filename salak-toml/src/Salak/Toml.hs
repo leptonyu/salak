@@ -6,7 +6,7 @@
 -- |
 -- Module:      Salak.Toml
 -- Copyright:   (c) 2019 Daniel YU
--- License:     BSD3
+-- License:     MIT
 -- Maintainer:  leptonyu@gmail.com
 -- Stability:   experimental
 -- Portability: portable

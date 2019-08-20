@@ -20,12 +20,24 @@ library:
   exposed-modules:
     - Salak.Toml
     # - Salak.HToml
+
+benchmarks:
+  salak-toml-bench:
+    main: SalakTomlBench.hs
+    source-dirs:
+      - bench
+      - src
+    ghc-options: -main-is SalakTomlBench.main -rtsopts -threaded -with-rtsopts=-K1K
+    dependencies:
+      - criterion
+
 tests:
-  spec:
-    main: Spec.hs
+  salak-toml-spec:
+    main: SalakTomlSpec.hs
     source-dirs:
       - test
       - src
+    ghc-options: -main-is SalakTomlSpec.main
     dependencies:
       - hspec == 2.*
       - QuickCheck < 2.14

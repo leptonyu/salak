@@ -7,7 +7,7 @@
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 
-module Main where
+module SalakYamlSpec where
 
 import           Control.Monad.Reader
 import           Data.List            (intercalate)
@@ -60,12 +60,12 @@ jsonProperty :: SpecWith ()
 jsonProperty = do
   context "load json" $ do
     it "salak.yml" $ do
-      loadAndRunSalak (loadYaml "test/salak.yml") $ do
+      loadAndRunSalak (loadYaml "salak.yml") $ do
         SourcePack{..}  <- ask
         as <- trace (show source) $ require "array"
         cf <- require "me.icymint.conf"
         lift $ do
-          as      `shouldBe` ["a","b","d","c" :: String]
+          as      `shouldBe` (["a","b","d","c"] :: [String])
           name cf `shouldBe` "daniel"
           age  cf `shouldBe` 18
           male cf `shouldBe` True

@@ -7,7 +7,7 @@
 {-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 
-module Main where
+module SalakTomlSpec where
 
 import           Control.Monad.Reader
 import           Data.List            (intercalate)
@@ -59,7 +59,7 @@ tomlProperty :: SpecWith ()
 tomlProperty = do
   context "load toml" $ do
     it "salak.toml" $ do
-      loadAndRunSalak (loadToml "test/salak.toml") $ do
+      loadAndRunSalak (loadToml "salak.toml") $ do
         SourcePack{..}  <- ask
         cf <- require "me.icymint.conf"
         lift $ do

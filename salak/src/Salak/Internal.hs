@@ -14,7 +14,7 @@
 -- |
 -- Module:      Salak.Internal
 -- Copyright:   2019 Daniel YU
--- License:     BSD3
+-- License:     MIT
 -- Maintainer:  leptonyu@gmail.com
 -- Stability:   experimental
 -- Portability: portable
@@ -63,6 +63,7 @@ import           Control.Monad.IO.Class  (MonadIO, liftIO)
 import qualified Control.Monad.IO.Unlift as IU
 import           Control.Monad.Reader
 import qualified Control.Monad.State     as MS
+import           Data.Char               (toLower)
 import           Data.HashMap.Strict     (HashMap)
 import qualified Data.HashMap.Strict     as HM
 import           Data.Maybe
@@ -210,7 +211,7 @@ loadEnv = loadList False "environment" go
       Left  _ -> VR [VRT v]
       Right x -> x
     {-# INLINE convert #-}
-    convert = TT.toLower . TT.pack . map (\c -> if c == '_' then '.' else c)
+    convert = TT.pack . map (\c -> if c == '_' then '.' else toLower c)
 
 -- | Convert arguments to properties
 type ParseCommandLine = [String] -> IO [(Text, Text)]

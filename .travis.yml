@@ -22,4 +22,4 @@ script:
  - cabal v2-update
  - cabal v2-build all
  - cabal v2-test --enable-test all
- - cabal v2-bench --enable-benchmarks salak
+ - cabal v2-bench --enable-benchmarks all
