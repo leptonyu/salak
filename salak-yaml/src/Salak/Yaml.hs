@@ -42,14 +42,17 @@ instance HasLoad YAML where
 loadYAML :: MonadIO m => Int -> TraceSource -> ConduitM MarkedEvent o m TraceSource
 loadYAML i = start
   where
+    {-# INLINE start #-}
     start ts = await >>= maybe (return ts) (go ts)
 
+    {-# INLINE go #-}
     go _  (MarkedEvent (EventAlias a) _ ee)       = ge ee $ "alias " ++ a ++ " not supported by salak"
     go ts (MarkedEvent (EventScalar a _ _ _) _ _) = return $ setVal i a ts
     go ts (MarkedEvent EventSequenceStart{}  _ _) = goS 0 ts
     go ts (MarkedEvent EventMappingStart{}   _ _) = goM ts
     go ts  _                                      = start ts
 
+    {-# INLINE goS #-}
     goS j ts = do
       v <- await
       case v of
@@ -59,6 +62,7 @@ loadYAML i = start
           val <- go T.empty e
           goS (j+1) (T.modify (KI j) (const val) ts)
 
+    {-# INLINE goM #-}
     goM ts = do
       v <- await
       case v of
@@ -68,5 +72,7 @@ loadYAML i = start
                 val <- start T.empty
                 goM $ T.modify' (simpleKeys $ decodeUtf8 a) (const val) ts
         Just e -> ge (yamlStartMark e) ("suppose scalar and mapping end, but is " ++ show (yamlEvent e))
+
+    {-# INLINE ge #-}
     ge YamlMark{..} e = liftIO $ throwIO $ YamlException $ "(" ++ show yamlLine ++ "," ++ show yamlColumn ++ ")" ++ e
 

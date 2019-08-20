@@ -21,6 +21,7 @@ module Salak.Toml(
 
 import           Control.Exception   (Exception, throwIO)
 import qualified Data.HashMap.Strict as HM
+import           Data.List           (foldl')
 import qualified Data.List.NonEmpty  as N
 import           Data.Text           (Text)
 import qualified Data.Text.IO        as IO
@@ -41,9 +42,11 @@ data TOML = TOML
 instance HasLoad TOML where
   loaders _ = (, loadToml) <$> ["toml", "tml"]
 
+{-# INLINE toSs #-}
 toSs :: T.Key -> Keys
 toSs (T.Key ps) = fromKeys $ toS <$> N.toList ps
 
+{-# INLINE toS #-}
 toS :: Piece -> Key
 toS = KT . unPiece
 
@@ -53,28 +56,31 @@ loadTOML i T.TOML{..}
   . foldTables      tomlTables
   . foldTableArrays tomlTableArrays
   where
-    foldToml go p t = HM.foldlWithKey' go t p
-    foldPairs       = foldToml (\s k v -> TR.modify' (toSs k) (insertAnyValue i v) s)
-    foldTableArrays = foldToml (\s _ v -> foldArray (N.toList v) (loadTOML i) s)
+    {-# INLINE foldToml #-}
+    foldToml = flip . HM.foldlWithKey'
+    {-# INLINE foldPairs #-}
+    foldPairs       = foldToml (\s k v -> TR.modify' (toSs k) (insertAnyValue v) s)
+    {-# INLINE foldTableArrays #-}
+    foldTableArrays = foldToml (\s _ v -> foldArray (loadTOML i) (N.toList v) s)
+    {-# INLINE foldTables #-}
     foldTables      = foldToml (\s _ v -> go v s)
-      where
-        go (Leaf   k toml)    = TR.modify' (toSs k) (loadTOML i toml)
-        go (Branch k v tomap) = TR.modify' (toSs k) (foldTables tomap) . maybe id (loadTOML i) v
-insertAnyValue :: Int -> AnyValue -> TraceSource -> TraceSource
-insertAnyValue i (AnyValue (Array   b))             ts = foldArray b (insertAnyValue i . AnyValue) ts
-insertAnyValue i (AnyValue (Bool    b))             ts = setVal i (VB  b) ts
-insertAnyValue i (AnyValue (Integer b))             ts = setVal i (VI $ fromIntegral b) ts
-insertAnyValue i (AnyValue (Double  b))             ts = setVal i (VI $ realToFrac   b) ts
-insertAnyValue i (AnyValue (Text    b))             ts = setVal i (VT  b) ts
-insertAnyValue i (AnyValue (Local   b))             ts = setVal i (VLT b) ts
-insertAnyValue i (AnyValue (Day     b))             ts = setVal i (VD  b) ts
-insertAnyValue i (AnyValue (Hours   b))             ts = setVal i (VH  b) ts
-insertAnyValue i (AnyValue (Zoned (ZonedTime a b))) ts = setVal i (VZT b a) ts
-
-foldArray :: [a] -> (a -> TraceSource -> TraceSource) -> TraceSource -> TraceSource
-foldArray as f ts = foldl go ts $ zip [0..] as
-  where
-    go t (i, a) = TR.modify (KI i) (f a) t
+    {-# INLINE go #-}
+    go (Leaf   k   toml)  = TR.modify' (toSs k) (loadTOML i toml)
+    go (Branch k v tomap) = TR.modify' (toSs k) (foldTables tomap) . maybe id (loadTOML i) v
+    {-# INLINE insertAnyValue #-}
+    insertAnyValue :: AnyValue -> TraceSource -> TraceSource
+    insertAnyValue (AnyValue (Array   b))             = foldArray (insertAnyValue . AnyValue) b
+    insertAnyValue (AnyValue (Bool    b))             = setVal i (VB  b)
+    insertAnyValue (AnyValue (Integer b))             = setVal i (VI $ fromIntegral b)
+    insertAnyValue (AnyValue (Double  b))             = setVal i (VI $ realToFrac   b)
+    insertAnyValue (AnyValue (Text    b))             = setVal i (VT  b)
+    insertAnyValue (AnyValue (Local   b))             = setVal i (VLT b)
+    insertAnyValue (AnyValue (Day     b))             = setVal i (VD  b)
+    insertAnyValue (AnyValue (Hours   b))             = setVal i (VH  b)
+    insertAnyValue (AnyValue (Zoned (ZonedTime a b))) = setVal i (VZT b a)
+    {-# INLINE foldArray #-}
+    foldArray :: (a -> TraceSource -> TraceSource) -> [a] -> TraceSource -> TraceSource
+    foldArray f = flip (foldl' (\t (j,a) -> TR.modify (KI j) (f a) t)) . zip [0..]
 
 newtype TomlException = TomlException Text deriving Show
 

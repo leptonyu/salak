@@ -90,10 +90,7 @@ data UpdateSource = UpdateSource
 
 -- | Configuration Loader Monad, used for load properties from sources. Custom loaders using `loadTrie`
 newtype LoadSalakT m a = LoadSalakT (MS.StateT UpdateSource m a)
-  deriving (Functor, Applicative, Monad, MonadTrans, MS.MonadState UpdateSource, MonadThrow, MonadCatch)
-
-instance MonadIO m => MonadIO (LoadSalakT m) where
-  liftIO = LoadSalakT . lift . liftIO
+  deriving (Functor, Applicative, Monad, MonadIO, MonadTrans, MS.MonadState UpdateSource, MonadThrow, MonadCatch)
 
 -- | Simple IO Monad
 type LoadSalak = LoadSalakT IO
