@@ -41,7 +41,7 @@ library:
 
 benchmarks:
   bench:
-    main: Bench.hs
+    main: SalakBench.hs
     source-dirs:
       - src
       - bench
@@ -50,7 +50,7 @@ benchmarks:
 
 tests:
   spec:
-    main: Spec.hs
+    main: SalakSpec.hs
     source-dirs:
       - test
       - src
