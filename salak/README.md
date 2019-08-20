@@ -18,7 +18,7 @@ This library defines a universal procedure to load configurations and parse prop
 
 ## Parse Functions
 
-`HasSalak` monad provide a unified function `require` to parse properties. Here are some examples.
+`MonadSalak` monad provide a unified function `require` to parse properties. Here are some examples.
 
 ```Haskell
 a :: Bool              <- require "bool.key"

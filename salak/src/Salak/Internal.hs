@@ -108,9 +108,7 @@ instance MonadIO m => MonadSalak (LoadSalakT m) where
     liftIO $ void $ swapMVar lfunc f
   logSalak msg = do
     UpdateSource{..} <- MS.get
-    liftIO $ do
-      f <- readMVar lfunc
-      f msg
+    liftIO $ readMVar lfunc >>= ($ msg)
 
 instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (LoadSalakT m) where
   askUnliftIO = do
@@ -140,7 +138,7 @@ loadTrie :: (MonadThrow m, MonadIO m) => Bool -> String -> (Int -> IO TraceSourc
 loadTrie canReload name f = do
   logSalak $ "Loading " ++ (if canReload then "[reloadable]" else "") ++ name
   UpdateSource{..} <- MS.get
-  nut  <- liftIO $ do
+  (MS.put=<<) $ liftIO $ do
     v  <- readMVar ref
     ts <- loadSource f refNo (fmap ([],) v)
     let (t,_,es) = extract v ts
@@ -150,7 +148,6 @@ loadTrie canReload name f = do
         _ <- swapMVar ref t
         return $ UpdateSource ref (refNo + 1) (HM.insert refNo name refMap) lfunc qfunc update
       else throwM $ PropException $ unlines es
-  MS.put nut
   where
     {-# INLINE go #-}
     go ts n ud = return $ do
@@ -178,16 +175,17 @@ load lm = do
   runLoad (lm >> MS.get) us >>= toSourcePack
 
 toSourcePack :: MonadIO m => UpdateSource -> m SourcePack
-toSourcePack UpdateSource{..} = liftIO (readMVar ref) >>= \s -> return $ SourcePack s s S.empty mempty qfunc lfunc go
-  where
-    {-# INLINE go #-}
-    go = do
+toSourcePack UpdateSource{..} = liftIO $ do
+  s <- readMVar ref
+  return 
+    $ SourcePack s s S.empty mempty qfunc lfunc
+    $ do
       t        <- readMVar ref
       (ts, ac) <- join $ readMVar update
-      let (s,cs,es) = extract t ts
+      let (t1,cs,es) = extract t ts
       f <- readMVar qfunc
       if null es
-        then case f s of
+        then case f t1 of
           Left  e -> return (ReloadResult True $ lines e)
           Right a -> ac >> a >> return (ReloadResult False $ lines $ show cs)
         else return (ReloadResult True es)

@@ -71,9 +71,7 @@ class Monad m => MonadSalak m where
   logSalak :: MonadIO m => String -> m ()
   logSalak msg = do
     SourcePack{..} <- askSourcePack
-    liftIO $ do
-      f <- readMVar lref
-      f msg
+    liftIO $ readMVar lref >>= ($ msg)
 
   -- | Parse properties using `FromProp`. For example:
   --
