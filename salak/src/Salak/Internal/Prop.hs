@@ -45,6 +45,7 @@ import           Data.Word
 import           Foreign.C
 import           GHC.Exts
 import           GHC.Generics
+import           GHC.Stack
 import           Salak.Internal.Key
 import           Salak.Internal.Source
 import           Salak.Internal.Val
@@ -64,16 +65,16 @@ class Monad m => MonadSalak m where
   askReload = reload <$> askSourcePack
 
   {-# INLINE setLogF #-}
-  setLogF :: MonadIO m => (Text -> IO ()) -> m ()
+  setLogF :: MonadIO m => (CallStack -> Text -> IO ()) -> m ()
   setLogF f = do
     SourcePack{..} <- askSourcePack
     liftIO $ void $ swapMVar lref f
 
   {-# INLINE logSalak #-}
-  logSalak :: MonadIO m => Text -> m ()
+  logSalak :: (HasCallStack, MonadIO m) => Text -> m ()
   logSalak msg = do
     SourcePack{..} <- askSourcePack
-    liftIO $ readMVar lref >>= ($ msg)
+    liftIO $ readMVar lref >>= \lf -> lf callStack msg
 
   -- | Parse properties using `FromProp`. For example:
   --
@@ -301,10 +302,10 @@ instance Monad m => HasValid (Prop m) where
   invalid = Control.Monad.Fail.fail . toI18n
 
 {-# INLINE readPrimitive' #-}
-readPrimitive' :: MonadIO m => (Value -> Either String a) -> Prop m (Maybe a)
+readPrimitive' :: (HasCallStack, MonadIO m) => (Value -> Either String a) -> Prop m (Maybe a)
 readPrimitive' f = do
   SourcePack{..} <- ask
-  liftIO $ readMVar lref >>= \lf -> lf (showKey pref)
+  liftIO $ readMVar lref >>= \lf -> lf callStack (showKey pref)
   let {-# INLINE go #-}
       go [VRT t]        = return t
       go (VRT t   : as) = (t <>) <$> go as

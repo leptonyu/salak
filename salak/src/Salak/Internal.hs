@@ -72,6 +72,7 @@ import qualified Data.Set                as S
 import           Data.String
 import           Data.Text               (Text, pack)
 import qualified Data.Text               as TT
+import           GHC.Stack
 import           Salak.Internal.Key
 import           Salak.Internal.Prop
 import           Salak.Internal.Source
@@ -113,7 +114,7 @@ instance MonadIO m => MonadSalak (LoadSalakT m) where
     liftIO $ void $ swapMVar lfunc f
   logSalak msg = do
     UpdateSource{..} <- MS.get
-    liftIO $ readMVar lfunc >>= ($ msg)
+    liftIO $ readMVar lfunc >>= \lf -> lf callStack msg
 
 instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (LoadSalakT m) where
   askUnliftIO = do
@@ -176,7 +177,7 @@ load lm = do
     r <- newMVar T.empty
     q <- newMVar $ return . void . swapMVar r
     u <- newMVar $ return (T.empty, return ())
-    l <- newMVar $ \_ -> return ()
+    l <- newMVar $ \_ _ -> return ()
     return $ UpdateSource r 0 HM.empty l q u
   runLoad (lm >> MS.get) us >>= toSourcePack
 

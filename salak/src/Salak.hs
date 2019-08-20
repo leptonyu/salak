@@ -100,7 +100,7 @@ instance Default PropConfig where
     True
     False
     defaultParseCommandLine
-    (\_ -> return ())
+    (\_ _ -> return ())
     (\_ -> return ())
 
 data FileConfig = FileConfig

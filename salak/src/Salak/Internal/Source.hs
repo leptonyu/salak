@@ -8,6 +8,7 @@ import           Data.HashMap.Strict     (HashMap)
 import qualified Data.HashMap.Strict     as HM
 import qualified Data.Set                as S
 import           Data.Text               (Text)
+import           GHC.Stack               (CallStack)
 import           Salak.Internal.Key
 import           Salak.Internal.Val
 import qualified Salak.Trie              as T
@@ -24,7 +25,7 @@ data ReloadResult = ReloadResult
 
 type QFunc = Source -> IO (IO ())
 
-type LFunc = Text -> IO ()
+type LFunc = CallStack -> Text -> IO ()
 
 data SourcePack = SourcePack
   { source :: !Source
