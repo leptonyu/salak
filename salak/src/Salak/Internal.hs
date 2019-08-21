@@ -117,6 +117,7 @@ instance MonadIO m => MonadSalak (LoadSalakT m) where
     liftIO $ readMVar lfunc >>= \lf -> lf callStack msg
 
 instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (LoadSalakT m) where
+  {-# INLINE askUnliftIO #-}
   askUnliftIO = do
     ut <- MS.get
     lift $ IU.withUnliftIO $ \u -> return (IU.UnliftIO (IU.unliftIO u . flip runLoad ut))
@@ -129,9 +130,11 @@ newtype RunSalakT m a = RunSalakT { runSalakT :: ReaderT SourcePack m a }
 type RunSalak = RunSalakT IO
 
 instance MonadIO m => MonadSalak (RunSalakT m) where
+  {-# INLINE askSourcePack #-}
   askSourcePack = ask
 
 instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (RunSalakT m) where
+  {-# INLINE askUnliftIO #-}
   askUnliftIO = do
     ut <- ask
     lift $ IU.withUnliftIO $ \u -> return (IU.UnliftIO (IU.unliftIO u . flip runReaderT ut . runSalakT))

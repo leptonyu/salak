@@ -10,6 +10,7 @@ import qualified Salak.Trie            as T
 import           System.Random         (randomIO)
 import           Test.Hspec
 import           Test.QuickCheck
+import           Control.Concurrent.MVar
 
 
 data Config = Config
@@ -46,7 +47,7 @@ spec = do
       length c `shouldBe` 0
       length (T.toList b) `shouldBe` 1
   context "Reload test" $ do
-    it "reload" $ do
+    it "reload - random" $ do
       loadAndRunSalak (loadRandom "hello") $ do
         Hello{..}  <- require ""
         Config{..} <- require ""
@@ -64,3 +65,40 @@ spec = do
           x  `shouldNotBe` y
           q2 <- level
           q1 `shouldBe` q2
+    it "reload - error" $ do
+      io <- newMVar [("hello", "10")]
+      loadAndRunSalak (loadList True "test" (readMVar io :: IO [(Text, Text)])) $ do
+        vio <- require "hello"
+        rl  <- askReload
+        lift $ do
+          v <- vio :: IO Int
+          v `shouldBe` 10
+        lift $ do
+          void $ swapMVar io [("hello", "text")]
+          ReloadResult{..} <- rl
+          hasError `shouldBe` True
+          v <- vio
+          v `shouldBe` 10
+        lift $ do
+          void $ swapMVar io [("hello", "5")]
+          ReloadResult{..} <- rl
+          hasError `shouldBe` False
+          msgs `shouldBe` ["hello:Mod"]
+          v <- vio
+          v `shouldBe` 5
+        lift $ do
+          void $ swapMVar io []
+          ReloadResult{..} <- rl
+          hasError `shouldBe` False
+          msgs `shouldBe` ["hello:Del"]
+          v <- vio
+          v `shouldBe` 10
+        lift $ do
+          void $ swapMVar io [("hello", "8")]
+          ReloadResult{..} <- rl
+          hasError `shouldBe` False
+          msgs `shouldBe` ["hello:Add"]
+          v <- vio
+          v `shouldBe` 8
+
+

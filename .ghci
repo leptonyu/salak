@@ -1,1 +1,2 @@
 :load SalakSpec SalakBench SalakYamlSpec SalakYamlBench SalakTomlSpec SalakTomlBench
+test = SalakSpec.main >> SalakBench.main

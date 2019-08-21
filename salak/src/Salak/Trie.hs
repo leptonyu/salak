@@ -61,6 +61,7 @@ data Trie v = Trie
   } deriving (Eq, Functor)
 
 instance Show v => Show (Trie v) where
+  {-# INLINE show #-}
   show t = intercalate "\n" $ map (\(k,v)-> show k ++ ":" ++ show v) $ Salak.Trie.toList t
 
 instance Foldable Trie where
@@ -106,7 +107,7 @@ subTrie key = fromMaybe empty . HM.lookup key . tmap
 
 {-# INLINE subTries #-}
 subTries :: Keys -> Trie v -> Trie v
-subTries = flip (foldl' $ flip subTrie) . toKeyList
+subTries = flip (foldl' (flip subTrie)) . toKeyList
 
 -- | /O(log (n+m))/. Return the primitive value to which the specified key is mapped,
 -- or Nothing if this trie contains no mapping for the key.

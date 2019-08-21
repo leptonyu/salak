@@ -99,43 +99,17 @@ instance Monad m => MonadSalak (ReaderT SourcePack m) where
 -- | Property parser, used to parse property from `Value`
 newtype Prop m a
   = Prop { unProp :: ReaderT SourcePack (ExceptT SomeException m) a }
-  deriving (Functor, Applicative, Monad, MonadReader SourcePack, MonadIO)
+  deriving (Functor, Applicative, Monad)
 
-{-# INLINE runProp #-}
-runProp :: MonadThrow m => SourcePack -> Prop m a -> m a
-runProp sp (Prop p) = do
-  v <- runExceptT (runReaderT p sp)
-  case v of
-    Left  e -> throwM e
-    Right x -> return x
+instance Monad m => MonadReader SourcePack (Prop m) where
+  {-# INLINE ask #-}
+  ask = unsafeCoerce (ask :: ReaderT SourcePack (ExceptT SomeException m) SourcePack)
+  {-# INLINE local #-}
+  local = unsafeCoerce (local :: (SourcePack -> SourcePack) -> ReaderT SourcePack m a -> ReaderT SourcePack m a)
 
-{-# INLINE withProp #-}
-withProp :: (SourcePack -> SourcePack) -> Prop m a -> Prop m a
-withProp = unsafeCoerce withReaderT
-
-{-# INLINE withKey #-}
-withKey :: Key -> Prop m a -> Prop m a
-withKey = withKeys . singletonKey
-
-{-# INLINE withKeys #-}
-withKeys :: Keys -> Prop m a -> Prop m a
-withKeys key = withProp
-  $ \SourcePack{..} ->
-     SourcePack{pref = pref <> key, source = TR.subTries key source, ..}
-
-data SalakException
-  = SalakException Keys String -- ^ Parse failed
-  | NullException Keys        -- ^ Not found
-  deriving Show
-
-instance Exception SalakException
-
-{-# INLINE failKey #-}
-failKey :: Monad m => Text -> String -> Prop m a
-failKey ks e = do
-  SourcePack{..} <- ask
-  throwM
-    $ SalakException (pref <> singletonKey (KT ks)) e
+instance MonadIO m => MonadIO (Prop m) where
+  {-# INLINE liftIO #-}
+  liftIO = lift . liftIO
 
 -- | Automatic convert literal string into an instance of `Prop` @m@ @a@.
 instance (MonadIO m, FromProp m a) => IsString (Prop m a) where
@@ -143,7 +117,6 @@ instance (MonadIO m, FromProp m a) => IsString (Prop m a) where
   fromString ks = case toKeys ks of
     Left  e -> failKey (fromString ks) e
     Right k -> withKeys k fromProp
-
 
 instance MonadTrans Prop where
   {-# INLINE lift #-}
@@ -181,6 +154,45 @@ instance Monad m => MonadCatch (Prop m) where
 instance Monad m => MonadFail (Prop m) where
   {-# INLINE fail #-}
   fail = failKey ""
+
+
+{-# INLINE runProp #-}
+runProp :: MonadThrow m => SourcePack -> Prop m a -> m a
+runProp sp (Prop p) = do
+  v <- runExceptT (runReaderT p sp)
+  case v of
+    Left  e -> throwM e
+    Right x -> return x
+
+{-# INLINE withProp #-}
+withProp :: (SourcePack -> SourcePack) -> Prop m a -> Prop m a
+withProp = unsafeCoerce withReaderT
+
+{-# INLINE withKey #-}
+withKey :: Key -> Prop m a -> Prop m a
+withKey = withKeys . singletonKey
+
+{-# INLINE withKeys #-}
+withKeys :: Keys -> Prop m a -> Prop m a
+withKeys key = withProp
+  $ \SourcePack{..} ->
+     SourcePack{pref = pref <> key, source = TR.subTries key source, ..}
+
+-- | Exception
+data SalakException
+  = SalakException Keys String -- ^ Parse failed
+  | NullException Keys        -- ^ Not found
+  deriving Show
+
+instance Exception SalakException
+
+{-# INLINE failKey #-}
+failKey :: Monad m => Text -> String -> Prop m a
+failKey ks e = do
+  SourcePack{..} <- ask
+  throwM
+    $ SalakException (pref <> singletonKey (KT ks)) e
+
 
 -- | Type class used to parse properties.
 class FromProp m a where
@@ -305,7 +317,7 @@ instance Monad m => HasValid (Prop m) where
 readPrimitive' :: (HasCallStack, MonadIO m) => (Value -> Either String a) -> Prop m (Maybe a)
 readPrimitive' f = do
   SourcePack{..} <- ask
-  liftIO $ readMVar lref >>= \lf -> lf callStack (showKey pref)
+  liftIO $ readMVar lref >>= \lf -> lf callStack ("require: " <> showKey pref)
   let {-# INLINE go #-}
       go [VRT t]        = return t
       go (VRT t   : as) = (t <>) <$> go as

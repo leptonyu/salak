@@ -16,6 +16,7 @@ module Salak.Internal.Key(
   , isStr
   , keyExpr
   , Parser
+  , (<>)
   ) where
 
 import qualified Data.DList                 as D
