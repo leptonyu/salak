@@ -39,7 +39,7 @@ library:
     - Salak.Internal.Writable
 
 benchmarks:
-  salak-bench:
+  salak:
     main: SalakBench.hs
     source-dirs:
       - bench
@@ -49,8 +49,8 @@ benchmarks:
       - salak
 
 tests:
-  salak-spec:
-    main: SalakSpec.hs
+  salak:
+    main: Spec.hs
     source-dirs:
       - test
       - src

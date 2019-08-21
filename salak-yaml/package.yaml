@@ -19,22 +19,22 @@ library:
     - Salak.Yaml
 
 benchmarks:
-  salak-yaml-bench:
+  salak-yaml:
     main: SalakYamlBench.hs
     source-dirs:
       - bench
       - src
-    ghc-options: -main-is SalakYamlBench.main -rtsopts -threaded -with-rtsopts=-K1K
+    ghc-options: -rtsopts -threaded -with-rtsopts=-K1K
     dependencies:
       - criterion
 
 tests:
-  salak-yaml-spec:
+  salak-yaml:
     main: SalakYamlSpec.hs
     source-dirs:
       - test
       - src
-    ghc-options: -main-is SalakYamlSpec.main
+    ghc-options: -rtsopts -threaded -with-rtsopts=-K1K
     dependencies:
       - hspec == 2.*
       - QuickCheck < 2.14

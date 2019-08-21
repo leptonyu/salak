@@ -1,4 +1,4 @@
-module SalakYamlBench where
+module Main where
 
 import           Criterion.Main
 import           Salak

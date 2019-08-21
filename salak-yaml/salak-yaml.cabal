@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2474529b69e87a5c5234f66ffb3b37a8c0e739cbce6479188d73becc36a3080b
+-- hash: 4b9b55dd17d08bf36868a7fa57564ba55f9d152ed6e88e0d24ea1b290ce88ef9
 
 name:           salak-yaml
 version:        0.3.5
@@ -38,7 +38,7 @@ library
     , text
   default-language: Haskell2010
 
-test-suite salak-yaml-spec
+test-suite salak-yaml
   type: exitcode-stdio-1.0
   main-is: SalakYamlSpec.hs
   other-modules:
@@ -48,7 +48,7 @@ test-suite salak-yaml-spec
       test
       src
   default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
-  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -main-is SalakYamlSpec.main
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
       QuickCheck <2.14
     , base >=4.10 && <5
@@ -61,7 +61,7 @@ test-suite salak-yaml-spec
     , text
   default-language: Haskell2010
 
-benchmark salak-yaml-bench
+benchmark salak-yaml
   type: exitcode-stdio-1.0
   main-is: SalakYamlBench.hs
   other-modules:
@@ -71,7 +71,7 @@ benchmark salak-yaml-bench
       bench
       src
   default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
-  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -main-is SalakYamlBench.main -rtsopts -threaded -with-rtsopts=-K1K
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
       base >=4.10 && <5
     , conduit

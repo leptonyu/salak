@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4e4a8a59ade018879a56cd88f29967ca8dc80f6ae41ff4f3a602eacc9889804f
+-- hash: f527756c3997f0ce8a65b64de32abb066153d9c5eba371e1d09907b0bd0f228e
 
 name:           salak
 version:        0.3.5
@@ -56,9 +56,9 @@ library
     , unordered-containers
   default-language: Haskell2010
 
-test-suite salak-spec
+test-suite salak
   type: exitcode-stdio-1.0
-  main-is: SalakSpec.hs
+  main-is: Spec.hs
   other-modules:
       Salak.Internal.KeySpec
       Salak.Internal.PropSpec
@@ -103,7 +103,7 @@ test-suite salak-spec
   default-language: Haskell2010
   build-tool-depends: hspec-discover:hspec-discover
 
-benchmark salak-bench
+benchmark salak
   type: exitcode-stdio-1.0
   main-is: SalakBench.hs
   other-modules:

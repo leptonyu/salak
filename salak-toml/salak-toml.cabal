@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 155864267410f793ae14ed8c356906515210a85d3b91571ced688ecc0e87ae97
+-- hash: 8d6125d4425b22dc920bd9c49c6dd38f7584846ff96a301c9ed803bfb3da4d7d
 
 name:           salak-toml
 version:        0.3.5
@@ -39,7 +39,7 @@ library
     , unordered-containers
   default-language: Haskell2010
 
-test-suite salak-toml-spec
+test-suite salak-toml
   type: exitcode-stdio-1.0
   main-is: SalakTomlSpec.hs
   other-modules:
@@ -49,7 +49,7 @@ test-suite salak-toml-spec
       test
       src
   default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
-  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -main-is SalakTomlSpec.main
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
       QuickCheck <2.14
     , base >=4.10 && <5
@@ -63,7 +63,7 @@ test-suite salak-toml-spec
     , unordered-containers
   default-language: Haskell2010
 
-benchmark salak-toml-bench
+benchmark salak-toml
   type: exitcode-stdio-1.0
   main-is: SalakTomlBench.hs
   other-modules:
@@ -72,7 +72,7 @@ benchmark salak-toml-bench
       bench
       src
   default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
-  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -main-is SalakTomlBench.main -rtsopts -threaded -with-rtsopts=-K1K
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
       base >=4.10 && <5
     , criterion

@@ -1,4 +1,4 @@
-module SalakTomlBench where
+module Main where
 
 import           Criterion.Main
 import           Salak
