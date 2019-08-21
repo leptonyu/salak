@@ -1,6 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RecordWildCards  #-}
-{-# LANGUAGE TupleSections    #-}
 -- |
 -- Module:      Salak.Yaml
 -- Copyright:   (c) 2019 Daniel YU

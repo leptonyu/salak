@@ -1,8 +1,4 @@
-{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE GADTs             #-}
-{-# LANGUAGE NoOverloadedLists #-}
-{-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE TupleSections     #-}
 -- |
 -- Module:      Salak.Toml
 -- Copyright:   (c) 2019 Daniel YU

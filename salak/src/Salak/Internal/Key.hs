@@ -1,7 +1,3 @@
-{-# LANGUAGE CPP               #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NoOverloadedLists #-}
-{-# LANGUAGE OverloadedStrings #-}
 module Salak.Internal.Key(
     Key(..)
   , Keys(..)

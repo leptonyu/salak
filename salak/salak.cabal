@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 459a7163edaf73fc4469f9426f32514e7ea20c13351351c8075464a9f6b8abae
+-- hash: 23cee7be365c29125b74d4d6fdce90cf3f7c9ee3266da3beff8eef81a854e49a
 
 name:           salak
 version:        0.3.4.1
@@ -33,7 +33,7 @@ library
       Salak.Internal.Writable
   hs-source-dirs:
       src
-  default-extensions: RecordWildCards TupleSections OverloadedStrings NoOverloadedLists ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
+  default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       base >=4.10 && <5
@@ -76,8 +76,8 @@ test-suite salak-spec
   hs-source-dirs:
       test
       src
-  default-extensions: RecordWildCards TupleSections OverloadedStrings NoOverloadedLists ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
-  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -main-is SalakSpec.main -rtsopts -threaded -with-rtsopts=-K1K
+  default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
       QuickCheck <2.14
     , base >=4.10 && <5
@@ -110,8 +110,8 @@ benchmark salak-bench
       Paths_salak
   hs-source-dirs:
       bench
-  default-extensions: RecordWildCards TupleSections OverloadedStrings NoOverloadedLists ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
-  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -main-is SalakBench.main -rtsopts -threaded -with-rtsopts=-K1K
+  default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
+  ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
       base >=4.10 && <5
     , bytestring

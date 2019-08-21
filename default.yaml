@@ -8,13 +8,19 @@
   category:            Library, Configuration
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   default-extensions:
-    - RecordWildCards
-    - TupleSections
-    - OverloadedStrings
-    - NoOverloadedLists
-    - ScopedTypeVariables
-    - FlexibleInstances
-    - MultiParamTypeClasses
+    - BangPatterns
+    - CPP
+    - DefaultSignatures
+    - DeriveFunctor
     - DeriveGeneric
     - FlexibleContexts
+    - FlexibleInstances
+    - GeneralizedNewtypeDeriving
+    - MultiParamTypeClasses
+    - NoOverloadedLists
+    - OverloadedStrings
     - RankNTypes
+    - RecordWildCards
+    - ScopedTypeVariables
+    - TupleSections
+    - TypeOperators

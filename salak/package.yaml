@@ -43,7 +43,7 @@ benchmarks:
     main: SalakBench.hs
     source-dirs:
       - bench
-    ghc-options: -main-is SalakBench.main -rtsopts -threaded -with-rtsopts=-K1K
+    ghc-options: -rtsopts -threaded -with-rtsopts=-K1K
     dependencies:
       - criterion
       - salak
@@ -54,7 +54,7 @@ tests:
     source-dirs:
       - test
       - src
-    ghc-options: -main-is SalakSpec.main -rtsopts -threaded -with-rtsopts=-K1K
+    ghc-options: -rtsopts -threaded -with-rtsopts=-K1K
     dependencies:
       - hspec == 2.*
       - QuickCheck < 2.14

@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveFunctor     #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 -- |
 -- Module:      Salak.Internal

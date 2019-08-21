@@ -1,6 +1,3 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NoOverloadedLists #-}
 module Salak.Internal.Source where
 
 import           Control.Concurrent.MVar

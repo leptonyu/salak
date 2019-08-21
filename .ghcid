@@ -1,1 +1,1 @@
---reload . --test SalakSpec.main
+--reload src --restart default.yaml --restart package.yaml --test SalakSpec.main

@@ -1,2 +1,2 @@
 -- file test/Spec.hs
-{-# OPTIONS_GHC -F -pgmF hspec-discover -optF --module-name=SalakSpec #-}
+{-# OPTIONS_GHC -F -pgmF hspec-discover #-}

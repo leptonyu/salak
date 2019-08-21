@@ -1,15 +1,4 @@
-{-# LANGUAGE DefaultSignatures          #-}
-{-# LANGUAGE DeriveFunctor              #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE OverloadedStrings          #-}
-{-# LANGUAGE RecordWildCards            #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
 {-# LANGUAGE TypeFamilies               #-}
-{-# LANGUAGE TypeOperators              #-}
-{-# LANGUAGE UndecidableInstances       #-}
 module Salak.Internal.Prop where
 
 import           Control.Applicative     ((<|>))
@@ -99,17 +88,7 @@ instance Monad m => MonadSalak (ReaderT SourcePack m) where
 -- | Property parser, used to parse property from `Value`
 newtype Prop m a
   = Prop { unProp :: ReaderT SourcePack (ExceptT SomeException m) a }
-  deriving (Functor, Applicative, Monad)
-
-instance Monad m => MonadReader SourcePack (Prop m) where
-  {-# INLINE ask #-}
-  ask = unsafeCoerce (ask :: ReaderT SourcePack (ExceptT SomeException m) SourcePack)
-  {-# INLINE local #-}
-  local = unsafeCoerce (local :: (SourcePack -> SourcePack) -> ReaderT SourcePack m a -> ReaderT SourcePack m a)
-
-instance MonadIO m => MonadIO (Prop m) where
-  {-# INLINE liftIO #-}
-  liftIO = lift . liftIO
+  deriving (Functor, Applicative, Monad, MonadReader SourcePack, MonadIO)
 
 -- | Automatic convert literal string into an instance of `Prop` @m@ @a@.
 instance (MonadIO m, FromProp m a) => IsString (Prop m a) where

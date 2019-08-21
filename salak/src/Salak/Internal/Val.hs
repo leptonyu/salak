@@ -1,7 +1,3 @@
-{-# LANGUAGE CPP               #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
-
 module Salak.Internal.Val where
 
 import           Control.Applicative  ((<|>))

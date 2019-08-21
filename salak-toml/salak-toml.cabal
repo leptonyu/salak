@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 311d3d24fa6ff79552bc1db8158511cf59d40f57d73935eee90b0bdf706f4dbd
+-- hash: 097c385f7596307f6139e738ed3be8c511b73270eb7b5c14aee5d599cee808a8
 
 name:           salak-toml
 version:        0.3.4.1
@@ -28,7 +28,7 @@ library
       Paths_salak_toml
   hs-source-dirs:
       src
-  default-extensions: RecordWildCards TupleSections OverloadedStrings NoOverloadedLists ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
+  default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       base >=4.10 && <5
@@ -48,7 +48,7 @@ test-suite salak-toml-spec
   hs-source-dirs:
       test
       src
-  default-extensions: RecordWildCards TupleSections OverloadedStrings NoOverloadedLists ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
+  default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -main-is SalakTomlSpec.main
   build-depends:
       QuickCheck <2.14
@@ -71,7 +71,7 @@ benchmark salak-toml-bench
   hs-source-dirs:
       bench
       src
-  default-extensions: RecordWildCards TupleSections OverloadedStrings NoOverloadedLists ScopedTypeVariables FlexibleInstances MultiParamTypeClasses DeriveGeneric FlexibleContexts RankNTypes
+  default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -main-is SalakTomlBench.main -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
       base >=4.10 && <5
