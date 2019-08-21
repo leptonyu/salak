@@ -19,7 +19,7 @@ library:
     - Salak.Yaml
 
 benchmarks:
-  salak-yaml:
+  salak-yaml-bench:
     main: SalakYamlBench.hs
     source-dirs:
       - bench
@@ -29,7 +29,7 @@ benchmarks:
       - criterion
 
 tests:
-  salak-yaml:
+  salak-yaml-test:
     main: SalakYamlSpec.hs
     source-dirs:
       - test

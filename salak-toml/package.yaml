@@ -22,7 +22,7 @@ library:
     # - Salak.HToml
 
 benchmarks:
-  salak-toml:
+  salak-toml-bench:
     main: SalakTomlBench.hs
     source-dirs:
       - bench
@@ -34,7 +34,7 @@ benchmarks:
       - criterion
 
 tests:
-  salak-toml:
+  salak-toml-test:
     main: SalakTomlSpec.hs
     source-dirs:
       - test

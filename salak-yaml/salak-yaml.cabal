@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4b9b55dd17d08bf36868a7fa57564ba55f9d152ed6e88e0d24ea1b290ce88ef9
+-- hash: 11f2b1b0738103cd3d7fff058ff49451f22a7d38c2344915dd013f79d97c93ac
 
 name:           salak-yaml
 version:        0.3.5
@@ -38,7 +38,7 @@ library
     , text
   default-language: Haskell2010
 
-test-suite salak-yaml
+test-suite salak-yaml-test
   type: exitcode-stdio-1.0
   main-is: SalakYamlSpec.hs
   other-modules:
@@ -61,7 +61,7 @@ test-suite salak-yaml
     , text
   default-language: Haskell2010
 
-benchmark salak-yaml
+benchmark salak-yaml-bench
   type: exitcode-stdio-1.0
   main-is: SalakYamlBench.hs
   other-modules:

@@ -1,1 +1,1 @@
---command "stack ghci salak:lib salak-toml:lib salak-yaml:lib --main-is salak:test:salak" --reload . --restart */package.yaml --restart default.yaml --test main
+--command "stack ghci salak:lib salak-toml:lib salak-yaml:lib --main-is salak:test:salak-test" --reload . --restart */package.yaml --restart default.yaml --test main
