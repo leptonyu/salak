@@ -7,12 +7,12 @@ extra-source-files:
 - salak.toml
 
 dependencies:
-  - base >= 4.10 && < 5
-  - salak
-  - tomland >= 1.0 && < 1.2
-  - unordered-containers
-  - time
-  - text
+  - base                 >= 4.10   && < 5
+  - salak                >= 0.3.5  && < 0.4
+  - text                 >= 1.2.3  && < 1.3
+  - time                 >= 1.8.0  && < 1.10
+  - tomland              >= 1.1.0  && < 1.2
+  - unordered-containers >= 0.2.10 && < 0.3
   # - htoml
 
 library:

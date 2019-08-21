@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ad69f9a835dfc187af40b6f7b859cb2999efbdd270e5e75065cad09af3616807
+-- hash: a052037c4952f4c11337a58e8bd5a35a011527bf7e1c199d9332e0529be7ae4d
 
 name:           salak-toml
-version:        0.3.5
+version:        0.3.5.1
 synopsis:       Configuration Loader for toml
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme
@@ -32,11 +32,11 @@ library
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       base >=4.10 && <5
-    , salak
-    , text
-    , time
-    , tomland >=1.0 && <1.2
-    , unordered-containers
+    , salak >=0.3.5 && <0.4
+    , text >=1.2.3 && <1.3
+    , time >=1.8.0 && <1.10
+    , tomland >=1.1.0 && <1.2
+    , unordered-containers >=0.2.10 && <0.3
   default-language: Haskell2010
 
 test-suite salak-toml-test
@@ -56,11 +56,11 @@ test-suite salak-toml-test
     , exceptions
     , hspec ==2.*
     , mtl
-    , salak
+    , salak >=0.3.5 && <0.4
     , text
-    , time
-    , tomland >=1.0 && <1.2
-    , unordered-containers
+    , time >=1.8.0 && <1.10
+    , tomland >=1.1.0 && <1.2
+    , unordered-containers >=0.2.10 && <0.3
   default-language: Haskell2010
 
 benchmark salak-toml-bench
@@ -76,9 +76,9 @@ benchmark salak-toml-bench
   build-depends:
       base >=4.10 && <5
     , criterion
-    , salak
-    , text
-    , time
-    , tomland >=1.0 && <1.2
-    , unordered-containers
+    , salak >=0.3.5 && <0.4
+    , text >=1.2.3 && <1.3
+    , time >=1.8.0 && <1.10
+    , tomland >=1.1.0 && <1.2
+    , unordered-containers >=0.2.10 && <0.3
   default-language: Haskell2010

@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9f17a60d8378096452d0092712b9a263a4e5fb32558c5a414fcd122406aaf25e
+-- hash: 21d8970596a92e37060854c66cf0d1e92ceb5810194de8a348cf9d3d9bf37112
 
 name:           salak
-version:        0.3.5
+version:        0.3.5.1
 synopsis:       Configuration (re)Loader and Parser.
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme
@@ -37,23 +37,23 @@ library
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       base >=4.10 && <5
-    , bytestring
-    , containers
-    , data-default
-    , directory
-    , dlist
-    , exceptions
-    , filepath
-    , hashable
-    , heaps
-    , megaparsec
-    , menshen
-    , mtl
-    , scientific
-    , text
-    , time
-    , unliftio-core
-    , unordered-containers
+    , bytestring >=0.10.8 && <0.11
+    , containers >=0.6.0 && <0.7
+    , data-default >=0.7.1 && <0.8
+    , directory >=1.3.3 && <1.4
+    , dlist >=0.8.0 && <0.9
+    , exceptions >=0.10.2 && <0.11
+    , filepath >=1.4.2 && <1.5
+    , hashable >=1.2.7.0 && <1.4
+    , heaps >=0.3.6 && <0.4
+    , megaparsec >=7.0.5 && <7.1
+    , menshen >=0.0.3 && <0.1
+    , mtl >=2.2.2 && <2.3
+    , scientific >=0.3.6 && <0.4
+    , text >=1.2.3 && <1.3
+    , time >=1.8.0 && <1.10
+    , unliftio-core >=0.1.2 && <0.2
+    , unordered-containers >=0.2.10 && <0.3
   default-language: Haskell2010
 
 test-suite salak-test
@@ -81,25 +81,25 @@ test-suite salak-test
   build-depends:
       QuickCheck <2.14
     , base >=4.10 && <5
-    , bytestring
-    , containers
-    , data-default
-    , directory
-    , dlist
-    , exceptions
-    , filepath
-    , hashable
-    , heaps
+    , bytestring >=0.10.8 && <0.11
+    , containers >=0.6.0 && <0.7
+    , data-default >=0.7.1 && <0.8
+    , directory >=1.3.3 && <1.4
+    , dlist >=0.8.0 && <0.9
+    , exceptions >=0.10.2 && <0.11
+    , filepath >=1.4.2 && <1.5
+    , hashable >=1.2.7.0 && <1.4
+    , heaps >=0.3.6 && <0.4
     , hspec ==2.*
-    , megaparsec
-    , menshen
-    , mtl
+    , megaparsec >=7.0.5 && <7.1
+    , menshen >=0.0.3 && <0.1
+    , mtl >=2.2.2 && <2.3
     , random
-    , scientific
-    , text
-    , time
-    , unliftio-core
-    , unordered-containers
+    , scientific >=0.3.6 && <0.4
+    , text >=1.2.3 && <1.3
+    , time >=1.8.0 && <1.10
+    , unliftio-core >=0.1.2 && <0.2
+    , unordered-containers >=0.2.10 && <0.3
   default-language: Haskell2010
   build-tool-depends: hspec-discover:hspec-discover
 
@@ -114,23 +114,23 @@ benchmark salak-bench
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
       base >=4.10 && <5
-    , bytestring
-    , containers
+    , bytestring >=0.10.8 && <0.11
+    , containers >=0.6.0 && <0.7
     , criterion
-    , data-default
-    , directory
-    , dlist
-    , exceptions
-    , filepath
-    , hashable
-    , heaps
-    , megaparsec
-    , menshen
-    , mtl
+    , data-default >=0.7.1 && <0.8
+    , directory >=1.3.3 && <1.4
+    , dlist >=0.8.0 && <0.9
+    , exceptions >=0.10.2 && <0.11
+    , filepath >=1.4.2 && <1.5
+    , hashable >=1.2.7.0 && <1.4
+    , heaps >=0.3.6 && <0.4
+    , megaparsec >=7.0.5 && <7.1
+    , menshen >=0.0.3 && <0.1
+    , mtl >=2.2.2 && <2.3
     , salak
-    , scientific
-    , text
-    , time
-    , unliftio-core
-    , unordered-containers
+    , scientific >=0.3.6 && <0.4
+    , text >=1.2.3 && <1.3
+    , time >=1.8.0 && <1.10
+    , unliftio-core >=0.1.2 && <0.2
+    , unordered-containers >=0.2.10 && <0.3
   default-language: Haskell2010
