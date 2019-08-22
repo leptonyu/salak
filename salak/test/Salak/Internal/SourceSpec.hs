@@ -100,5 +100,43 @@ spec = do
           msgs `shouldBe` ["hello:Add"]
           v <- vio
           v `shouldBe` 8
+    it "reload - multi layer" $ do
+      io0 <- newMVar [("hello", "10")]
+      io1 <- newMVar [("hello", "8")]
+      let
+        lio = do
+          loadList True "test-0" (readMVar io0 :: IO [(Text, Text)])
+          loadList True "test-1" (readMVar io1 :: IO [(Text, Text)])
+      loadAndRunSalak lio $ do
+        vio <- require "hello"
+        rl  <- askReload
+        lift $ do
+          v <- vio :: IO Int
+          v `shouldBe` 10
+        lift $ do
+          void $ swapMVar io0 [("hello", "7")]
+          _ <- rl
+          v <- vio :: IO Int
+          v `shouldBe` 7
+        lift $ do
+          void $ swapMVar io1 [("hello", "81")]
+          _ <- rl
+          v <- vio :: IO Int
+          v `shouldBe` 7
+        lift $ do
+          void $ swapMVar io0 []
+          _ <- rl
+          v <- vio :: IO Int
+          v `shouldBe` 81
+        lift $ do
+          void $ swapMVar io1 [("hello", "82")]
+          _ <- rl
+          v <- vio :: IO Int
+          v `shouldBe` 82
+        lift $ do
+          void $ swapMVar io0 [("hello", "10")]
+          _ <- rl
+          v <- vio :: IO Int
+          v `shouldBe` 10
 
 

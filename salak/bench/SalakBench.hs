@@ -3,7 +3,7 @@ module Main(main) where
 import           Control.Monad.Reader
 import           Criterion.Main
 import           Data.Default
-import           Data.Text            (Text)
+import           Data.Text              (Text)
 import           Data.Time
 import           Data.Time.Clock.System
 import           Salak
