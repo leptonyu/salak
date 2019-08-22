@@ -4,6 +4,8 @@ import           Control.Monad.Reader
 import           Criterion.Main
 import           Data.Default
 import           Data.Text            (Text)
+import           Data.Time
+import           Data.Time.Clock.System
 import           Salak
 
 
@@ -30,6 +32,10 @@ main = do
     , bgroup "run"
       [ bench "text"     $ whnfIO $ (run $ require "a.b.c.d.e.f.g.h.i.j.k.text" :: IO Text)
       , bench "bool"     $ whnfIO $ (run $ require "a.b.c.d.e.f.g.h.i.j.k.bool" :: IO Bool)
+      ]
+    , bgroup "gettime"
+      [ bench "current"  $ whnfIO getCurrentTime
+      , bench "system"   $ whnfIO getSystemTime
       ]
     ]
 

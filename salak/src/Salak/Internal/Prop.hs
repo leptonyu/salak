@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeFamilies #-}
 module Salak.Internal.Prop where
 
 import           Control.Applicative     ((<|>))

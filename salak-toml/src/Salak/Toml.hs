@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs             #-}
+{-# LANGUAGE GADTs #-}
 -- |
 -- Module:      Salak.Toml
 -- Copyright:   (c) 2019 Daniel YU

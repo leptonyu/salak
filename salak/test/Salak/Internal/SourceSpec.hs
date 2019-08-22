@@ -1,16 +1,16 @@
 module Salak.Internal.SourceSpec(spec) where
 
+import           Control.Concurrent.MVar
 import           Control.Monad.Writer
-import           Data.Text             (Text, unpack)
+import           Data.Text               (Text, unpack)
 import           GHC.Generics
 import           Salak
 import           Salak.Internal
 import           Salak.Internal.Source
-import qualified Salak.Trie            as T
-import           System.Random         (randomIO)
+import qualified Salak.Trie              as T
+import           System.Random           (randomIO)
 import           Test.Hspec
 import           Test.QuickCheck
-import           Control.Concurrent.MVar
 
 
 data Config = Config

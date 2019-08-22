@@ -243,5 +243,6 @@ language_extensions:
   - TypeSynonymInstances
   - ViewPatterns
   - ImplicitParams
+  - CPP
   # - TemplateHaskell
   # - QuasiQuotes

@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeFamilies #-}
 -- |
 -- Module:      Salak.Internal
 -- Copyright:   2019 Daniel YU
