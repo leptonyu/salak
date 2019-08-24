@@ -61,8 +61,8 @@ extract o t =
     {-# INLINE list #-}
     list = fmap (\(k,v)->(show k,v)) $ T.toList $ fmap fst t
 
-gen :: (Foldable f, ToKeys k, ToValue v) => Int -> f (k,v) -> TraceSource
-gen i = foldr go T.empty
+genSource :: (Foldable f, ToKeys k, ToValue v) => Int -> f (k,v) -> TraceSource
+genSource i = foldr go T.empty
   where
     {-# INLINE go #-}
     go (k,v) x = case toKeys k of

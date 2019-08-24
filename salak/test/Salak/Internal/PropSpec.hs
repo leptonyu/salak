@@ -8,8 +8,6 @@ import           Data.Text            (Text)
 import           Data.Word
 import           Salak
 import           Salak.Internal
-import           Salak.Internal.Prop
-import           Salak.Internal.Val
 import           Test.Hspec
 
 spec :: SpecWith ()

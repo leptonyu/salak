@@ -6,7 +6,6 @@ import           Data.Text               (Text, unpack)
 import           GHC.Generics
 import           Salak
 import           Salak.Internal
-import           Salak.Internal.Source
 import qualified Salak.Trie              as T
 import           System.Random           (randomIO)
 import           Test.Hspec
@@ -39,11 +38,11 @@ spec :: SpecWith ()
 spec = do
   context "source" $ do
     it "normal - 1" $ do
-      let (_,b,c) = extract T.empty $ gen 0 ([("hello", "world")] :: [(Text, Text)])
+      let (_,b,c) = extract T.empty $ genSource 0 ([("hello", "world")] :: [(Text, Text)])
       length c `shouldBe` 0
       length (T.toList b) `shouldBe` 1
     it "normal - 2" $ do
-      let (_,b,c) = extract T.empty $ gen 0 ([("hello.value", "world")] :: [(Text, Text)])
+      let (_,b,c) = extract T.empty $ genSource 0 ([("hello.value", "world")] :: [(Text, Text)])
       length c `shouldBe` 0
       length (T.toList b) `shouldBe` 1
   context "Reload test" $ do

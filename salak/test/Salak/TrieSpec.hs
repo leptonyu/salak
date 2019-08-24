@@ -1,7 +1,7 @@
 module Salak.TrieSpec(spec) where
 
 import qualified Data.HashMap.Strict as HM
-import           Salak.Internal.Key
+import           Salak.Internal
 import qualified Salak.Trie          as T
 import           Test.Hspec
 

@@ -35,10 +35,16 @@ module Salak.Internal(
   , setVal
   , Val(..)
   , Value(..)
+  , VRef(..)
+  , mkValue
   , ToValue(..)
   , liftNT
   , SourcePack(..)
   , MonadIO
+  , runProp
+  , withKeys
+  , extract
+  , genSource
   , module Salak.Internal.Writable
   ) where
 
@@ -150,7 +156,7 @@ loadTrie !canReload !name f = do
 
 -- | Simple loader
 loadList :: (MonadThrow m, MonadIO m, Foldable f, ToKeys k, ToValue v) => Bool -> String -> IO (f (k,v)) -> LoadSalakT m ()
-loadList canReload name iof = loadTrie canReload name (\i -> gen i <$> iof)
+loadList canReload name iof = loadTrie canReload name (\i -> genSource i <$> iof)
 
 -- | Standard salak functions, by load and with a `SourcePack` instance.
 --  Users should use `SourcePack` to create custom `MonadSalak` instances, then you get will an instance of `MonadSalak`.

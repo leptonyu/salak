@@ -1,7 +1,7 @@
-resolver: nightly-2019-08-07
+resolver: nightly-2019-08-24
 packages:
 - salak
 - salak-yaml
 - salak-toml
-# ghc-options:
-#   "$locals": -ddump-to-file -ddump-hi
+ghc-options:
+  "$locals": -ddump-to-file -ddump-hi
