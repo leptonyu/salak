@@ -1,7 +1,7 @@
 module Salak.Internal.KeySpec(spec) where
 
-import           Data.List          (intercalate)
-import           Data.Text          (Text, pack, unpack)
+import           Data.List       (intercalate)
+import           Data.Text       (Text, pack, unpack)
 import           Salak.Internal
 import           Test.Hspec
 import           Test.QuickCheck

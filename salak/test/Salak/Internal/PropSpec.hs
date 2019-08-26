@@ -10,6 +10,13 @@ import           Salak
 import           Salak.Internal
 import           Test.Hspec
 
+data Conf = Conf
+  { val :: Int
+  }
+
+instance FromProp m Conf where
+  fromProp = Conf <$> "val" .?= 1
+
 spec :: SpecWith ()
 spec = do
   context "Prop" $ do
@@ -25,6 +32,8 @@ spec = do
           , ("bool-L4", "FALSE")
           , ("int-", "-1")
           , ("empty", "")
+          , ("a.val", "")
+          , ("b.val", "wrong")
           ]
         run :: ((forall a. FromProp IO a => Text -> IO a) -> RunSalak ()) -> IO ()
         run g = loadAndRunSalak (loadMock vals) $ do
@@ -101,6 +110,11 @@ spec = do
         (v  :: String)       `shouldBe` ""
         (vm :: Maybe String) `shouldBe` Just ""
         (n  :: Maybe String) `shouldBe` Nothing
+    it "<|>" $ run $ \r -> do
+      Conf{..} <- require "a"
+      lift $ do
+        val `shouldBe` 1
+        (r "b" :: IO Conf) `shouldThrow` anyException
   context "placeholder" $ do
     it "positive" $ do
       mkValue (VT "${}")             `shouldBe` Right (VR [VRR "" []])

@@ -111,8 +111,9 @@ instance Monad m => A.Alternative (Prop m) where
   a <|> b = do
     v <- try a
     case v of
-      Right x                   -> return x
-      Left (_ :: SomeException) -> b
+      Right x                -> return x
+      Left (NullException _) -> b
+      Left e                 -> throwM e
 
 instance Monad m => MonadError SomeException (Prop m) where
   {-# INLINE throwError #-}
