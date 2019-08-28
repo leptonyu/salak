@@ -1,0 +1,25 @@
+name: Haskell CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        stack: 
+          - --stack-yaml stack.yaml
+          - --resolver nightly
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: |
+        curl -sSL -o stack.sh https://get.haskellstack.org/
+        sh stack.sh --dest $HOME
+        $HOME/stack --version
+    - name: Build
+      run: $HOME/stack build --test --bench ${{ matrix.stack }}
+    - name: Run test
+      run: $HOME/stack test ${{ matrix.stack }}
+    - name: Run bench
+      run: $HOME/stack bench ${{ matrix.stack }}
