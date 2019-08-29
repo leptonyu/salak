@@ -4,11 +4,12 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d6f3d8cb11f4a09565db40aa1e5a697f780228ed7b65381d1ab1a1eb629f55b9
+-- hash: ad7ee67276c836bd6b884a0b51234844cf3c551850c3f27a1d3b62564826ca75
 
 name:           salak-yaml
-version:        0.3.5.2
+version:        0.3.5.3
 synopsis:       Configuration Loader for yaml
+description:    Yaml support for [salak](https://hackage.haskell.org/package/salak).
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme
 author:         Daniel YU
@@ -20,6 +21,7 @@ build-type:     Simple
 extra-source-files:
     README.md
     salak.yml
+    CHANGELOG.md
 
 library
   exposed-modules:
@@ -31,7 +33,7 @@ library
   default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
-      base >=4.10 && <5
+      base >=4.9 && <5
     , conduit >=1.3.1 && <1.4
     , libyaml >=0.1.1 && <0.2
     , salak >=0.3.5 && <0.4
@@ -51,7 +53,7 @@ test-suite salak-yaml-test
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
       QuickCheck <2.14
-    , base >=4.10 && <5
+    , base >=4.9 && <5
     , conduit >=1.3.1 && <1.4
     , exceptions
     , hspec ==2.*
@@ -73,7 +75,7 @@ benchmark salak-yaml-bench
   default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
-      base >=4.10 && <5
+      base >=4.9 && <5
     , conduit >=1.3.1 && <1.4
     , criterion
     , libyaml >=0.1.1 && <0.2

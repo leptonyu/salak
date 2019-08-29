@@ -54,12 +54,9 @@ module Salak(
   -- * Reexport
   , MonadCatch
   , MonadThrow
-  , MonadIO
   ) where
 
 import           Control.Monad.Catch
-import           Control.Monad.IO.Class  (MonadIO)
-import           Control.Monad.IO.Unlift
 import           Control.Monad.Reader
 import           Data.Default
 import           Data.Maybe
@@ -70,6 +67,9 @@ import           Salak.Internal.Source
 import           Salak.Internal.Writable
 import           System.Directory
 import           System.FilePath         ((</>))
+#if __GLASGOW_HASKELL__ < 808
+import           Control.Monad.IO.Class  (MonadIO (..))
+#endif
 
 -- | Type synonyms of 'SourcePack'
 type Salak = SourcePack

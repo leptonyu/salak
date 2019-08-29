@@ -1,14 +1,16 @@
 _common: !include "../default.yaml"
 name:                salak
 synopsis:            Configuration (re)Loader and Parser.
+description:         This library defines a universal procedure to load configurations and parse properties, also supports reload configuration files.
 <<: *legal
 extra-source-files:
 - README.md
+- CHANGELOG.md
 
 dependencies:
-  - base                 >= 4.10    && < 5
-  - mtl                  >= 2.2.2   && < 2.3
-  - text                 >= 1.2.3   && < 1.3
+  - base >= 4.9   && < 5
+  - mtl  >= 2.2.2 && < 2.3
+  - text >= 1.2.3 && < 1.3
 
 library:
   source-dirs: src
@@ -33,7 +35,7 @@ library:
     - hashable             >= 1.2.7.0 && < 1.4
     - heaps                >= 0.3.6   && < 0.4
     - megaparsec           >= 7.0.5   && < 7.1
-    - menshen              >= 0.0.3   && < 0.1
+    # - menshen              >= 0.0.3   && < 0.1
     - scientific           >= 0.3.6   && < 0.4
     - time                 >= 1.8.0   && < 1.10
     - unliftio-core        >= 0.1.2   && < 0.2

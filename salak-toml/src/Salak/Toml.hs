@@ -15,18 +15,21 @@ module Salak.Toml(
   , runSalakWithToml
   ) where
 
-import           Control.Exception   (Exception, throwIO)
-import qualified Data.HashMap.Strict as HM
-import           Data.List           (foldl')
-import qualified Data.List.NonEmpty  as N
-import           Data.Text           (Text)
-import qualified Data.Text.IO        as IO
+import           Control.Exception      (Exception, throwIO)
+import qualified Data.HashMap.Strict    as HM
+import           Data.List              (foldl')
+import qualified Data.List.NonEmpty     as N
+import           Data.Text              (Text)
+import qualified Data.Text.IO           as IO
 import           Data.Time
 import           Salak
 import           Salak.Internal
-import qualified Salak.Trie          as TR
-import           Toml                hiding (Key, TOML, Value)
-import qualified Toml                as T
+import qualified Salak.Trie             as TR
+import           Toml                   hiding (Key, TOML, Value)
+import qualified Toml                   as T
+#if __GLASGOW_HASKELL__ < 808
+import           Control.Monad.IO.Class (MonadIO (..))
+#endif
 
 
 runSalakWithToml :: (MonadCatch m, MonadIO m) => FilePath -> RunSalakT m a -> m a
