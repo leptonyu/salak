@@ -40,7 +40,6 @@ module Salak.Internal(
   , ToValue(..)
   , liftNT
   , SourcePack(..)
-  , MonadIO
   , runProp
   , withKeys
   , extract
@@ -53,7 +52,6 @@ import           Control.Concurrent.MVar
 import           Control.Monad
 import           Control.Monad.Catch
 import           Control.Monad.Except
-import           Control.Monad.IO.Class  (MonadIO, liftIO)
 import qualified Control.Monad.IO.Unlift as IU
 import           Control.Monad.Reader
 import qualified Control.Monad.State     as MS
@@ -74,6 +72,9 @@ import           Salak.Internal.Writable
 import qualified Salak.Trie              as T
 import           System.Directory
 import           System.Environment
+#if __GLASGOW_HASKELL__ < 808
+import           Control.Monad.IO.Class  (MonadIO (..))
+#endif
 
 data UpdateSource = UpdateSource
   {  ref    :: !(MVar Source)

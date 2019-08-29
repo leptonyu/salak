@@ -12,12 +12,19 @@ matrix:
   include:
     - ghc: "8.8.1"
       cabal: 3.0
+      env: TARGET=cabal.88.project
     - ghc: "8.6.5"
       cabal: 2.4
+      env: TARGET=cabal.project
     - ghc: "8.4.4"
       cabal: 2.4
+      env: TARGET=cabal.project
     - ghc: "8.2.2"
       cabal: 2.4
+      env: TARGET=cabal.project
+    - ghc: "8.0.2"
+      cabal: 2.4
+      env: TARGET=cabal.88.project
 
 install:
  - cabal --version
@@ -25,6 +32,6 @@ install:
 
 script:
  - cabal v2-update
- - cabal v2-build all
- - cabal v2-test --enable-test all
- - cabal v2-bench --enable-benchmarks all
+ - cabal v2-build all --project-file=$TARGET
+ - cabal v2-test --enable-test all --project-file=$TARGET
+ - if cabal --version | grep -q 2.4; then cabal v2-bench --enable-benchmarks all --project-file=$TARGET; fi

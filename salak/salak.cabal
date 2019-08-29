@@ -4,11 +4,12 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 273506b248d7af83da3601f1822adfe1cf9927660a36f07ef4f3fad6206e3ec5
+-- hash: a30d96cdc96bcc24bbb445150b6b13acead0ad726df1fab2d6ffa6f6f065f826
 
 name:           salak
 version:        0.3.5.3
 synopsis:       Configuration (re)Loader and Parser.
+description:    This library defines a universal procedure to load configurations and parse properties, also supports reload configuration files.
 category:       Library, Configuration
 homepage:       https://github.com/leptonyu/salak#readme
 author:         Daniel YU
@@ -19,6 +20,7 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
+    CHANGELOG.md
 
 library
   exposed-modules:
@@ -36,7 +38,7 @@ library
   default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
-      base >=4.10 && <5
+      base >=4.9 && <5
     , bytestring >=0.10.8 && <0.11
     , containers >=0.6.0 && <0.7
     , data-default >=0.7.1 && <0.8
@@ -70,7 +72,7 @@ test-suite salak-test
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
       QuickCheck <2.14
-    , base >=4.10 && <5
+    , base >=4.9 && <5
     , hspec ==2.*
     , mtl >=2.2.2 && <2.3
     , random
@@ -91,7 +93,7 @@ benchmark salak-bench
   default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
-      base >=4.10 && <5
+      base >=4.9 && <5
     , criterion
     , data-default
     , mtl >=2.2.2 && <2.3

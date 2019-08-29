@@ -15,7 +15,7 @@ module Salak.Yaml(
   ) where
 
 import           Control.Exception      (throwIO)
-import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Control.Monad.IO.Class
 import           Data.Conduit           hiding (Source)
 import           Data.Text.Encoding     (decodeUtf8)
 import           Salak

@@ -4,14 +4,16 @@
 [![Build](https://img.shields.io/travis/leptonyu/salak.svg?logo=travis)](https://travis-ci.org/leptonyu/salak)
 [![stackage LTS package](http://stackage.org/package/salak/badge/lts)](http://stackage.org/lts/package/salak)
 [![stackage Nightly package](http://stackage.org/package/salak/badge/nightly)](http://stackage.org/nightly/package/salak)
-[![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/leptonyu/salak/blob/master/LICENSE)
+[![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/leptonyu/salak/blob/master/salak/LICENSE)
+![Hackage-Deps](https://img.shields.io/hackage-deps/v/salak)
+
 
 Configuration (re)loader in Haskell.
 
-## salak-yaml
-[![salak-yaml](https://img.shields.io/hackage/v/salak-yaml.svg?logo=haskell)](https://hackage.haskell.org/package/salak-yaml)
-## salak-toml
-[![salak-toml](https://img.shields.io/hackage/v/salak-toml.svg?logo=haskell)](https://hackage.haskell.org/package/salak-toml)
+### Packages
+
+- [![Hackage](https://img.shields.io/badge/salak-yaml-orange)](https://hackage.haskell.org/package/salak-yaml) Yaml support for salak.
+- [![Hackage](https://img.shields.io/badge/salak-toml-orange)](https://hackage.haskell.org/package/salak-toml) Toml support for salak.
 
 ## Introduction
 This library defines a universal procedure to load configurations and parse properties, also supports reload configuration files.

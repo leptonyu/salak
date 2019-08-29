@@ -568,11 +568,13 @@ toNum s = case toBoundedInteger s of
   Just v -> return v
   _      -> Control.Monad.Fail.fail "scientific number doesn't fit in the target representation"
 
+#if __GLASGOW_HASKELL__ >= 802
 instance FromProp m CBool where
   {-# INLINE fromProp #-}
   fromProp = do
     b <- fromProp
     return $ if b then 1 else 0
+#endif
 
 instance FromProp m CShort where
   {-# INLINE fromProp #-}

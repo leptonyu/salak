@@ -1,6 +1,5 @@
 module Salak.Internal.Val where
 
-import           Control.Applicative  ((<|>))
 import           Data.ByteString      (ByteString)
 import           Data.Heap            (Heap)
 import qualified Data.Heap            as H
@@ -14,6 +13,9 @@ import           Data.Time
 import           Salak.Internal.Key
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
+#if __GLASGOW_HASKELL__ < 808
+import           Control.Applicative  ((<|>))
+#endif
 #if __GLASGOW_HASKELL__ < 804
 import           Data.Semigroup       ((<>))
 #endif
