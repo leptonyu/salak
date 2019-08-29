@@ -20,7 +20,7 @@ import           Data.Int
 import           Data.List               (sort)
 import qualified Data.Map.Strict         as M
 import           Data.Maybe
-import           Data.Menshen
+-- import           Data.Menshen
 import           Data.Scientific
 import           Data.Semigroup
 import qualified Data.Set                as S
@@ -289,9 +289,9 @@ instance (MonadIO m, FromProp IO a) => PropOp (Prop m) (IO a) where
       Left  (_ :: SomeException) -> liftIO a >>= buildIO sp
       Right o                    -> return o
 
-instance Monad m => HasValid (Prop m) where
-  {-# INLINE invalid #-}
-  invalid = Control.Monad.Fail.fail . toI18n
+-- instance Monad m => HasValid (Prop m) where
+--   {-# INLINE invalid #-}
+--   invalid = Control.Monad.Fail.fail . toI18n
 
 {-# INLINE readPrimitive' #-}
 readPrimitive' :: (HasCallStack, MonadIO m) => (Value -> Either String a) -> Prop m (Maybe a)
