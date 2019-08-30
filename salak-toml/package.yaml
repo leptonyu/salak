@@ -6,6 +6,7 @@ description:         Toml support for [salak](https://hackage.haskell.org/packag
 extra-source-files:
 - README.md
 - salak.toml
+- CHANGELOG.md
 
 dependencies:
   - base                 >= 4.10   && < 5

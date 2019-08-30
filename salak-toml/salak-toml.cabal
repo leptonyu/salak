@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9dfef9e50a47b5e03de5ae89c29f3e02017de1512925833d0d37646c744d4794
+-- hash: 1b35f96c8e4fb5ee6549f6028ac7b40676815f10b40706c270bc89ae8b2c6335
 
 name:           salak-toml
 version:        0.3.5.3
@@ -21,6 +21,7 @@ build-type:     Simple
 extra-source-files:
     README.md
     salak.toml
+    CHANGELOG.md
 
 library
   exposed-modules:
