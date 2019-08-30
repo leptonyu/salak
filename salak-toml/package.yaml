@@ -1,6 +1,7 @@
 _common: !include "../default.yaml"
 name:                salak-toml
 synopsis:            Configuration Loader for toml
+description:         Toml support for [salak](https://hackage.haskell.org/package/salak).
 <<: *legal
 extra-source-files:
 - README.md
