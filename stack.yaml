@@ -5,7 +5,7 @@ packages:
   #- salak-toml
 extra-deps:
 - megaparsec-8.0.0
-# - unliftio-core-0.2.0.0
-# - resourcet-1.2.3
+- unliftio-core-0.2.0.0
+- resourcet-1.2.3
 ghc-options:
   "$locals": -ddump-to-file -ddump-hi

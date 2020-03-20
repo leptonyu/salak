@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 52fdf71abecd677284cda0a34109f0112c71fdcec206c40674ae73e12b615573
+-- hash: f4e41d3d319929758bdec6b6e98dab0a80e8425760da0659ab8d1b56f45ecb58
 
 name:           salak
-version:        0.3.5.3
+version:        0.3.6
 synopsis:       Configuration (re)Loader and Parser.
 description:    This library defines a universal procedure to load configurations and parse properties, also supports reload configuration files.
 category:       Library, Configuration

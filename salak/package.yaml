@@ -1,6 +1,5 @@
 _common: !include "../default.yaml"
 name:                salak
-version: 0.3.5.3
 synopsis:            Configuration (re)Loader and Parser.
 description:         This library defines a universal procedure to load configurations and parse properties, also supports reload configuration files.
 <<: *legal
