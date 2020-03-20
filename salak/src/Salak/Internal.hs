@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE CPP #-}
 -- |
 -- Module:      Salak.Internal
 -- Copyright:   2019 Daniel YU
@@ -52,7 +53,6 @@ import           Control.Concurrent.MVar
 import           Control.Monad
 import           Control.Monad.Catch
 import           Control.Monad.Except
-import qualified Control.Monad.IO.Unlift as IU
 import           Control.Monad.Reader
 import qualified Control.Monad.State     as MS
 import           Data.Char               (toLower)
@@ -74,6 +74,9 @@ import           System.Directory
 import           System.Environment
 #if __GLASGOW_HASKELL__ < 808
 import           Control.Monad.IO.Class  (MonadIO (..))
+#endif
+#if !MIN_VERSION_unliftio_core(0,2,0)
+import qualified Control.Monad.IO.Unlift as IU
 #endif
 
 data UpdateSource = UpdateSource
@@ -110,11 +113,13 @@ instance MonadIO m => MonadSalak (LoadSalakT m) where
     UpdateSource{..} <- MS.get
     liftIO $ readMVar lfunc >>= \lf -> lf callStack msg
 
+#if !MIN_VERSION_unliftio_core(0,2,0)
 instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (LoadSalakT m) where
   {-# INLINE askUnliftIO #-}
   askUnliftIO = do
     ut <- MS.get
     lift $ IU.withUnliftIO $ \u -> return (IU.UnliftIO (IU.unliftIO u . flip runLoad ut))
+#endif
 
 -- | Standard `MonadSalak` instance.
 newtype RunSalakT m a = RunSalakT { runSalakT :: ReaderT SourcePack m a }
@@ -127,11 +132,13 @@ instance MonadIO m => MonadSalak (RunSalakT m) where
   {-# INLINE askSourcePack #-}
   askSourcePack = ask
 
+#if !MIN_VERSION_unliftio_core(0,2,0)
 instance (MonadThrow m, IU.MonadUnliftIO m) => IU.MonadUnliftIO (RunSalakT m) where
   {-# INLINE askUnliftIO #-}
   askUnliftIO = do
     ut <- ask
     lift $ IU.withUnliftIO $ \u -> return (IU.UnliftIO (IU.unliftIO u . flip runReaderT ut . runSalakT))
+#endif
 
 -- | Basic loader
 loadTrie :: (MonadThrow m, MonadIO m) => Bool -> String -> (Int -> IO TraceSource) -> LoadSalakT m ()

@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ad7ee67276c836bd6b884a0b51234844cf3c551850c3f27a1d3b62564826ca75
+-- hash: 994d53f476c8a999be7c2c7a97034d39b4f184bbf3db6dd3450b02c84c4d8a00
 
 name:           salak-yaml
-version:        0.3.5.3
+version:        0.3.6
 synopsis:       Configuration Loader for yaml
 description:    Yaml support for [salak](https://hackage.haskell.org/package/salak).
 category:       Library, Configuration

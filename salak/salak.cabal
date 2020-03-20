@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a30d96cdc96bcc24bbb445150b6b13acead0ad726df1fab2d6ffa6f6f065f826
+-- hash: 52fdf71abecd677284cda0a34109f0112c71fdcec206c40674ae73e12b615573
 
 name:           salak
 version:        0.3.5.3
@@ -48,12 +48,12 @@ library
     , filepath >=1.4.2 && <1.5
     , hashable >=1.2.7.0 && <1.4
     , heaps >=0.3.6 && <0.4
-    , megaparsec >=7.0.5 && <7.1
+    , megaparsec >=7.0.5 && <8.1
     , mtl >=2.2.2 && <2.3
     , scientific >=0.3.6 && <0.4
     , text >=1.2.3 && <1.3
     , time >=1.8.0 && <1.10
-    , unliftio-core >=0.1.2 && <0.2
+    , unliftio-core >=0.1.2 && <0.3
     , unordered-containers >=0.2.10 && <0.3
   default-language: Haskell2010
 

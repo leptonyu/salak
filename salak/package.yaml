@@ -35,11 +35,11 @@ library:
     - filepath             >= 1.4.2   && < 1.5
     - hashable             >= 1.2.7.0 && < 1.4
     - heaps                >= 0.3.6   && < 0.4
-    - megaparsec           >= 7.0.5   && < 7.1
+    - megaparsec           >= 7.0.5   && < 8.1
     # - menshen              >= 0.0.3   && < 0.1
     - scientific           >= 0.3.6   && < 0.4
     - time                 >= 1.8.0   && < 1.10
-    - unliftio-core        >= 0.1.2   && < 0.2
+    - unliftio-core        >= 0.1.2   && < 0.3
     - unordered-containers >= 0.2.10  && < 0.3
 
 benchmarks:
