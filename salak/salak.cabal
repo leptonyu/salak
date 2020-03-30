@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f4e41d3d319929758bdec6b6e98dab0a80e8425760da0659ab8d1b56f45ecb58
+-- hash: 10fb234742a011ff2922f7299b35b50f0a49b496320b9d11b636fc48238bb7e5
 
 name:           salak
 version:        0.3.6
@@ -71,7 +71,7 @@ test-suite salak-test
   default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
-      QuickCheck <2.14
+      QuickCheck
     , base >=4.9 && <5
     , hspec ==2.*
     , mtl >=2.2.2 && <2.3

@@ -39,7 +39,7 @@ tests:
     ghc-options: -rtsopts -threaded -with-rtsopts=-K1K
     dependencies:
       - hspec == 2.*
-      - QuickCheck < 2.14
+      - QuickCheck
       - text
       - mtl
       - exceptions
