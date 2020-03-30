@@ -1,13 +1,10 @@
-resolver: nightly-2019-11-17
+resolver: lts-15.5 
 packages:
 - salak
 - salak-yaml
   #- salak-toml
 extra-deps:
-- megaparsec-8.0.0
 - unliftio-core-0.2.0.0
-- resourcet-1.2.3
 - QuickCheck-2.14
-- splitmix-0.0.4
 ghc-options:
   "$locals": -ddump-to-file -ddump-hi
