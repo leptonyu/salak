@@ -1,7 +1,7 @@
 # salak
 
 [![Hackage](https://img.shields.io/hackage/v/salak.svg?logo=haskell)](https://hackage.haskell.org/package/salak)
-[![Build](https://img.shields.io/travis/leptonyu/salak.svg?logo=travis)](https://travis-ci.org/leptonyu/salak)
+[![Build](https://img.shields.io/travis/leptonyu/salak.svg?logo=travis)](https://travis-ci.com/leptonyu/salak)
 [![stackage LTS package](http://stackage.org/package/salak/badge/lts)](http://stackage.org/lts/package/salak)
 [![stackage Nightly package](http://stackage.org/package/salak/badge/nightly)](http://stackage.org/nightly/package/salak)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/leptonyu/salak/blob/master/salak/LICENSE)
