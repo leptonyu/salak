@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fe265f49a627a45a5f825dea56ac9d0197fd39b61ed5e750b628744b1224a2ee
+-- hash: 08a43e59d24c76451f718d8788f654fb396ed2f1de33e5081da63fad444712b6
 
 name:           salak-yaml
-version:        0.3.6
+version:        0.3.7
 synopsis:       Configuration Loader for yaml
 description:    Yaml support for [salak](https://hackage.haskell.org/package/salak).
 category:       Library, Configuration
@@ -59,6 +59,7 @@ test-suite salak-yaml-test
     , hspec ==2.*
     , libyaml >=0.1.1 && <0.2
     , mtl
+    , random
     , salak >=0.3.5 && <0.4
     , text
   default-language: Haskell2010

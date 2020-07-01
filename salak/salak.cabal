@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 10fb234742a011ff2922f7299b35b50f0a49b496320b9d11b636fc48238bb7e5
+-- hash: 18e4dedc7943deb0bbf1d5c510110d5a2ab1554987662516039908acabf35ca8
 
 name:           salak
-version:        0.3.6
+version:        0.3.7
 synopsis:       Configuration (re)Loader and Parser.
 description:    This library defines a universal procedure to load configurations and parse properties, also supports reload configuration files.
 category:       Library, Configuration

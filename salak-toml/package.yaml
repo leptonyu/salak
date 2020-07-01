@@ -45,6 +45,7 @@ tests:
     dependencies:
       - hspec == 2.*
       - QuickCheck < 2.14
+      - random
       - text
       - mtl
       - exceptions

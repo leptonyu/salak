@@ -41,5 +41,6 @@ tests:
       - hspec == 2.*
       - QuickCheck
       - text
+      - random
       - mtl
       - exceptions
