@@ -3,8 +3,5 @@ packages:
 - salak
 - salak-yaml
   #- salak-toml
-extra-deps:
-- unliftio-core-0.2.0.0
-- QuickCheck-2.14
 ghc-options:
   "$locals": -ddump-to-file -ddump-hi
