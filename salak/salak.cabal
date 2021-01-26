@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.3.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 18e4dedc7943deb0bbf1d5c510110d5a2ab1554987662516039908acabf35ca8
+-- hash: 502a5e060c009d3dfcc9863c6ff882ec9ad29d018328007fc52e1f06bf6bc69c
 
 name:           salak
 version:        0.3.7
@@ -48,7 +48,7 @@ library
     , filepath >=1.4.2 && <1.5
     , hashable >=1.2.7.0 && <1.4
     , heaps >=0.3.6 && <0.4
-    , megaparsec >=7.0.5 && <8.1
+    , megaparsec >=7.0.5 && <10
     , mtl >=2.2.2 && <2.3
     , scientific >=0.3.6 && <0.4
     , text >=1.2.3 && <1.3
