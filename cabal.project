@@ -2,5 +2,4 @@
 
 packages:
   salak
-  salak-toml
   salak-yaml
