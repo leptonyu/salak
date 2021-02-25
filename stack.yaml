@@ -5,3 +5,5 @@ packages:
   #- salak-toml
 ghc-options:
   "$locals": -ddump-to-file -ddump-hi
+extra-deps:
+- heaps-0.4

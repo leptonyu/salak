@@ -33,7 +33,7 @@ library:
     - exceptions           >= 0.10.2  && < 0.11
     - filepath             >= 1.4.2   && < 1.5
     - hashable             >= 1.2.7.0 && < 1.4
-    - heaps                >= 0.3.6   && < 0.4
+    - heaps                >= 0.3.6   && < 1
     - megaparsec           >= 7.0.5   && < 10
     # - menshen              >= 0.0.3   && < 0.1
     - scientific           >= 0.3.6   && < 0.4
