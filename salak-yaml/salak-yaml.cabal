@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 08a43e59d24c76451f718d8788f654fb396ed2f1de33e5081da63fad444712b6
+-- hash: 63c076d2b01e50829795f038a045a715975d6470d299fe9825fa3a0e4bbffefc
 
 name:           salak-yaml
 version:        0.3.7
@@ -30,7 +30,23 @@ library
       Paths_salak_yaml
   hs-source-dirs:
       src
-  default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
+  default-extensions:
+      BangPatterns
+      CPP
+      DefaultSignatures
+      DeriveFunctor
+      DeriveGeneric
+      FlexibleContexts
+      FlexibleInstances
+      GeneralizedNewtypeDeriving
+      MultiParamTypeClasses
+      NoOverloadedLists
+      OverloadedStrings
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      TupleSections
+      TypeOperators
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures
   build-depends:
       base >=4.9 && <5
@@ -49,7 +65,23 @@ test-suite salak-yaml-test
   hs-source-dirs:
       test
       src
-  default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
+  default-extensions:
+      BangPatterns
+      CPP
+      DefaultSignatures
+      DeriveFunctor
+      DeriveGeneric
+      FlexibleContexts
+      FlexibleInstances
+      GeneralizedNewtypeDeriving
+      MultiParamTypeClasses
+      NoOverloadedLists
+      OverloadedStrings
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      TupleSections
+      TypeOperators
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
       QuickCheck
@@ -73,7 +105,23 @@ benchmark salak-yaml-bench
   hs-source-dirs:
       bench
       src
-  default-extensions: BangPatterns CPP DefaultSignatures DeriveFunctor DeriveGeneric FlexibleContexts FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses NoOverloadedLists OverloadedStrings RankNTypes RecordWildCards ScopedTypeVariables TupleSections TypeOperators
+  default-extensions:
+      BangPatterns
+      CPP
+      DefaultSignatures
+      DeriveFunctor
+      DeriveGeneric
+      FlexibleContexts
+      FlexibleInstances
+      GeneralizedNewtypeDeriving
+      MultiParamTypeClasses
+      NoOverloadedLists
+      OverloadedStrings
+      RankNTypes
+      RecordWildCards
+      ScopedTypeVariables
+      TupleSections
+      TypeOperators
   ghc-options: -Wall -fno-warn-orphans -fno-warn-missing-signatures -rtsopts -threaded -with-rtsopts=-K1K
   build-depends:
       base >=4.9 && <5
