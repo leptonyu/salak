@@ -67,7 +67,7 @@ library
     , megaparsec >=7.0.5 && <10
     , mtl >=2.2.2 && <2.3
     , scientific >=0.3.6 && <0.4
-    , text >=1.2.3 && <1.3
+    , text >=1.2.3 && <2.2
     , time >=1.8.0 && <2.0
     , unliftio-core >=0.1.2 && <0.3
     , unordered-containers >=0.2.10 && <0.3
@@ -110,7 +110,7 @@ test-suite salak-test
     , random
     , salak
     , scientific
-    , text >=1.2.3 && <1.3
+    , text >=1.2.3 && <2.2
     , unordered-containers
   default-language: Haskell2010
   build-tool-depends: hspec-discover:hspec-discover
@@ -146,6 +146,6 @@ benchmark salak-bench
     , data-default
     , mtl >=2.2.2 && <2.3
     , salak
-    , text >=1.2.3 && <1.3
+    , text >=1.2.3 && <2.2
     , time
   default-language: Haskell2010

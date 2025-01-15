@@ -53,7 +53,7 @@ library
     , conduit >=1.3.1 && <1.4
     , libyaml >=0.1.1 && <0.2
     , salak >=0.3.5 && <0.4
-    , text >=1.2.3 && <1.3
+    , text >=1.2.3 && <2.2
   default-language: Haskell2010
 
 test-suite salak-yaml-test
@@ -129,5 +129,5 @@ benchmark salak-yaml-bench
     , criterion
     , libyaml >=0.1.1 && <0.2
     , salak >=0.3.5 && <0.4
-    , text >=1.2.3 && <1.3
+    , text >=1.2.3 && <2.2
   default-language: Haskell2010
