@@ -65,7 +65,7 @@ library
     , hashable >=1.2.7.0 && <1.4
     , heaps >=0.3.6 && <1
     , megaparsec >=7.0.5 && <10
-    , mtl >=2.2.2 && <2.3
+    , mtl >=2.2.2 && <2.4
     , scientific >=0.3.6 && <0.4
     , text >=1.2.3 && <2.2
     , time >=1.8.0 && <2.0
@@ -106,7 +106,7 @@ test-suite salak-test
       QuickCheck
     , base >=4.9 && <5
     , hspec ==2.*
-    , mtl >=2.2.2 && <2.3
+    , mtl >=2.2.2 && <2.4
     , random
     , salak
     , scientific
@@ -144,7 +144,7 @@ benchmark salak-bench
       base >=4.9 && <5
     , criterion
     , data-default
-    , mtl >=2.2.2 && <2.3
+    , mtl >=2.2.2 && <2.4
     , salak
     , text >=1.2.3 && <2.2
     , time
