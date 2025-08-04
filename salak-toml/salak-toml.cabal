@@ -36,7 +36,7 @@ library
       base >=4.10 && <5
     , salak >=0.3.5 && <0.4
     , text >=1.2.3 && <2.2
-    , time >=1.8.0 && <1.15
+    , time >=1.8.0 && <1.16
     , tomland >=1.1.0 && <1.4
     , unordered-containers >=0.2.10 && <0.3
   default-language: Haskell2010
@@ -60,7 +60,7 @@ test-suite salak-toml-test
     , mtl
     , salak >=0.3.5 && <0.4
     , text
-    , time >=1.8.0 && <1.15
+    , time >=1.8.0 && <1.16
     , tomland >=1.1.0 && <1.4
     , unordered-containers >=0.2.10 && <0.3
   default-language: Haskell2010
@@ -80,7 +80,7 @@ benchmark salak-toml-bench
     , criterion
     , salak >=0.3.5 && <0.4
     , text >=1.2.3 && <2.2
-    , time >=1.8.0 && <1.15
+    , time >=1.8.0 && <1.16
     , tomland >=1.1.0 && <1.4
     , unordered-containers >=0.2.10 && <0.3
   default-language: Haskell2010
